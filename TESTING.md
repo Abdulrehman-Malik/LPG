@@ -72,7 +72,7 @@ Error / reproduction steps:
 - [x] Cylinder Stock shows 0 on fresh database.
 - [x] Total Gas Stock shows 0.00 kg on fresh database.
 - [x] No SQL/PHP errors appear in page or server log.
-Result: [ ] PASS / [ ] FAIL
+Result: [x] PASS / [ ] FAIL
 Error / notes:
 > Write here.
 
