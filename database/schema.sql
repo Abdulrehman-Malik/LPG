@@ -1,259 +1,47 @@
--- =====================================================================
--- Perfect LPG (Pvt.) LTD — Distribution & Cylinder Inventory Management
--- MySQL Schema (InnoDB, utf8mb4)
--- =====================================================================
-
+-- Perfect LPG POS / ERP - Complete install schema
+-- MySQL 8.0+ / InnoDB / utf8mb4. Run this file once on a fresh server.
+CREATE DATABASE IF NOT EXISTS perfect_lpg CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE perfect_lpg;
 SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
+SET FOREIGN_KEY_CHECKS=0;
+DROP TABLE IF EXISTS audit_logs,cash_transactions,cash_sessions,cash_registers,expenses,expense_categories,inventory_movements,inventory_opening_balances,customer_receipts,supplier_payments,purchase_payments,purchase_items,purchases,sale_payments,sale_items,sales,rate_change_log,rate_cards,customers,suppliers,role_permissions,permissions,users,roles,locations,cylinder_types;
+SET FOREIGN_KEY_CHECKS=1;
 
--- ---------------------------------------------------------------------
--- users : system operators (auth, roles)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS users (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    full_name       VARCHAR(120)        NOT NULL,
-    username        VARCHAR(60)         NOT NULL,
-    email           VARCHAR(150)        NULL,
-    password_hash   VARCHAR(255)        NOT NULL,
-    role            ENUM('admin','manager','cashier') NOT NULL DEFAULT 'cashier',
-    is_active       TINYINT(1)          NOT NULL DEFAULT 1,
-    last_login_at   DATETIME            NULL,
-    created_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_users_username (username),
-    UNIQUE KEY uq_users_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE locations(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) NOT NULL UNIQUE,name VARCHAR(120) NOT NULL,address VARCHAR(255),city VARCHAR(80),phone VARCHAR(30),is_active BOOLEAN NOT NULL DEFAULT 1,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)ENGINE=InnoDB;
+CREATE TABLE roles(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(40) NOT NULL UNIQUE,name VARCHAR(80) NOT NULL,description VARCHAR(255))ENGINE=InnoDB;
+CREATE TABLE permissions(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(80) NOT NULL UNIQUE,name VARCHAR(120) NOT NULL)ENGINE=InnoDB;
+CREATE TABLE role_permissions(role_id BIGINT UNSIGNED NOT NULL,permission_id BIGINT UNSIGNED NOT NULL,PRIMARY KEY(role_id,permission_id),FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE,FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE)ENGINE=InnoDB;
+CREATE TABLE users(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,location_id BIGINT UNSIGNED,role_id BIGINT UNSIGNED NOT NULL,full_name VARCHAR(120) NOT NULL,username VARCHAR(60) NOT NULL UNIQUE,email VARCHAR(150) UNIQUE,password_hash VARCHAR(255) NOT NULL,is_active BOOLEAN NOT NULL DEFAULT 1,last_login_at DATETIME,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE SET NULL,FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE RESTRICT,KEY idx_users_role(role_id))ENGINE=InnoDB;
+CREATE TABLE cylinder_types(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) NOT NULL UNIQUE,name VARCHAR(60) NOT NULL,capacity_kg DECIMAL(8,3) NOT NULL UNIQUE,tare_weight_kg DECIMAL(8,3),is_active BOOLEAN NOT NULL DEFAULT 1,sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,CHECK(capacity_kg>0))ENGINE=InnoDB;
+CREATE TABLE customers(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) UNIQUE,name VARCHAR(150) NOT NULL,phone VARCHAR(30),city VARCHAR(80),address VARCHAR(255),vehicle_no VARCHAR(40),credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0,opening_balance DECIMAL(14,2) NOT NULL DEFAULT 0,is_active BOOLEAN NOT NULL DEFAULT 1,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,KEY idx_customer_name(name),CHECK(credit_limit>=0))ENGINE=InnoDB;
+CREATE TABLE suppliers(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) UNIQUE,name VARCHAR(150) NOT NULL,phone VARCHAR(30),city VARCHAR(80),address VARCHAR(255),credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0,opening_balance DECIMAL(14,2) NOT NULL DEFAULT 0,is_active BOOLEAN NOT NULL DEFAULT 1,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,KEY idx_supplier_name(name),CHECK(credit_limit>=0))ENGINE=InnoDB;
+CREATE TABLE rate_cards(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,location_id BIGINT UNSIGNED,rate_type ENUM('gas_per_kg','cylinder_package') NOT NULL,cylinder_type_id BIGINT UNSIGNED,rate_value DECIMAL(14,4) NOT NULL,effective_from DATETIME NOT NULL,effective_to DATETIME,created_by BIGINT UNSIGNED,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE SET NULL,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,KEY idx_rate_lookup(location_id,rate_type,cylinder_type_id,effective_from),CHECK(rate_value>=0),CHECK((rate_type='gas_per_kg' AND cylinder_type_id IS NULL) OR(rate_type='cylinder_package' AND cylinder_type_id IS NOT NULL)))ENGINE=InnoDB;
+CREATE TABLE rate_change_log(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,rate_card_id BIGINT UNSIGNED,location_id BIGINT UNSIGNED,rate_type ENUM('gas_per_kg','cylinder_package') NOT NULL,cylinder_type_id BIGINT UNSIGNED,old_rate DECIMAL(14,4),new_rate DECIMAL(14,4) NOT NULL,changed_by BIGINT UNSIGNED,changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,reason VARCHAR(255),FOREIGN KEY(rate_card_id) REFERENCES rate_cards(id) ON DELETE SET NULL,FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE SET NULL,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE SET NULL,FOREIGN KEY(changed_by) REFERENCES users(id) ON DELETE SET NULL)ENGINE=InnoDB;
+CREATE TABLE sales(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,sale_no VARCHAR(40) NOT NULL,location_id BIGINT UNSIGNED NOT NULL,customer_id BIGINT UNSIGNED,transaction_type ENUM('filled_cylinder','refill_service','cylinder_exchange','empty_intake','empty_sale','mixed') NOT NULL,status ENUM('posted','voided') NOT NULL DEFAULT 'posted',transaction_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,total_kg DECIMAL(14,3) NOT NULL DEFAULT 0,subtotal DECIMAL(14,2) NOT NULL DEFAULT 0,discount_amount DECIMAL(14,2) NOT NULL DEFAULT 0,total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,credit_amount DECIMAL(14,2) NOT NULL DEFAULT 0,custom_rate_flag BOOLEAN NOT NULL DEFAULT 0,notes VARCHAR(500),created_by BIGINT UNSIGNED,voided_by BIGINT UNSIGNED,voided_at DATETIME,void_reason VARCHAR(255),created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY uq_sale_no(location_id,sale_no),KEY idx_sale_date(transaction_at),KEY idx_sale_customer(customer_id,transaction_at),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,FOREIGN KEY(voided_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(subtotal>=0 AND discount_amount>=0 AND total_amount>=0 AND credit_amount>=0))ENGINE=InnoDB;
+CREATE TABLE sale_items(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,sale_id BIGINT UNSIGNED NOT NULL,line_no SMALLINT UNSIGNED NOT NULL,line_type ENUM('filled_cylinder','refill_kg','empty_cylinder') NOT NULL,cylinder_type_id BIGINT UNSIGNED,quantity DECIMAL(14,3) NOT NULL,gas_weight_kg DECIMAL(14,3) NOT NULL DEFAULT 0,applied_rate DECIMAL(14,4) NOT NULL,standard_rate DECIMAL(14,4),custom_rate_flag BOOLEAN NOT NULL DEFAULT 0,empty_cylinder_received DECIMAL(14,3) NOT NULL DEFAULT 0,line_discount DECIMAL(14,2) NOT NULL DEFAULT 0,line_total DECIMAL(14,2) NOT NULL,notes VARCHAR(255),UNIQUE KEY uq_sale_line(sale_id,line_no),FOREIGN KEY(sale_id) REFERENCES sales(id) ON DELETE RESTRICT,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE RESTRICT,CHECK(quantity>0))ENGINE=InnoDB;
+CREATE TABLE sale_payments(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,sale_id BIGINT UNSIGNED NOT NULL,payment_mode ENUM('cash','cheque','online','credit') NOT NULL,amount DECIMAL(14,2) NOT NULL,reference_no VARCHAR(100),payment_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,received_by BIGINT UNSIGNED,FOREIGN KEY(sale_id) REFERENCES sales(id) ON DELETE RESTRICT,FOREIGN KEY(received_by) REFERENCES users(id) ON DELETE SET NULL,KEY idx_sale_payment(sale_id,payment_mode),CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE purchases(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,purchase_no VARCHAR(40) NOT NULL,location_id BIGINT UNSIGNED NOT NULL,supplier_id BIGINT UNSIGNED NOT NULL,status ENUM('posted','voided') NOT NULL DEFAULT 'posted',transaction_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,subtotal DECIMAL(14,2) NOT NULL DEFAULT 0,discount_amount DECIMAL(14,2) NOT NULL DEFAULT 0,total_amount DECIMAL(14,2) NOT NULL DEFAULT 0,credit_amount DECIMAL(14,2) NOT NULL DEFAULT 0,notes VARCHAR(500),created_by BIGINT UNSIGNED,voided_by BIGINT UNSIGNED,voided_at DATETIME,void_reason VARCHAR(255),created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,UNIQUE KEY uq_purchase_no(location_id,purchase_no),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,FOREIGN KEY(voided_by) REFERENCES users(id) ON DELETE SET NULL)ENGINE=InnoDB;
+CREATE TABLE purchase_items(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,purchase_id BIGINT UNSIGNED NOT NULL,line_no SMALLINT UNSIGNED NOT NULL,line_type ENUM('gas_kg','filled_cylinder','empty_cylinder') NOT NULL,cylinder_type_id BIGINT UNSIGNED,quantity DECIMAL(14,3) NOT NULL,unit_rate DECIMAL(14,4) NOT NULL,line_total DECIMAL(14,2) NOT NULL,UNIQUE KEY uq_purchase_line(purchase_id,line_no),FOREIGN KEY(purchase_id) REFERENCES purchases(id) ON DELETE RESTRICT,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE RESTRICT,CHECK(quantity>0))ENGINE=InnoDB;
+CREATE TABLE purchase_payments(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,purchase_id BIGINT UNSIGNED NOT NULL,payment_mode ENUM('cash','cheque','online','credit') NOT NULL,amount DECIMAL(14,2) NOT NULL,reference_no VARCHAR(100),payment_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,paid_by BIGINT UNSIGNED,FOREIGN KEY(purchase_id) REFERENCES purchases(id) ON DELETE RESTRICT,FOREIGN KEY(paid_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE customer_receipts(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,receipt_no VARCHAR(40) NOT NULL,location_id BIGINT UNSIGNED NOT NULL,customer_id BIGINT UNSIGNED NOT NULL,status ENUM('posted','voided') NOT NULL DEFAULT 'posted',amount DECIMAL(14,2) NOT NULL,payment_mode ENUM('cash','cheque','online') NOT NULL,receipt_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,reference_no VARCHAR(100),notes VARCHAR(255),created_by BIGINT UNSIGNED,UNIQUE KEY uq_receipt_no(location_id,receipt_no),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE supplier_payments(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,payment_no VARCHAR(40) NOT NULL,location_id BIGINT UNSIGNED NOT NULL,supplier_id BIGINT UNSIGNED NOT NULL,status ENUM('posted','voided') NOT NULL DEFAULT 'posted',amount DECIMAL(14,2) NOT NULL,payment_mode ENUM('cash','cheque','online') NOT NULL,payment_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,reference_no VARCHAR(100),notes VARCHAR(255),created_by BIGINT UNSIGNED,UNIQUE KEY uq_supplier_payment_no(location_id,payment_no),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE inventory_opening_balances(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,location_id BIGINT UNSIGNED NOT NULL,inventory_date DATE NOT NULL,inventory_type ENUM('gas_kg','filled_cylinder','empty_cylinder') NOT NULL,cylinder_type_id BIGINT UNSIGNED,quantity DECIMAL(14,3) NOT NULL,created_by BIGINT UNSIGNED,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE KEY uq_inventory_opening(location_id,inventory_date,inventory_type,cylinder_type_id),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(quantity>=0))ENGINE=InnoDB;
+CREATE TABLE inventory_movements(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,location_id BIGINT UNSIGNED NOT NULL,inventory_type ENUM('gas_kg','filled_cylinder','empty_cylinder') NOT NULL,cylinder_type_id BIGINT UNSIGNED,quantity DECIMAL(14,3) NOT NULL,direction ENUM('in','out','adjustment') NOT NULL,movement_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,source_type VARCHAR(40) NOT NULL,source_id BIGINT UNSIGNED NOT NULL,source_line_id BIGINT UNSIGNED,created_by BIGINT UNSIGNED,notes VARCHAR(255),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(cylinder_type_id) REFERENCES cylinder_types(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,KEY idx_inventory(location_id,inventory_type,cylinder_type_id,movement_at),KEY idx_inventory_source(source_type,source_id),CHECK(quantity>0))ENGINE=InnoDB;
+CREATE TABLE cash_registers(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,location_id BIGINT UNSIGNED NOT NULL,code VARCHAR(30) NOT NULL,name VARCHAR(80) NOT NULL,is_active BOOLEAN NOT NULL DEFAULT 1,UNIQUE KEY uq_register(location_id,code),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT)ENGINE=InnoDB;
+CREATE TABLE cash_sessions(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,register_id BIGINT UNSIGNED NOT NULL,opened_by BIGINT UNSIGNED NOT NULL,opened_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,opening_cash DECIMAL(14,2) NOT NULL DEFAULT 0,closed_by BIGINT UNSIGNED,closed_at DATETIME,counted_cash DECIMAL(14,2),status ENUM('open','closed') NOT NULL DEFAULT 'open',notes VARCHAR(255),FOREIGN KEY(register_id) REFERENCES cash_registers(id) ON DELETE RESTRICT,FOREIGN KEY(opened_by) REFERENCES users(id) ON DELETE RESTRICT,FOREIGN KEY(closed_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(opening_cash>=0))ENGINE=InnoDB;
+CREATE TABLE cash_transactions(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,cash_session_id BIGINT UNSIGNED NOT NULL,transaction_type ENUM('opening_float','sale_cash','customer_receipt','purchase_cash','supplier_payment','expense','manual_in','manual_out','cash_handover') NOT NULL,direction ENUM('in','out') NOT NULL,amount DECIMAL(14,2) NOT NULL,transaction_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,reference_type VARCHAR(40),reference_id BIGINT UNSIGNED,created_by BIGINT UNSIGNED,notes VARCHAR(255),FOREIGN KEY(cash_session_id) REFERENCES cash_sessions(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,KEY idx_cash_session(cash_session_id,transaction_at),CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE expense_categories(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) NOT NULL UNIQUE,name VARCHAR(80) NOT NULL,is_active BOOLEAN NOT NULL DEFAULT 1)ENGINE=InnoDB;
+CREATE TABLE expenses(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,expense_no VARCHAR(40) NOT NULL,location_id BIGINT UNSIGNED NOT NULL,category_id BIGINT UNSIGNED NOT NULL,amount DECIMAL(14,2) NOT NULL,payment_mode ENUM('cash','cheque','online') NOT NULL,expense_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,reference_no VARCHAR(100),description VARCHAR(255),created_by BIGINT UNSIGNED,UNIQUE KEY uq_expense_no(location_id,expense_no),FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE RESTRICT,FOREIGN KEY(category_id) REFERENCES expense_categories(id) ON DELETE RESTRICT,FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,CHECK(amount>0))ENGINE=InnoDB;
+CREATE TABLE audit_logs(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,user_id BIGINT UNSIGNED,location_id BIGINT UNSIGNED,action VARCHAR(50) NOT NULL,entity_type VARCHAR(50) NOT NULL,entity_id BIGINT UNSIGNED,old_values JSON,new_values JSON,ip_address VARCHAR(45),user_agent VARCHAR(500),created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE SET NULL,KEY idx_audit(entity_type,entity_id,created_at))ENGINE=InnoDB;
 
--- ---------------------------------------------------------------------
--- cylinder_types : the fixed capacity catalog (6kg, 11.8kg, 15kg, ...)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS cylinder_types (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    label           VARCHAR(30)         NOT NULL,        -- e.g. "11.8 kg"
-    capacity_kg     DECIMAL(6,2)        NOT NULL,        -- e.g. 11.80
-    is_active       TINYINT(1)          NOT NULL DEFAULT 1,
-    sort_order      SMALLINT UNSIGNED   NOT NULL DEFAULT 0,
-    created_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_cylinder_capacity (capacity_kg)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- gas_rates : per-cylinder-type rate AND a generic per-kg rate, both
--- versioned by effective_from so historical sales keep their own rate.
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS gas_rates (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    cylinder_type_id    INT UNSIGNED    NULL,   -- NULL => generic per-kg rate row
-    rate_per_cylinder   DECIMAL(10,2)   NULL,
-    rate_per_kg         DECIMAL(10,4)   NULL,
-    effective_from      DATE            NOT NULL,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_gasrate_cylinder
-        FOREIGN KEY (cylinder_type_id) REFERENCES cylinder_types(id)
-        ON DELETE CASCADE,
-    KEY idx_gasrate_effective (effective_from)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- customers : parties / vehicles buying gas
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS customers (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(150)        NOT NULL,
-    phone           VARCHAR(30)         NULL,
-    vehicle_no      VARCHAR(30)         NULL,
-    address         VARCHAR(255)        NULL,
-    opening_balance DECIMAL(12,2)       NOT NULL DEFAULT 0.00, -- +ve = customer owes
-    is_active       TINYINT(1)          NOT NULL DEFAULT 1,
-    created_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    KEY idx_customer_name (name),
-    KEY idx_customer_vehicle (vehicle_no)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- sales : one row per sale transaction (header)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sales (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    sale_date           DATE            NOT NULL,
-    customer_id         INT UNSIGNED    NULL,       -- NULL => walk-in / cash sale
-    vehicle_no          VARCHAR(30)     NULL,        -- snapshot at time of sale
-    sale_mode           ENUM('cylinder','kg','mixed') NOT NULL DEFAULT 'cylinder',
-    total_kg            DECIMAL(10,3)   NOT NULL DEFAULT 0.000,
-    total_amount        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    cash_received       DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    online_received     DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    credit_amount       DECIMAL(12,2)   NOT NULL DEFAULT 0.00, -- total - cash - online
-    empty_recv_count    INT UNSIGNED    NOT NULL DEFAULT 0,
-    payment_status      ENUM('cash','credit','online','mixed') NOT NULL DEFAULT 'cash',
-    notes               VARCHAR(255)    NULL,
-    created_by          INT UNSIGNED    NULL,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_sales_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
-        ON DELETE SET NULL,
-    CONSTRAINT fk_sales_user
-        FOREIGN KEY (created_by) REFERENCES users(id)
-        ON DELETE SET NULL,
-    KEY idx_sales_date (sale_date),
-    KEY idx_sales_customer (customer_id),
-    KEY idx_sales_payment_status (payment_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- sale_items : line items — either cylinder-based or kg-based per line
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sale_items (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    sale_id             INT UNSIGNED    NOT NULL,
-    cylinder_type_id    INT UNSIGNED    NULL,        -- NULL when pure kg-based line
-    line_type           ENUM('cylinder','kg') NOT NULL DEFAULT 'cylinder',
-    cylinder_count      INT UNSIGNED    NOT NULL DEFAULT 0,
-    gas_weight_kg       DECIMAL(10,3)   NOT NULL DEFAULT 0.000,
-    rate                DECIMAL(10,4)   NOT NULL DEFAULT 0.0000, -- per-cylinder or per-kg
-    line_total          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    CONSTRAINT fk_saleitem_sale
-        FOREIGN KEY (sale_id) REFERENCES sales(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_saleitem_cylinder
-        FOREIGN KEY (cylinder_type_id) REFERENCES cylinder_types(id)
-        ON DELETE RESTRICT,
-    KEY idx_saleitem_sale (sale_id),
-    KEY idx_saleitem_cylinder (cylinder_type_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- customer_payments : direct payment receiving (independent of a sale)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS customer_payments (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    customer_id     INT UNSIGNED        NOT NULL,
-    payment_date    DATE                NOT NULL,
-    amount          DECIMAL(12,2)       NOT NULL,
-    payment_mode    ENUM('cash','online','cheque','bank') NOT NULL DEFAULT 'cash',
-    notes           VARCHAR(255)        NULL,
-    created_by      INT UNSIGNED        NULL,
-    created_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_custpay_customer
-        FOREIGN KEY (customer_id) REFERENCES customers(id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_custpay_user
-        FOREIGN KEY (created_by) REFERENCES users(id)
-        ON DELETE SET NULL,
-    KEY idx_custpay_date (payment_date),
-    KEY idx_custpay_customer (customer_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- daily_filled_stock : per cylinder-type, per day filled-gas stock ledger
--- Closing = Opening + Received - Sold + Adjustment  (enforced in app layer,
--- mirrored here as a generated column for reporting integrity)
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS daily_filled_stock (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    stock_date          DATE            NOT NULL,
-    cylinder_type_id    INT UNSIGNED    NOT NULL,
-    opening_stock       INT             NOT NULL DEFAULT 0,
-    received_stock      INT             NOT NULL DEFAULT 0,
-    sold_stock          INT             NOT NULL DEFAULT 0,
-    adjustment          INT             NOT NULL DEFAULT 0,  -- can be negative
-    closing_stock       INT GENERATED ALWAYS AS
-                            (opening_stock + received_stock - sold_stock + adjustment)
-                            STORED,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_filledstock_cylinder
-        FOREIGN KEY (cylinder_type_id) REFERENCES cylinder_types(id)
-        ON DELETE CASCADE,
-    UNIQUE KEY uq_filledstock_date_type (stock_date, cylinder_type_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- daily_empty_stock : per cylinder-type, per day empty-cylinder ledger
--- Closing = Opening + Recv(from customers) - Sent(for refill) + Adjustment
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS daily_empty_stock (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    stock_date          DATE            NOT NULL,
-    cylinder_type_id    INT UNSIGNED    NOT NULL,
-    opening_stock       INT             NOT NULL DEFAULT 0,
-    received_from_cust  INT             NOT NULL DEFAULT 0,
-    sent_for_refill     INT             NOT NULL DEFAULT 0,
-    adjustment          INT             NOT NULL DEFAULT 0,
-    closing_stock       INT GENERATED ALWAYS AS
-                            (opening_stock + received_from_cust - sent_for_refill + adjustment)
-                            STORED,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_emptystock_cylinder
-        FOREIGN KEY (cylinder_type_id) REFERENCES cylinder_types(id)
-        ON DELETE CASCADE,
-    UNIQUE KEY uq_emptystock_date_type (stock_date, cylinder_type_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- expenses : bowser/salary/misc expenses feeding the daily cash report
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS expenses (
-    id              INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    expense_date    DATE                NOT NULL,
-    category        VARCHAR(60)         NOT NULL, -- e.g. 'bowser', 'salary', 'misc'
-    description     VARCHAR(255)        NULL,
-    amount          DECIMAL(12,2)       NOT NULL,
-    created_by      INT UNSIGNED        NULL,
-    created_at      DATETIME            NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_expense_user
-        FOREIGN KEY (created_by) REFERENCES users(id)
-        ON DELETE SET NULL,
-    KEY idx_expense_date (expense_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ---------------------------------------------------------------------
--- daily_summaries : one row per business day — the Daily Cash/Sale Report
--- ---------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS daily_summaries (
-    id                  INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    summary_date        DATE            NOT NULL,
-    opening_cash        DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    cash_sale           DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    credit_sale         DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    online_sale         DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    credit_received     DECIMAL(12,2)   NOT NULL DEFAULT 0.00, -- from customer_payments
-    total_sale          DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    bowser_expense      DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    other_expense       DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    hand_over_cash      DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    balance             DECIMAL(12,2)   NOT NULL DEFAULT 0.00,
-    closed_by           INT UNSIGNED    NULL,
-    is_closed           TINYINT(1)      NOT NULL DEFAULT 0,
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                        ON UPDATE CURRENT_TIMESTAMP,
-    CONSTRAINT fk_summary_user
-        FOREIGN KEY (closed_by) REFERENCES users(id)
-        ON DELETE SET NULL,
-    UNIQUE KEY uq_summary_date (summary_date)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
--- =====================================================================
--- Seed: standard cylinder capacities
--- =====================================================================
-INSERT INTO cylinder_types (label, capacity_kg, sort_order) VALUES
-    ('6 kg',    6.00,  1),
-    ('11.8 kg', 11.80, 2),
-    ('15 kg',   15.00, 3),
-    ('35 kg',   35.00, 4),
-    ('45 kg',   45.00, 5),
-    ('45.2 kg', 45.20, 6)
-ON DUPLICATE KEY UPDATE label = VALUES(label);
+INSERT INTO locations(code,name,city) VALUES('MAIN','Main LPG Shop','Lahore');
+INSERT INTO roles(code,name,description) VALUES('ADMIN','Administrator','Full system access'),('MANAGER','Manager','Operational access'),('CASHIER','Cashier','POS and cash access');
+INSERT INTO permissions(code,name) VALUES('DASHBOARD_VIEW','View dashboard'),('POS_SALE','Create POS sales'),('POS_VOID','Void posted sales'),('CUSTOMER_MANAGE','Manage customers'),('SUPPLIER_MANAGE','Manage suppliers'),('RATE_MANAGE','Manage LPG rates'),('INVENTORY_MANAGE','Manage inventory'),('PURCHASE_MANAGE','Manage purchases'),('CASH_MANAGE','Manage counter cash'),('EXPENSE_MANAGE','Manage expenses'),('REPORT_VIEW','View reports'),('USER_MANAGE','Manage users'),('AUDIT_VIEW','View audit log');
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r CROSS JOIN permissions p WHERE r.code='ADMIN';
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r CROSS JOIN permissions p WHERE r.code='MANAGER' AND p.code<>'USER_MANAGE';
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r JOIN permissions p ON p.code IN('DASHBOARD_VIEW','POS_SALE','CUSTOMER_MANAGE','REPORT_VIEW') WHERE r.code='CASHIER';
+-- Local development account: admin / admin123
+INSERT INTO users(location_id,role_id,full_name,username,email,password_hash) SELECT l.id,r.id,'System Administrator','admin','admin@perfectlpg.local','$2y$12$9MTfd/L4bb/9R6o1/DWQB.gjYAQReoFRajJCgiNbych8g3iRfVdWm' FROM locations l JOIN roles r ON r.code='ADMIN' WHERE l.code='MAIN';
+INSERT INTO cash_registers(location_id,code,name) SELECT id,'REG-01','Main Counter' FROM locations WHERE code='MAIN';
+INSERT INTO expense_categories(code,name) VALUES('BOWSER','Bowser / Transport'),('SALARY','Salary / Wages'),('UTILITIES','Utilities'),('MAINTENANCE','Maintenance'),('OTHER','Other');
+INSERT INTO cylinder_types(code,name,capacity_kg,sort_order) VALUES('C6','6 kg',6,1),('C11_8','11.8 kg',11.8,2),('C15','15 kg',15,3),('C35','35 kg',35,4),('C45','45 kg',45,5),('C45_2','45.2 kg',45.2,6);

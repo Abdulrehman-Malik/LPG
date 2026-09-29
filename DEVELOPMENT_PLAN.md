@@ -4,64 +4,57 @@ Legend:
 - [ ] Pending
 - [/] In Progress
 - [x] Done
-- [!] Blocked / business decision required
+- [!] Blocked / user business decision required
 
 ## Phase 0 — Architecture
 - [x] Repository reviewed
-- [x] Existing schema reviewed
-- [x] Target normalized schema designed
-- [x] Core services defined
-- [x] POS business rules defined
-- [x] API contract defined
+- [x] Target normalized database architecture defined
+- [x] Core services/business rules/API contract documented
+- [x] Complete one-shot MySQL schema prepared
 - [ ] Business decisions confirmed
 
-## Phase 1 — Database
-- [/] Target schema prepared
-- [ ] Convert schema to CodeIgniter migrations
-- [ ] Seed roles/permissions/admin
-- [ ] Seed cylinder types
-- [ ] Add stock calculation queries
-- [ ] Add ledger queries
-- [ ] Database tests
+## Phase 1 — Foundation / Local Test Gate
+- [x] Complete database schema in database/schema.sql
+- [x] Seed location, roles, permissions, admin, register, expense categories and cylinder types
+- [x] Authentication updated for role table
+- [x] Dashboard updated for target inventory/sales ledgers
+- [x] TESTING.md created as mandatory test gate
+- [ ] User executes schema and tests foundation
+- [ ] User reports PASS/FAIL in TESTING.md
 
-## Phase 2 — Authentication
-- [x] Existing login baseline
-- [ ] v2 role/permission integration
-- [ ] Permission filter
-- [ ] User management
-- [ ] Audit service
-
-## Phase 3 — Master Data
-- [ ] Cylinder types
-- [ ] Customers
+## Phase 2 — Master Data
+- [ ] Customers / Parties
 - [ ] Suppliers
-- [ ] Gas rates
-- [ ] Cylinder package prices
-- [ ] Rate history/audit
+- [ ] Cylinder Types management
+- [ ] LPG rate management + rate history
+- [ ] Users / Roles / Permissions
+- [ ] Opening inventory
+- [ ] Customer/supplier ledgers
 
-## Phase 4 — POS
+## Phase 3 — POS Sales
 - [ ] POS screen
 - [ ] Filled cylinder sale
 - [ ] KG refill
 - [ ] Cylinder exchange
-- [ ] Empty intake
-- [ ] Empty sale
+- [ ] Empty cylinder intake
+- [ ] Empty cylinder sale
 - [ ] Payment modes
 - [ ] Credit enforcement
 - [ ] OS balance block
 - [ ] Custom-rate highlighting
-- [ ] Receipt/print
+- [ ] Atomic inventory/cash posting
+- [ ] Receipt / print
+- [ ] Sale void/reversal
 
-## Phase 5 — Purchases & Inventory
-- [ ] Purchases
+## Phase 4 — Purchases & Inventory
+- [ ] Purchase entry
 - [ ] Inventory service
-- [ ] Opening balances
-- [ ] Adjustments
+- [ ] Stock adjustments
 - [ ] Negative-stock protection
-- [ ] Stock reports
+- [ ] Inventory reports
 
-## Phase 6 — Counter Cash
-- [ ] Register/session
+## Phase 5 — Counter Cash & Expenses
+- [ ] Cash register/session
 - [ ] Cash IN/OUT
 - [ ] Expenses
 - [ ] Customer receipts
@@ -69,25 +62,24 @@ Legend:
 - [ ] Handover
 - [ ] Close/reconcile
 
-## Phase 7 — Reports
+## Phase 6 — Reports & Audit
 - [ ] Customer ledger
 - [ ] Supplier ledger
 - [ ] Daily transactions
-- [ ] Rate override report
-- [ ] Stock
-- [ ] Counter Cash
+- [ ] Custom-rate report
+- [ ] Stock report
+- [ ] Counter cash reconciliation
 - [ ] Expenses
 - [ ] Outstanding balances
+- [ ] Audit log
 
-## Phase 8 — Production Hardening
+## Phase 7 — Production Hardening
 - [ ] Unit tests
 - [ ] Feature tests
-- [ ] Concurrency tests
+- [ ] Concurrency/transaction tests
 - [ ] Security review
 - [ ] Backup/restore test
 - [ ] Deployment guide
 
-## Current Position
-Architecture/database transition point.
-
-Next: introduce the target schema through versioned CI4 migrations without breaking the existing application, then implement SalesService and the POS workflow.
+## Workflow Gate
+Do not silently move to the next testable phase. The user tests the items marked ready in TESTING.md, records PASS/FAIL, and pushes the result. FAIL items become the next fix cycle. Only PASS results unlock the next development phase.
