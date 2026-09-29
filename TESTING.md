@@ -18,21 +18,21 @@ Use this file as the test gate between development phases.
 Status: [ ] Not tested · [x] Pass · [!] Fail · [-] N/A
 
 ## Phase 1 — Database Installation
-- [ ] Execute database/schema.sql successfully on a fresh MySQL server.
-- [ ] Database perfect_lpg is created.
-- [ ] All required tables are created without SQL errors.
-- [ ] users contains seeded admin account.
-- [ ] cylinder_types contains 6 standard cylinder types.
-- [ ] cash_registers contains REG-01.
+- [ ] Execute database/schema.sql successfully on a fresh MySQL server.[x]
+- [ ] Database perfect_lpg is created. [x]
+- [ ] All required tables are created without SQL errors.[x]
+- [ ] users contains seeded admin account.[x]
+- [ ] cylinder_types contains 6 standard cylinder types.[x]
+- [ ] cash_registers contains REG-01.[x]
 - [ ] roles, permissions and role_permissions contain seed data.
 Result: [ ] PASS / [ ] FAIL
 Database error / notes:
 > Write here.
 
 ## Phase 1 — Application Configuration
-- [ ] .env database connection points to perfect_lpg.
-- [ ] Application starts without PHP fatal error.
-- [ ] /login opens correctly.
+- [ ] .env database connection points to perfect_lpg.[x]
+- [ ] Application starts without PHP fatal error.[x]
+- [ ] /login opens correctly.[x]
 - [ ] Bootstrap/CSS/JS load correctly.
 Result: [ ] PASS / [ ] FAIL
 Error / notes:

@@ -1,5 +1,4 @@
 /vendor/
-/.env
 /writable/cache/*
 !/writable/cache/index.html
 /writable/logs/*
