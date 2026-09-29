@@ -46,32 +46,32 @@ Database error / notes:
 - [x] .env database connection points to perfect_lpg.
 - [x] Application starts without PHP fatal error.
 - [x] /login opens correctly.
-- [ ] Bootstrap/CSS/JS load correctly.
+- [x] Bootstrap/CSS/JS load correctly.
 - [x] Application starting URL is http://localhost:180/.
 Result: [ ] PASS / [ ] FAIL
 Error / notes:
 > Write here.
 
 ## Phase 1 — Authentication
-- [ ] Username: admin
-- [ ] Password: admin123
-- [ ] Login succeeds.
-- [ ] Redirect to /dashboard works.
-- [ ] Top-right user shows System Administrator.
-- [ ] Role badge shows ADMIN.
-- [ ] Invalid password is rejected.
-- [ ] Logout returns to /login.
-- [ ] Direct /dashboard while logged out redirects to /login.
+- [x] Username: admin
+- [x] Password: admin123
+- [x] Login succeeds.
+- [x] Redirect to /dashboard works.
+- [x] Top-right user shows System Administrator.
+- [x] Role badge shows ADMIN.
+- [x] Invalid password is rejected.
+- [x] Logout returns to /login.
+- [x] Direct /dashboard while logged out redirects to /login.
 Result: [ ] PASS / [ ] FAIL
 Error / reproduction steps:
 > Write here.
 
 ## Phase 1 — Dashboard
-- [ ] Dashboard opens after login.
-- [ ] Today's Sales shows Rs. 0.00 on fresh database.
-- [ ] Cylinder Stock shows 0 on fresh database.
-- [ ] Total Gas Stock shows 0.00 kg on fresh database.
-- [ ] No SQL/PHP errors appear in page or server log.
+- [x] Dashboard opens after login.
+- [x] Today's Sales shows Rs. 0.00 on fresh database.
+- [x] Cylinder Stock shows 0 on fresh database.
+- [x] Total Gas Stock shows 0.00 kg on fresh database.
+- [x] No SQL/PHP errors appear in page or server log.
 Result: [ ] PASS / [ ] FAIL
 Error / notes:
 > Write here.
