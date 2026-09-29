@@ -4,14 +4,16 @@ Use this file as the test gate between development phases.
 
 ## How to use
 1. Pull the latest main branch.
-2. Back up any local database you care about.
-3. For the first installation, execute database/schema.sql once in MySQL.
-4. Configure CodeIgniter .env for database perfect_lpg.
-5. Test only items marked READY FOR TEST.
-6. Change [ ] to [x] for PASS or [!] for FAIL.
-7. For every FAIL, add the exact error/message and reproduction steps.
-8. Commit/push your updated TESTING.md to GitHub.
-9. I will read the results, fix failures, and only then start the next phase.
+2. Install PHP 8.2+ with `intl`, `mbstring` and MySQLi enabled.
+3. Run `composer install` from the project root. This installs CodeIgniter into `vendor/`; do not commit `vendor/`.
+4. Copy `env` to `.env` and set your local MySQL credentials/database settings.
+5. Execute `database/schema.sql` once on a fresh MySQL server.
+6. Run the application with `php spark serve` and open `http://localhost:8080/`.
+7. Test only items marked READY FOR TEST.
+8. Change [ ] to [x] for PASS or [!] for FAIL.
+9. For every FAIL, add the exact error/message and reproduction steps.
+10. Commit/push your updated TESTING.md to GitHub.
+11. I will read the results, fix failures, and only then start the next phase.
 
 Status: [ ] Not tested · [x] Pass · [!] Fail · [-] N/A
 
