@@ -4,23 +4,23 @@ Use this file as the test gate between development phases.
 
 ## Application Starting URL
 
-**Starting URL:** http://localhost:180/
+**Starting URL:** http://localhost:180/LPG2/LPG/public/
 
 The application base URL is configured in .env as:
 
-    app.baseURL = 'http://localhost:180/'
+    app.baseURL = 'http://localhost:180/LPG2/LPG/public/'
 
 After starting the application, open the URL above in your browser. The login page is available at:
 
-    http://localhost:180/login
+    http://localhost:180/LPG2/LPG/public/login
 
 ## How to use
 1. Pull the latest main branch.
 2. Install PHP 8.2+ with intl, mbstring and MySQLi enabled.
-3. Run 'composer install' from the project root. This installs CodeIgniter into 'vendor/'; do not commit 'vendor/'.
+3. The repository currently contains the CodeIgniter/vendor tree. If rebuilding dependencies locally, use the repository's composer.lock and verify the installed framework version before testing.
 4. Copy 'env' to '.env' if required and set your local MySQL credentials/database settings. The repository configuration uses 'perfect_lpg' as the database.
 5. Execute 'database/schema.sql' once on a fresh MySQL server.
-6. Start the application using the configured local web server and open **http://localhost:180/**.
+6. Start the application using the configured local web server and open **http://localhost:180/LPG2/LPG/public/**.
 7. If using CodeIgniter's development server instead, run 'php spark serve' and open the URL reported by Spark (normally http://localhost:8080/).
 8. Test only items marked READY FOR TEST.
 9. Change '[ ]' to '[x]' for PASS or '[!]' for FAIL.
@@ -47,7 +47,7 @@ Database error / notes:
 - [x] Application starts without PHP fatal error.
 - [x] /login opens correctly.
 - [x] Bootstrap/CSS/JS load correctly.
-- [x] Application starting URL is http://localhost:180/.
+- [x] Application starting URL is http://localhost:180/LPG2/LPG/public/.
 Result: [ ] PASS / [ ] FAIL
 Error / notes:
 > Write here.
@@ -106,7 +106,7 @@ Phase 3 status: NOT READY
 - CodeIgniter version:
 - MySQL version:
 - Browser:
-- Local URL: http://localhost:180/
+- Local URL: http://localhost:180/LPG2/LPG/public/
 
 ## Tester Notes
 > Add screenshots, SQL errors, PHP errors or unexpected business behavior here.
