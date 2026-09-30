@@ -1,0 +1,144 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\CylinderTypeModel;
+use App\Models\CustomerModel;
+use App\Models\GasRateModel;
+use Config\Database;
+use RuntimeException;
+
+class SalesService
+{
+    protected $db;
+    protected $types;
+    protected $customers;
+    protected $rates;
+
+    public function __construct()
+    {
+        $this->db=Database::connect();
+        $this->types=new CylinderTypeModel();
+        $this->customers=new CustomerModel();
+        $this->rates=new GasRateModel();
+    }
+
+    public function post(array $payload, int $userId, int $locationId): int
+    {
+        $customerId=!empty($payload['customer_id'])?(int)$payload['customer_id']:null;
+        $lines=$payload['lines']??[];
+        if(!$lines) throw new RuntimeException('At least one sale line is required.');
+
+        $transactionAt=trim((string)($payload['transaction_at']??date('Y-m-d H:i:s')));
+        $transactionAt=str_replace('T',' ',$transactionAt);
+        $payments=$payload['payments']??[];
+        $notes=trim((string)($payload['notes']??''))?:null;
+
+        $customer=$customerId?$this->customers->find($customerId):null;
+        if($customerId && !$customer) throw new RuntimeException('Customer not found.');
+        if($customerId && !(int)$customer['is_active']) throw new RuntimeException('Customer is inactive.');
+
+        $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;$inventory=[];
+        foreach($lines as $i=>$line){
+            $type=(string)($line['line_type']??'');
+            $qty=(float)($line['quantity']??0);
+            $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:null;
+            $rate=(float)($line['rate']??0);
+            if($qty<=0) throw new RuntimeException('Line '.($i+1).' quantity must be greater than zero.');
+
+            $gasKg=0;$standardRate=null;$emptyReceived=(float)($line['empty_cylinder_received']??0);
+            if(in_array($type,['filled_cylinder','cylinder_exchange'],true)){
+                if(!$typeId) throw new RuntimeException('Cylinder type is required for line '.($i+1).'.');
+                $ct=$this->types->find($typeId);
+                if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+                $gasKg=$qty*(float)$ct['capacity_kg'];
+                $standardRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
+                if($standardRate===null) throw new RuntimeException('No effective package rate exists for '.$ct['name'].'.');
+                if($rate<=0) $rate=$standardRate;
+                if($emptyReceived<0) throw new RuntimeException('Empty cylinder quantity cannot be negative.');
+                if($type==='cylinder_exchange' && $emptyReceived<=0) $emptyReceived=$qty;
+                if($type==='filled_cylinder' && $emptyReceived>0) throw new RuntimeException('Empty cylinder intake must use cylinder exchange.');
+                $inventory[]=['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out'];
+                $inventory[]=['type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>'out'];
+                if($emptyReceived>0) $inventory[]=['type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$emptyReceived,'direction'=>'in'];
+            } elseif($type==='refill_kg'){
+                $standardRate=$this->rates->currentKgRate($transactionAt);
+                if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
+                $gasKg=(float)($line['gas_weight_kg']??$qty);
+                if($gasKg<=0) throw new RuntimeException('Refill KG must be greater than zero.');
+                $rate=$rate>0?$rate:$standardRate;
+                $inventory[]=['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out'];
+            } elseif($type==='empty_intake' || $type==='empty_sale'){
+                if(!$typeId) throw new RuntimeException('Cylinder type is required for line '.($i+1).'.');
+                $ct=$this->types->find($typeId);
+                if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+                if($rate<0) throw new RuntimeException('Rate cannot be negative.');
+                $standardRate=$rate;
+                $inventory[]=['type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>$type==='empty_intake'?'in':'out'];
+            } else {
+                throw new RuntimeException('Unsupported sale line type.');
+            }
+
+            if($rate<0) throw new RuntimeException('Rate cannot be negative.');
+            $lineTotal=($type==='refill_kg')?$gasKg*$rate:$qty*$rate;
+            $isCustom=$standardRate!==null && abs($rate-$standardRate)>0.00001;
+            $customRate=$customRate||$isCustom;
+            $subtotal+=$lineTotal;$totalKg+=$gasKg;
+            $prepared[]=['line_no'=>$i+1,'line_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>$qty,'gas_weight_kg'=>$gasKg,'applied_rate'=>$rate,'standard_rate'=>$standardRate,'custom_rate_flag'=>$isCustom?1:0,'empty_cylinder_received'=>$emptyReceived,'line_discount'=>0,'line_total'=>$lineTotal,'notes'=>trim((string)($line['notes']??''))?:null];
+        }
+
+        $discount=max(0,(float)($payload['discount_amount']??0));
+        if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
+        $total=$subtotal-$discount;
+        $paymentTotal=0;$credit=0;
+        foreach($payments as $p){
+            $mode=(string)($p['payment_mode']??'');
+            $amount=(float)($p['amount']??0);
+            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0) throw new RuntimeException('Invalid payment.');
+            if(!$customerId && $mode!=='cash') throw new RuntimeException('Walk-in sales are cash only.');
+            $paymentTotal+=$amount;
+            if($mode==='credit') $credit+=$amount;
+        }
+        if(abs($paymentTotal-$total)>0.01) throw new RuntimeException('Payment total must equal sale total.');
+        if(!$customerId && $credit>0) throw new RuntimeException('Walk-in customers cannot create credit.');
+        if($customerId && $credit>0){
+            $balance=$this->customerBalance($customerId);
+            if($balance+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
+        }
+
+        $this->db->transBegin();
+        try{
+            foreach($inventory as $m) $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $transactionType=count(array_unique(array_column($prepared,'line_type')))>1?'mixed':$prepared[0]['line_type'];
+            $saleData=['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>$transactionType,'status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId];
+            $this->db->table('sales')->insert($saleData); $saleId=(int)$this->db->insertID();
+            foreach($prepared as $row){$row['sale_id']=$saleId;$this->db->table('sale_items')->insert($row);$lineId=(int)$this->db->insertID();foreach($inventory as &$m){/* movements are mapped below by line in a second pass */}unset($m);}
+            foreach($inventory as $m){
+                $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'created_by'=>$userId]);
+            }
+            foreach($payments as $p) $this->db->table('sale_payments')->insert(['sale_id'=>$saleId,'payment_mode'=>$p['payment_mode'],'amount'=>(float)$p['amount'],'reference_no'=>trim((string)($p['reference_no']??''))?:null,'payment_at'=>$transactionAt,'received_by'=>$userId]);
+            if(!$this->db->transStatus()) throw new RuntimeException('Sale posting failed.');
+            $this->db->transCommit();
+            return $saleId;
+        }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+    }
+
+    protected function customerBalance(int $customerId): float
+    {
+        $s=$this->db->table('sales')->selectSum('credit_amount','credit')->where('customer_id',$customerId)->where('status','posted')->get()->getRowArray();
+        $r=$this->db->table('customer_receipts')->selectSum('amount','paid')->where('customer_id',$customerId)->where('status','posted')->get()->getRowArray();
+        $c=$this->customers->find($customerId);
+        return (float)($c['opening_balance']??0)+(float)($s['credit']??0)-(float)($r['paid']??0);
+    }
+
+    protected function assertStock(int $locationId,string $type,?int $typeId,float $qty,string $direction,string $at): void
+    {
+        if($direction!=='out') return;
+        $q=$this->db->table('inventory_opening_balances')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('inventory_date <=',substr($at,0,10))->get()->getRowArray();
+        $in=$this->db->table('inventory_movements')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('direction','in')->where('movement_at <=',$at)->get()->getRowArray();
+        $out=$this->db->table('inventory_movements')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('direction','out')->where('movement_at <=',$at)->get()->getRowArray();
+        $stock=(float)($q['qty']??0)+(float)($in['qty']??0)-(float)($out['qty']??0);
+        if($stock+0.00001<$qty) throw new RuntimeException('Insufficient '.$type.' stock.');
+    }
+}
