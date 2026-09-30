@@ -37,8 +37,8 @@ Status: [ ] Not tested · [x] Pass · [!] Fail · [-] N/A
 - [x] users contains seeded admin account.
 - [x] cylinder_types contains 6 standard cylinder types.
 - [x] cash_registers contains REG-01.
-- [ ] roles, permissions and role_permissions contain seed data.
-Result: [ ] PASS / [ ] FAIL
+- [x] roles, permissions and role_permissions contain seed data.
+Result: [x] PASS / [ ] FAIL
 Database error / notes:
 > Write here.
 
@@ -48,7 +48,7 @@ Database error / notes:
 - [x] /login opens correctly.
 - [x] Bootstrap/CSS/JS load correctly.
 - [x] Application starting URL is http://localhost:180/LPG2/LPG/public/.
-Result: [ ] PASS / [ ] FAIL
+Result: [x] PASS / [ ] FAIL
 Error / notes:
 > Write here.
 
@@ -62,7 +62,7 @@ Error / notes:
 - [x] Invalid password is rejected.
 - [x] Logout returns to /login.
 - [x] Direct /dashboard while logged out redirects to /login.
-Result: [ ] PASS / [ ] FAIL
+Result: [x] PASS / [ ] FAIL
 Error / reproduction steps:
 > Write here.
 
