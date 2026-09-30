@@ -64,7 +64,7 @@ For financial/inventory cases, capture enough evidence to reconcile:
 | B08 | Cylinder type create/edit | Create 20 kg SQA type; edit capacity/tare | Valid values save; duplicate code/capacity and invalid capacity are rejected | | | NOT EXECUTED |
 | B09 | Cylinder capacity validation | Try capacity 0 or negative | Save rejected | | | NOT EXECUTED |
 | B10 | LPG gas rate | Create/update gas/kg rate with effective date | Current/effective rate is used by POS and history retains old/new values | | | NOT EXECUTED |
-| B11 | Cylinder package rate | Set package rate for SQA cylinder | POS resolves correct package rate | | | NOT EXECUTED |
+| B11 | Cylinder price rate | Set cylinder price for SQA cylinder | POS resolves correct cylinder price for types 3, 4 and 5 | | | NOT EXECUTED |
 | B12 | User/role create/edit | Create SQA user, assign role, edit without password | Role changes persist and blank password does not overwrite existing password | | | NOT EXECUTED |
 
 ## C. Opening Inventory and Physical Cylinders
@@ -94,37 +94,51 @@ For financial/inventory cases, capture enough evidence to reconcile:
 | D08 | Cash close variance | Counted cash different from expected | Session closes and difference = counted - expected | | | NOT EXECUTED |
 | D09 | Closed session protection | Try cash movement after close | Transaction rejected | | | NOT EXECUTED |
 
-## E. POS — Filled Cylinder Sale
+## E. POS — Five Business Transaction Types
 
 | ID | Use case | Input / Steps | Expected output / result | Actual result | Comments | Status |
 |---|---|---|---|---|---|---|
-| E01 | POS load | Open POS with cash session | Cash session is prominent; cylinder selector and transaction hints load without JS/PHP errors | | | NOT EXECUTED |
-| E02 | Filled stock visibility | Select SQA 20 kg cylinder | Selector shows available filled quantity and physical unit/gas information | | | NOT EXECUTED |
-| E03 | Partial-filled sale | Have 18 kg physical cylinder; sell quantity 1 | Sale deducts 18.000 kg and one filled physical unit | | | NOT EXECUTED |
-| E04 | Multiple filled units | 2 units × 18 kg; sell one | One unit remains at 18 kg; gas decreases by 18 kg | | | NOT EXECUTED |
-| E05 | Filled sale insufficient physical units | Request more cylinders than available | Sale rejected before posting; no partial movement | | | NOT EXECUTED |
-| E06 | Standard package rate | Select filled cylinder with current rate | Standard rate auto-populates and is used | | | NOT EXECUTED |
-| E07 | Custom rate | Change rate from standard to custom value | Line is flagged as custom; applied rate is retained in sale/receipt/report | | | NOT EXECUTED |
-| E08 | Cash payment | Exact cash total | Sale posts and Counter Cash increases by cash amount | | | NOT EXECUTED |
-| E09 | Cheque payment | Exact cheque total + reference | Sale posts; Counter Cash does not increase | | | NOT EXECUTED |
-| E10 | Online payment | Exact online total + reference | Sale posts; Counter Cash does not increase | | | NOT EXECUTED |
-| E11 | Payment mismatch | Payment total differs from sale total | Posting rejected | | | NOT EXECUTED |
-| E12 | Discount | Valid discount below subtotal | Total decreases correctly; payment must equal discounted total | | | NOT EXECUTED |
-| E13 | Walk-in restrictions | Walk-in + credit/cheque/online | Rejected; walk-in is cash only | | | NOT EXECUTED |
-| E14 | Receipt | Open posted sale receipt | Sale number, customer, items, rates, totals and payments match transaction | | | NOT EXECUTED |
+| E01 | POS load | Open POS with cash session | Five transaction types load; cash session is visible; no JS/PHP errors | | | NOT EXECUTED |
+| E02 | Transaction type list | Open Transaction Type dropdown | Exactly five business options are shown in the requested order | | | NOT EXECUTED |
+| E03 | Default transaction type | Select a type, tick Save as my default, refresh POS | Selected type is restored for the same logged-in user/browser | | | NOT EXECUTED |
+| E04 | Sell Gas Only — partial source consumption | Select 20 kg source type; enter 5.000 kg | Gas stock -5.000 kg; source physical cylinder remains filled with its remaining gas; no customer cylinder is added to stock | | | NOT EXECUTED |
+| E05 | Sell Gas Only — full source consumption | Have a filled 20 kg unit at 20.000 kg; sell 20.000 kg | Gas stock -20.000 kg; that physical filled unit becomes empty; empty stock +1 for that same cylinder type | | | NOT EXECUTED |
+| E06 | Sell Gas Only — source type tracking | Use multiple filled types; select C20 as source for 10 kg | Movement/line identifies the selected source cylinder type; a different cylinder type is not consumed | | | NOT EXECUTED |
+| E07 | Sell Gas by Same-Capacity Replacement | Customer returns empty C20 and receives filled C20 | Actual gas from selected filled unit(s) is charged; filled stock decreases; empty C20 stock increases; named customer required | | | NOT EXECUTED |
+| E08 | Same-capacity replacement price | Select C20 with actual gas 18 kg | Charge is 18 × Gas/KG rate only; no cylinder price is added | | | NOT EXECUTED |
+| E09 | Sell Filled Cylinder + Gas | Sell one filled C20 without receiving a cylinder | Actual gas × Gas/KG + cylinder price is charged; gas and filled stock both decrease | | | NOT EXECUTED |
+| E10 | Filled sale actual-weight pricing | Selected filled unit contains 18 kg in a 20 kg cylinder | Customer is charged 18 kg of gas, not automatically 20 kg, plus cylinder price | | | NOT EXECUTED |
+| E11 | Different-capacity replacement | Customer returns empty C11.8 and receives filled C20 | Gas and sold filled C20 decrease; empty C11.8 increases; cylinder price for sold C20 is charged | | | NOT EXECUTED |
+| E12 | Different-capacity validation | Select same received/sold type for type 4 | Posting rejected; type 4 must use a different received cylinder type | | | NOT EXECUTED |
+| E13 | Empty-cylinder-only sale | Sell one empty C20 | Empty stock -1; gas stock unchanged; no gas quantity is charged | | | NOT EXECUTED |
+| E14 | Filled stock visibility | Select a filled cylinder type | Dropdown contains available filled count and total actual gas for that type; no long list of physical unit codes is displayed below the dropdown | | | NOT EXECUTED |
+| E15 | Gas stock after-sale indicator | Select/enter gas transaction | Total Gas Stock remains current physical filled-cylinder gas; After This Sale updates immediately from the selected transaction lines | | | NOT EXECUTED |
+| E16 | Cash payment | Exact cash payment for any payable POS type | Sale posts and Counter Cash increases by cash amount | | | NOT EXECUTED |
+| E17 | Cheque payment | Exact cheque total + reference | Sale posts; Counter Cash does not increase | | | NOT EXECUTED |
+| E18 | Online payment | Exact online total + reference | Sale posts; Counter Cash does not increase | | | NOT EXECUTED |
+| E19 | Credit payment | Named customer + credit within limit | Sale posts; customer outstanding increases by credit portion | | | NOT EXECUTED |
+| E20 | Payment mismatch | Payment total differs from sale total | Posting rejected | | | NOT EXECUTED |
+| E21 | Walk-in restrictions | Walk-in with types 2 or 4 | Rejected; a named customer is required for cylinder returns | | | NOT EXECUTED |
+| E22 | Walk-in valid modes | Walk-in with type 1, 3 or 5 and cash | Sale allowed | | | NOT EXECUTED |
+| E23 | Custom rates | Override Gas/KG and/or cylinder price | Custom-rate flag is recorded and applied values match the transaction | | | NOT EXECUTED |
+| E24 | Receipt/ledger | Open posted sale and customer ledger | Sale scenario, items, actual gas, prices, payments and customer balance reconcile | | | NOT EXECUTED |
 
-## F. POS — KG Refill, Exchange and Empty Cylinder Transactions
+## F. Inventory and Legacy POS Regression
 
 | ID | Use case | Input / Steps | Expected output / result | Actual result | Comments | Status |
 |---|---|---|---|---|---|---|
-| F01 | KG refill | Refill customer cylinder by 5.00 kg | 5.000 kg gas OUT; no filled/empty shell movement | | | NOT EXECUTED |
-| F02 | KG refill insufficient stock, validation ON | Request more gas than available | Sale blocked with clear stock error | | | NOT EXECUTED |
-| F03 | KG refill validation OFF | Turn validation OFF; request over available; confirm | Confirmation required; after confirmation sale posts and override is traceable | | | NOT EXECUTED |
-| F04 | Cylinder exchange | Sell 1 filled + receive 1 empty | Filled unit OUT, its actual gas OUT, empty physical unit IN | | | NOT EXECUTED |
-| F05 | Empty intake | Receive 1 empty cylinder | Empty stock +1 and one physical empty unit created | | | NOT EXECUTED |
-| F06 | Empty sale | Sell 1 available empty cylinder | Empty unit becomes sold; empty stock -1 | | | NOT EXECUTED |
-| F07 | Empty sale insufficient stock | Sell more empty cylinders than available | Rejected without partial posting | | | NOT EXECUTED |
-| F08 | Mixed POS lines | Combine supported transaction types in one sale | System posts according to defined mixed transaction behavior without duplicate movements | | | NOT EXECUTED |
+| F01 | Physical filled-cylinder purchase | Purchase 2 × 20 kg at 18.000 kg actual each | Two physical filled units created; gas stock +36.000 kg | | | NOT EXECUTED |
+| F02 | Empty-cylinder purchase/intake | Receive empty physical cylinder through Inventory/Purchase flow | Empty stock and physical empty units increase | | | NOT EXECUTED |
+| F03 | Insufficient filled stock | Attempt type 2/3/4 with more filled cylinders than available | Posting rejected without partial movement | | | NOT EXECUTED |
+| F04 | Insufficient empty stock | Attempt type 5 with more empty cylinders than available | Posting rejected without partial movement | | | NOT EXECUTED |
+| F05 | Gas stock validation ON | Request gas above current physical gas stock | Posting blocked with clear stock error | | | NOT EXECUTED |
+| F06 | Gas stock validation OFF | Request gas above stock and confirm override | Confirmation is required; after confirmation the sale posts and override is traceable | | | NOT EXECUTED |
+| F07 | Cylinder-type stock-policy override | Configure a cylinder-type override | POS gas validation uses the applicable type-specific policy | | | NOT EXECUTED |
+| F08 | Multi-line POS | Add multiple supported transaction types in one sale | Totals, gas deduction and inventory movements match each line; no duplicate physical-unit consumption | | | NOT EXECUTED |
+| F09 | Legacy receipt/payment reconciliation | Post cash/cheque/online/credit combinations | Sale payments and customer ledger reconcile exactly | | | NOT EXECUTED |
+| F10 | Void gas-only partial sale | Sell 5 kg from a 20 kg physical unit, then void | Gas and the same physical unit return to their pre-sale state | | | NOT EXECUTED |
+| F11 | Void gas-only full consumption | Fully consume a physical filled cylinder, then void | The same physical cylinder is restored to filled with its original gas weight; empty stock reversal is correct | | | NOT EXECUTED |
+| F12 | Void replacement | Void type 2 or 4 | Sold filled units are restored; received empty units are reversed; gas and ledgers return to pre-sale state | | | NOT EXECUTED |
 
 ## G. Inventory Controls and Wastage
 
@@ -215,7 +229,7 @@ For financial/inventory cases, capture enough evidence to reconcile:
 | M04 | Empty line removal | Add/remove POS lines | Totals and hidden JSON remain correct | | | NOT EXECUTED |
 | M05 | Multiple payments | Split one transaction across allowed modes | Payment total must equal transaction total and each payment is retained | | | NOT EXECUTED |
 | M06 | Responsive POS | Test desktop and narrow/mobile viewport | Controls remain usable; no critical overlap or inaccessible action | | | NOT EXECUTED |
-| M07 | JavaScript regression | Load POS, add lines, change transaction type/rate/qty | No console syntax/runtime errors; totals and selectors update correctly | | | NOT EXECUTED |
+| M07 | JavaScript regression | Load POS, add/remove lines, change transaction type/cylinder/rates/qty | No console syntax/runtime errors; totals, rates, availability and selectors update correctly | | | NOT EXECUTED |
 | M08 | Error handling | Trigger common validation failures | User sees readable error and no partial transaction | | | NOT EXECUTED |
 
 ## N. End-to-End Business Flow
