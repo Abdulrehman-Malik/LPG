@@ -13,16 +13,6 @@
 </div>
 <div id="customerInfo" class="alert alert-light border py-2 small">Walk-in: cash sales are allowed; cylinder returns require a named customer.</div>
 
-<div class="row g-2 align-items-end mb-3">
-<div class="col-md-8"><label class="form-label">Default Transaction for New Lines</label><select id="transactionType" class="form-select">
-<option value="sell_gas_only">1 — Sell Gas Only</option>
-<option value="replace_same">2 — Sell Gas by Replacing Same-Capacity Cylinder</option>
-<option value="sell_filled">3 — Sell Filled Cylinder with Gas + Cylinder Price</option>
-<option value="replace_different">4 — Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder</option>
-<option value="sell_empty">5 — Sell Empty Cylinder Only</option>
-</select></div>
-<div class="col-md-4"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="saveDefault"><label class="form-check-label" for="saveDefault">Save as my default</label></div><button type="button" class="btn btn-sm btn-outline-secondary" id="clearDefault">Clear default</button></div>
-</div>
 <div id="transactionHint" class="alert alert-info border py-2 small mb-2"></div>
 
 <div class="table-responsive"><table class="table table-sm align-middle" id="lines"><thead><tr><th>Transaction</th><th>Cylinder Type</th><th>Qty / KG</th><th>Rates</th><th>Total</th><th></th></tr></thead><tbody></tbody></table></div>
@@ -43,7 +33,6 @@
 const types=<?= json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>;
 const rates=<?= json_encode($cylinderRates) ?>, kgRate=<?= json_encode($kgRate) ?>, filledStock=<?= json_encode($filledStock) ?>, filledUnits=<?= json_encode($filledUnits) ?>, emptyStock=<?= json_encode($emptyStock) ?>, gasStock=<?= json_encode($gasStock) ?>;
 const balances=<?= json_encode($balances) ?>, creditLimits=<?= json_encode($creditLimits) ?>, inventoryPolicy=<?= json_encode($inventoryPolicy) ?>;
-const userDefaultKey='lpg_pos_default_txn_<?= (int)session()->get('user_id') ?>';
 const modes={
  sell_gas_only:{label:'Sell Gas Only',hint:'Customer brings their own cylinder. Gas stock is reduced only. Select the filled cylinder type used as the gas source; when a source cylinder is fully consumed, that physical cylinder becomes empty automatically.'},
  replace_same:{label:'Sell Gas by Replacing Same-Capacity Cylinder',hint:'Customer returns an empty cylinder and receives a filled cylinder of the same type. Gas stock and filled-cylinder stock decrease; an empty cylinder of the same type is received.'},
@@ -51,7 +40,8 @@ const modes={
  replace_different:{label:'Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder',hint:'Customer returns an empty cylinder of a different type and receives the selected filled cylinder. Gas, sold filled stock and received empty stock are updated.'},
  sell_empty:{label:'Sell Empty Cylinder Only',hint:'Only an empty physical cylinder is sold. Gas stock is not affected.'}
 };
-const tbody=document.querySelector('#lines tbody'), payments=document.getElementById('payments'), transactionType=document.getElementById('transactionType'), saveDefault=document.getElementById('saveDefault');
+const defaultSaleMode=<?= json_encode($defaultSaleMode??'sell_gas_only') ?>, defaultPaymentMode=<?= json_encode($shopSettings['default_payment_mode']??'cash') ?>;
+const tbody=document.querySelector('#lines tbody'), payments=document.getElementById('payments');
 function selectedCustomer(){const id=document.getElementById('customer_id').value;return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0)}:null;}
 function refreshCustomer(){const c=selectedCustomer(),box=document.getElementById('customerInfo');if(!c){box.textContent='Walk-in: cash sales are allowed. Cylinder returns require a named customer.';return;}const available=Math.max(0,c.limit-c.balance);box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available Credit: Rs. '+available.toFixed(2);}
 function isGasMode(mode){return ['sell_gas_only','replace_same','sell_filled','replace_different'].includes(mode);}
@@ -86,13 +76,13 @@ function refreshLineFields(tr){
  cylRate.value=(['sell_filled','replace_different','sell_empty'].includes(mode)&&typeId&&rates[typeId]!=null)?Number(rates[typeId]).toFixed(2):'';
  gasRate.style.display=isGasMode(mode)?'block':'none';
  cylRate.style.display=['sell_filled','replace_different','sell_empty'].includes(mode)?'block':'none';
- transactionType.value=transactionType.value||'sell_gas_only';
+
 }
-function addLine(mode=transactionType.value||'sell_gas_only'){
+function addLine(mode=defaultSaleMode||'sell_gas_only'){
  const tr=document.createElement('tr');
  tr.innerHTML='<td><select class="form-select kind"><option value="sell_gas_only">1 — Sell Gas Only</option><option value="replace_same">2 — Sell Gas by Replacing Same-Capacity Cylinder</option><option value="sell_filled">3 — Sell Filled Cylinder with Gas + Cylinder Price</option><option value="replace_different">4 — Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder</option><option value="sell_empty">5 — Sell Empty Cylinder Only</option></select></td><td><select class="form-select cyl"></select><div class="receivedWrap mt-1" style="display:none"><small class="text-muted">Received Empty Type</small><select class="form-select receivedCyl"></select></div></td><td><input class="form-control qty" type="number" min="0.001" step="0.001" value="1"></td><td><div class="gasRateWrap small" style="display:none"><label class="form-label mb-0">Gas / KG</label><input class="form-control form-control-sm gasRate" type="number" min="0" step="0.01"></div><div class="cylRateWrap small mt-1" style="display:none"><label class="form-label mb-0">Cylinder Price</label><input class="form-control form-control-sm cylRate" type="number" min="0" step="0.01"></div></td><td class="lineGas small text-muted">Gas: 0.000 KG<br><strong class="lineTotal">Rs. 0.00</strong></td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
  tbody.appendChild(tr);tr.querySelector('.kind').value=mode;
- const kind=tr.querySelector('.kind');kind.onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.cyl').onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.receivedCyl').onchange=()=>recalc();tr.querySelector('.qty').oninput=()=>recalc();tr.querySelector('.gasRate').oninput=()=>recalc();tr.querySelector('.cylRate').oninput=()=>recalc();tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};refreshLineFields(tr);
+ const kind=tr.querySelector('.kind');kind.onchange=()=>{refreshLineFields(tr);setModeHint(kind.value);recalc();};tr.querySelector('.cyl').onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.receivedCyl').onchange=()=>recalc();tr.querySelector('.qty').oninput=()=>recalc();tr.querySelector('.gasRate').oninput=()=>recalc();tr.querySelector('.cylRate').oninput=()=>recalc();tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};refreshLineFields(tr);
 }
 function recalc(){
  let total=0,gasDeduction=0;const usedByType={};
@@ -108,12 +98,8 @@ function recalc(){
  total-=Number(document.getElementById('discount').value||0);document.getElementById('total').textContent=Math.max(0,total).toFixed(2);
  const after=Number(gasStock||0)-gasDeduction,afterEl=document.getElementById('gasStockAfter');afterEl.textContent=after.toFixed(3)+' KG';afterEl.classList.toggle('text-danger',after<0);afterEl.classList.toggle('text-success',after>=0);
 }
-function setModeHint(){document.getElementById('transactionHint').innerHTML='<strong>'+modes[transactionType.value].label+':</strong> '+modes[transactionType.value].hint;}
-function applyDefault(){const saved=localStorage.getItem(userDefaultKey);if(saved&&modes[saved]){transactionType.value=saved;saveDefault.checked=true;}setModeHint();if(!tbody.children.length)addLine(transactionType.value);}
-transactionType.onchange=()=>{setModeHint();if(saveDefault.checked)localStorage.setItem(userDefaultKey,transactionType.value);};
-saveDefault.onchange=()=>{if(saveDefault.checked)localStorage.setItem(userDefaultKey,transactionType.value);else localStorage.removeItem(userDefaultKey);};
-document.getElementById('clearDefault').onclick=()=>{localStorage.removeItem(userDefaultKey);saveDefault.checked=false;};
-function addPayment(){const div=document.createElement('div');div.className='input-group mb-2 payment';div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="0.01" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';payments.appendChild(div);div.querySelector('.mode').onchange=syncPaymentModes;div.querySelector('.remove').onclick=()=>div.remove();syncPaymentModes();}
+function setModeHint(mode){const active=mode||tbody.querySelector('.kind')?.value||defaultSaleMode;const data=modes[active]||modes.sell_gas_only;document.getElementById('transactionHint').innerHTML='<strong>'+data.label+':</strong> '+data.hint;}
+function addPayment(){const div=document.createElement('div');div.className='input-group mb-2 payment';div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="0.01" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';payments.appendChild(div);div.querySelector('.mode').value=defaultPaymentMode;div.querySelector('.mode').onchange=syncPaymentModes;div.querySelector('.remove').onclick=()=>div.remove();syncPaymentModes();}
 function syncPaymentModes(){const walkIn=!document.getElementById('customer_id').value;payments.querySelectorAll('.payment').forEach(p=>{const mode=p.querySelector('.mode');[...mode.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash');if(walkIn)mode.value='cash';});}
 function paymentTotal(){return [...payments.querySelectorAll('.payment')].reduce((s,p)=>s+Number(p.querySelector('.amount').value||0),0);}
 document.getElementById('customer_id').onchange=()=>{refreshCustomer();syncPaymentModes();};document.getElementById('addLine').onclick=()=>addLine();document.getElementById('discount').oninput=recalc;
@@ -132,6 +118,6 @@ document.getElementById('saleForm').onsubmit=()=>{
  if(gasRequired>Number(gasStock||0)+0.00001&&!Number(inventoryPolicy.stock_validation_enabled)){if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(3)+' kg, but this sale requires '+gasRequired.toFixed(3)+' kg. Stock validation is OFF. Post with inventory override?'))return false;document.getElementById('stock_override_confirmed').value='1';}
  document.getElementById('lines_json').value=JSON.stringify(lines);document.getElementById('payments_json').value=JSON.stringify(pays);return true;
 };
-applyDefault();addPayment();refreshCustomer();recalc();
+addLine(defaultSaleMode);setModeHint(defaultSaleMode);addPayment();refreshCustomer();recalc();
 </script>
 <?= $this->endSection() ?>
