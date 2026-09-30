@@ -26,7 +26,7 @@ class Users extends Controller
         $db=Database::connect();
         $rolePermissions=$db->table('role_permissions rp')->select('rp.role_id,rp.permission_id')->get()->getResultArray();
         $map=[]; foreach($rolePermissions as $row) $map[(int)$row['role_id']][]=(int)$row['permission_id'];
-        return view('users/index',['title'=>'Users / Roles','users'=>$this->users->select('users.*, roles.code AS role_code, roles.name AS role_name')->join('roles','roles.id=users.role_id')->orderBy('full_name')->findAll(),'roles'=>$this->roles->orderBy('name')->findAll(),'permissions'=>$this->permissions->orderBy('code')->findAll(),'rolePermissions'=>$map]);
+        return view('users/index',['title'=>'Users / Roles','edit'=>(int)$this->request->getGet('edit') ? $this->users->find((int)$this->request->getGet('edit')) : null,'users'=>$this->users->select('users.*, roles.code AS role_code, roles.name AS role_name')->join('roles','roles.id=users.role_id')->orderBy('full_name')->findAll(),'roles'=>$this->roles->orderBy('name')->findAll(),'permissions'=>$this->permissions->orderBy('code')->findAll(),'rolePermissions'=>$map]);
     }
     public function save()
     {
