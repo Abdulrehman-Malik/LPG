@@ -58,6 +58,9 @@ Legend:
 - [ ] User concurrency/reversal tests recorded as PASS in TESTING.md
 - [ ] HARDENING TESTS POSTPONED BY USER — remain outside the current functional test gate and will be resumed later
 
+- [x] Configurable gas stock validation with explicit POS override confirmation
+- [x] Gas wastage/leakage recording with physical-cylinder conversion to empty stock and filtered wastage report
+
 ## Phase 4 — Purchases & Inventory
 - [x] Purchase entry
 - [x] Inventory service
