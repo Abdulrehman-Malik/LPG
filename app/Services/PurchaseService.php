@@ -3,8 +3,8 @@ namespace App\Services;
 use Config\Database;
 use RuntimeException;
 class PurchaseService{
- protected $db; protected $inv; protected $cash;
- public function __construct(){ $this->db=Database::connect(); $this->inv=new InventoryService(); $this->cash=new CashService(); }
+ protected $db; protected $inv; protected $cash; protected $cylinders;
+ public function __construct(){ $this->db=Database::connect(); $this->inv=new InventoryService(); $this->cash=new CashService(); $this->cylinders=new CylinderUnitService(); }
  public function post(array $p,int $userId,int $locationId):array{
   $supplierId=(int)($p['supplier_id']??0); $lines=$p['lines']??[]; $payments=$p['payments']??[];
   if(!$supplierId||!$lines||!$payments) throw new RuntimeException('Supplier, purchase lines and payments are required.');
@@ -17,7 +17,7 @@ class PurchaseService{
    if($type!=='gas_kg'&&!$ct) throw new RuntimeException('Cylinder type required.');
    if($type==='gas_kg')$ct=null; $total=$qty*$rate;$subtotal+=$total;
    $prepared[]=['line_no'=>$i+1,'line_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'unit_rate'=>$rate,'line_total'=>$total];
-   $inventory[]=['inventory_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty];
+   $actual=(float)($l['actual_gas_weight_kg']??0); if($type==='filled_cylinder'){ if(floor($qty)!==$qty) throw new RuntimeException('Filled cylinder quantity must be a whole number.'); $cap=(float)$this->db->table('cylinder_types')->where('id',$ct)->get()->getRowArray()['capacity_kg']; $actual=$actual>0?$actual:$cap; if($actual<=0||$actual>$cap) throw new RuntimeException('Actual gas weight must be between 0 and cylinder capacity.'); } else $actual=0; $prepared[count($prepared)-1]['actual_gas_weight_kg']=$actual; $inventory[]=['inventory_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual];
   }
   $discount=max(0,(float)($p['discount_amount']??0));if($discount>$subtotal)throw new RuntimeException('Discount exceeds subtotal.');
   $total=$subtotal-$discount;$paid=0;
@@ -32,7 +32,18 @@ class PurchaseService{
    $no='P'.date('YmdHis').'-'.random_int(100,999);
    $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
    foreach($prepared as $row){$row['purchase_id']=$id;$this->db->table('purchase_items')->insert($row);}
-   foreach($inventory as $m)$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'created_by'=>$userId]);
+   foreach($inventory as $m){
+    if($m['inventory_type']==='filled_cylinder' || $m['inventory_type']==='empty_cylinder'){
+        $unitGas=$m['inventory_type']==='filled_cylinder'?(float)$m['actual_gas_weight_kg']:0;
+        $unitIds=$this->cylinders->createUnits($locationId,(int)$m['cylinder_type_id'],(int)$m['quantity'],$m['inventory_type']==='filled_cylinder'?'filled':'empty',$unitGas,$userId,'purchase',$id);
+        foreach($unitIds as $unitId){
+            $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>1,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'cylinder_unit_id'=>$unitId,'created_by'=>$userId]);
+            if($m['inventory_type']==='filled_cylinder') $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$unitGas,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'cylinder_unit_id'=>$unitId,'created_by'=>$userId]);
+        }
+    } else {
+        $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'created_by'=>$userId]);
+    }
+}
    foreach($payments as $pay)$this->db->table('purchase_payments')->insert(['purchase_id'=>$id,'payment_mode'=>$pay['payment_mode'],'amount'=>(float)$pay['amount'],'reference_no'=>trim((string)($pay['reference_no']??''))?:null,'payment_at'=>date('Y-m-d H:i:s'),'paid_by'=>$userId]);
    if($cash>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'purchase_cash','out',$cash,'purchase',$id,$userId,'Purchase cash');}
    if(!$this->db->transStatus())throw new RuntimeException('Purchase posting failed.');
