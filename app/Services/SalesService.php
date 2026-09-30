@@ -138,6 +138,8 @@ class SalesService
                 $this->db->table('inventory_movements')->insert(['location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,'created_by'=>$userId,'notes'=>'Reversal of sale '.$sale['sale_no']]);
             }
             $cashRows=$this->db->table('cash_transactions')->where('reference_type','sale')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','in')->get()->getResultArray();
+            $existingReversal=(int)$this->db->table('cash_transactions')->where('reference_type','sale_void')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','out')->countAllResults();
+            if($existingReversal>0) throw new RuntimeException('Cash reversal for this sale already exists.');
             foreach($cashRows as $cash){
                 $this->db->table('cash_transactions')->insert([
                     'cash_session_id'=>$cash['cash_session_id'],'transaction_type'=>'sale_cash','direction'=>'out',
