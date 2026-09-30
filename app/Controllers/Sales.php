@@ -29,7 +29,7 @@ class Sales extends Controller
         $cylinderRates=[];
         foreach($types as $type) $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']);
         $cashSession=(new \App\Services\CashService())->openSessionForLocation((int)session()->get('location_id')); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=$inv->stock((int)session()->get('location_id'),'gas_kg'); foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock((int)session()->get('location_id'),'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay((int)session()->get('location_id'),$typeId,'filled'); $emptyStock[$typeId]=$inv->stock((int)session()->get('location_id'),'empty_cylinder',$typeId);}
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock]);
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy((int)session()->get('location_id'))]);
     }
 
     public function save()
