@@ -1,68 +1,68 @@
-# CodeIgniter 4 Framework
+# Perfect LPG POS & ERP
 
-## What is CodeIgniter?
+A branch-aware LPG retail POS/ERP built with CodeIgniter 4, PHP 8.2+ and MySQL 8+.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Core Modules
 
-This repository holds the distributable version of the framework.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- Authentication and role-based access
+- Customers and supplier ledgers
+- Cylinder types and LPG pricing
+- Physical cylinder inventory with actual gas weight
+- Five-mode LPG POS
+- Purchases and supplier payments
+- Counter Cash
+- Expenses
+- Inventory controls and gas wastage
+- Reports and audit logging
+- Branch-level Shop Settings
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## POS Transaction Modes
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+1. **Sell Gas Only** — customer brings their own cylinder; gas stock is reduced by entered KG and the selected physical source cylinder is tracked.
+2. **Sell Gas by Replacing Same-Capacity Cylinder** — customer returns an empty cylinder and receives the same capacity filled cylinder.
+3. **Sell Filled Cylinder with Gas + Cylinder Price** — gas is charged by actual gas weight plus the cylinder price.
+4. **Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder** — same as mode 3, with a different empty cylinder type received.
+5. **Sell Empty Cylinder Only** — only empty-cylinder inventory is affected.
 
-## Important Change with index.php
+## Shop Settings
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+Open **Shop Settings** from the left navigation.
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+The branch-level settings are organized into tabs:
 
-**Please** read the user guide for a better explanation of how CI4 works!
+- General — branch name, address, city, phone
+- POS & Sales — default POS transaction mode
+- Inventory Control — sale stock validation and stock override policy
+- Cash & Payments — default payment mode
+- Receipt & Printing — receipt title, footer and branch address
+- Backup & Maintenance — database backup URL/endpoint and maintenance notes
 
-## Repository Management
+The POS no longer contains a separate default-transaction preference control. It reads the branch default from Shop Settings.
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+## Installation
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+1. Create/configure a MySQL 8+ database.
+2. Configure the local environment from `.env.example`.
+3. Run `database/schema.sql` on a fresh database.
+4. For an existing database, run `database/migrations/20260930_shop_settings.sql`.
+5. Run Composer dependencies: `composer install`.
+6. Point Apache/Nginx to the project's `public` directory.
+7. Open the application and log in with the configured user.
 
-## Contributing
+## Important Environment Rule
 
-We welcome contributions from the community.
+Do not commit a local `.env` file. Use `.env.example` as the template for local configuration.
 
-Please read the [*Contributing to CodeIgniter*](https://github.com/codeigniter4/CodeIgniter4/blob/develop/CONTRIBUTING.md) section in the development repository.
+## Shop Settings Migration
 
-## Server Requirements
+The branch settings table is intentionally delivered as a non-destructive migration so existing installations are not rebuilt.
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+Migration: `database/migrations/20260930_shop_settings.sql`
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
-
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
-
-Additionally, make sure that the following extensions are enabled in your PHP:
-
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
-
+It creates one settings record per branch and synchronizes the branch-wide stock-validation flag with the existing inventory policy.
 
 ## QA / Testing
 
-- `TESTING.md` — development status and release test gate.
-- `SQA.md` — complete SQA execution matrix with input, expected result, actual result, comments and status columns.
-- Copy `.env.example` to a local `.env`; local environment files are intentionally not committed.
+- `TESTING.md` — development status and release gate.
+- `SQA.md` — detailed execution matrix with expected/actual/status fields.
+- No browser execution is falsely marked PASS unless it has been executed in the user's local test environment.
