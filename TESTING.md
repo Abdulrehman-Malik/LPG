@@ -109,20 +109,47 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
 - Phase 2 regression completed after the edit retests. Any future SQA observation should be recorded in the per-function comment space above; implementation-impacting items should also be added to requirements.md before scheduling them.
 
-## Phase 3 — POS Sales (DO NOT TEST YET)
-- [ ] Filled cylinder sale
-- [ ] KG refill
-- [ ] Cylinder exchange
-- [ ] Empty cylinder intake
-- [ ] Empty cylinder sale
-- [ ] Cash / cheque / online / credit
-- [ ] Credit-limit enforcement
-- [ ] Previous OS + Current Credit = New OS
-- [ ] Custom-rate detection
-- [ ] Atomic inventory + financial posting
-- [ ] Receipt / print
-- [ ] Sale void / reversal
-Phase 3 status: NOT READY
+## Phase 3 — POS Sales (IN DEVELOPMENT — DO NOT TEST YET)
+- [ ] POS screen: customer selection, line grid, totals, payments, validation.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Filled cylinder sale: capacity-based gas/cylinder inventory OUT and applied package rate.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] KG refill: KG-based gas inventory OUT and gas/kg rate.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Cylinder exchange: filled cylinder + gas OUT and empty cylinder IN.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Empty cylinder intake: empty-cylinder inventory IN.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Empty cylinder sale: empty-cylinder inventory OUT.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Cash / cheque / online / credit: payment validation and walk-in restrictions.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Credit-limit enforcement: Previous OS + Current Credit must not exceed Credit Limit.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Previous OS + Current Credit = New OS: customer balance calculation and display.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Custom-rate detection: applied rate differs from standard rate and is flagged.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Atomic inventory + financial posting: sale, items, payments and inventory movements commit or roll back together.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Receipt / print.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+- [ ] Sale void / reversal: posted transactions are reversed/voided without hard deletion.
+  - SQA Comments / Improvement Notes:
+  - Evidence / Test Data:
+Phase 3 status: NOT READY FOR USER TEST
 
 ## Test Environment
 - OS:
