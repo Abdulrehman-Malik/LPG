@@ -77,15 +77,21 @@ Error / notes:
 > Write here.
 
 ## Phase 2 — Master Data (READY FOR TEST)
-- [X] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
-- [X] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
-- [X] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
-- [X] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
-- [X] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.** [edit function not wokring]
+- [!] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify the existing record values load into the edit form and changes persist.
+- [!] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify the existing record values load into the edit form and changes persist.
+- [x] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
+- [x] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
+- [!] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify existing user values load, role selection is preserved, and changes persist without requiring a password when unchanged.
 - [x] Opening Inventory: gas KG, filled cylinders and empty cylinders, date/type uniqueness, non-negative validation.
-- [X] Customer ledger: opening balance + posted credit sales - posted receipts. **Retest after fixes.**
-- [X] Supplier ledger: opening balance + posted credit purchases - posted supplier payments. **Retest after fixes.**
-Phase 2 status: FIXES READY FOR RETEST
+- [x] Customer ledger: opening balance + posted credit sales - posted receipts.
+- [x] Supplier ledger: opening balance + posted credit purchases - posted supplier payments.
+Phase 2 status: BLOCKED — 3 ITEMS AWAITING USER RETEST
+
+### Phase 2 Regression / Improvement Notes
+- Edit actions must open the correct edit modal and preload the selected record; saving an edit must persist the changed values.
+- Edit forms must preserve existing values, including role selection for users; user password must remain unchanged when the password field is left blank during an edit.
+- Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
+- After the edit retests pass, perform one regression pass over the already-passed Phase 2 modules before unlocking Phase 3.
 ## Phase 3 — POS Sales (DO NOT TEST YET)
 - [ ] Filled cylinder sale
 - [ ] KG refill
