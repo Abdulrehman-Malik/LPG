@@ -243,3 +243,21 @@ Development is considered functionally complete for the defined scope when:
 **SQA Comments / Improvement Notes:**
 
 **Evidence / Test Data:**
+
+
+## SQA — Global Application Appearance (READY FOR USER TEST)
+
+1. Open **Shop Settings → Appearance**.
+2. Select **Light** theme, save, and verify the application uses the light theme across Dashboard, POS, Inventory, Customers, Cash and Reports.
+3. Select **Dark** theme, save, and verify all authenticated application pages use the dark theme consistently.
+4. Change **Application Font Size** to 12 px and verify text and controls across multiple pages become smaller.
+5. Change it to 18 px and verify text and controls across multiple pages become larger.
+6. Change **Font Style** and verify the selected font is used across the application.
+7. Change **Primary Color** and **Accent Color** and verify navigation/branding/action accents reflect the selected colors throughout the application.
+8. Verify appearance settings persist after logout/login and page refresh.
+9. Verify unsupported font/theme/color values are rejected by server validation.
+10. Verify POS no longer has a separate POS-only font-size setting; the global application setting controls it.
+
+**SQA Comments / Improvement Notes:**
+
+**Evidence / Test Data:**
