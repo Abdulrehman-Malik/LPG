@@ -14,7 +14,13 @@ class InventoryControls extends Controller
   $svc=new InventoryControlService(); $policies=[];
   foreach($types as $t) $policies[(int)$t['id']]=$svc->policy($loc,(int)$t['id']);
   $policies['default']=$svc->policy($loc);
-  return view('inventory/controls',['title'=>'Inventory Controls & Wastage','types'=>$types,'policies'=>$policies]);
+  $filterFrom=$this->request->getGet('from') ?: '';
+  $filterTo=$this->request->getGet('to') ?: '';
+  $filterTypeRaw=$this->request->getGet('cylinder_type_id');
+  $filterType=$filterTypeRaw!==null && $filterTypeRaw!=='' ? (int)$filterTypeRaw : null;
+  $units=$db->table('cylinder_units cu')->select('cu.id,cu.unit_code,cu.gas_weight_kg,ct.code,ct.name')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cu.location_id'=>$loc,'cu.status'=>'filled'])->where('cu.gas_weight_kg >',0)->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
+  $rows=$svc->wastage($loc,$filterFrom ?: null,$filterTo ?: null,$filterType);
+  return view('inventory/controls',['title'=>'Inventory Controls & Wastage','types'=>$types,'policies'=>$policies,'units'=>$units,'rows'=>$rows,'filterFrom'=>$filterFrom,'filterTo'=>$filterTo,'filterType'=>$filterTypeRaw ?? '']);
  }
  public function save(){
   if($r=$this->guard()) return $r;
@@ -35,6 +41,6 @@ class InventoryControls extends Controller
  public function recordWastage(){
   if($r=$this->guard()) return $r;
   try{(new InventoryControlService())->recordWastage((int)session()->get('location_id'),(int)$this->request->getPost('cylinder_unit_id'),(float)$this->request->getPost('gas_weight_kg'),trim((string)$this->request->getPost('reason')),(int)session()->get('user_id'));return redirect()->to('/inventory/wastage')->with('success','Wastage recorded and cylinder converted to empty stock.');}
-  catch(Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
+  catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
  }
 }
