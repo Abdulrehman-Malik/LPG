@@ -126,6 +126,8 @@ Follow the tests in the order below. Do not try to test every screen randomly. C
 4. Click **Open**.
 5. Confirm an open session for register **REG-01** is displayed.
 6. Record the displayed Opening, Cash In, Cash Out and Expected values. If the opening float appears to be counted twice, record it as an SQA defect rather than changing the database manually.
+TEST Result: PASS 
+Suggestion: Show history report in a tab to view all history of cash counter or as seprate report. take the decision as professinal way to keep it user frindly also can be filterd searched for one day or for speccif date or for a month date range or for speifc counter cash history etc.
 
 ### Step 2 — Open POS and Post a Normal Cash Sale
 1. Open **POS**.
@@ -139,6 +141,14 @@ Follow the tests in the order below. Do not try to test every screen randomly. C
 9. Confirm a success message and sale number appear.
 10. Open the receipt and verify sale number, customer, cylinder, quantity, rate, total and payment.
 
+TEST Result: PASS 
+Suggestion:
+1.when select filled cylinder it should show avaialble gas in kg for that cylinders.. so that user can see how much gas is avaialble in my stock.. in which cylidner. 
+2.How system will manage GS stock. suppose a cylidner of 20kg filled cylidner exists in stock it mean we have 20kg in stock.
+while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 filed cylidenr of type 20kg and gas avaialble 40kg. we can sale 40kg gas from that two cylidner types.  if same is already handling then ok other wise tell me how its implemented currently before changeing anything.
+3. we can add cydlidner gas less than its capacity but not more than its capaicty. like we can have filled cylinder of type 20kg with actual filled gas as 18kg. so our gas stock will be 18kg for that specfic cylidner. this is must have feature.
+4.move this at top left side, "Cash session: OPEN — REG-01"
+5.Naming convention more user friendly and understndable to user for transaction type (like refill kg,empty intak, when user select the option show hint at the top what type of transction user is going to perform rule)
 ### Step 3 — Verify Inventory After the Sale
 1. Open **Inventory**.
 2. Find the cylinder type sold in Step 2.
