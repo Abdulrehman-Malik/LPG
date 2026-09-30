@@ -15,6 +15,7 @@ class SalesService
     protected $customers;
     protected $rates;
     protected $cash;
+    protected $cylinders;
     protected array $inventoryLocks = [];
 
     public function __construct()
@@ -24,6 +25,7 @@ class SalesService
         $this->customers=new CustomerModel();
         $this->rates=new GasRateModel();
         $this->cash=new CashService();
+        $this->cylinders=new CylinderUnitService();
     }
 
     public function post(array $payload,int $userId,int $locationId): array
@@ -54,17 +56,27 @@ class SalesService
                 if(!$typeId) throw new RuntimeException('Cylinder type is required for line '.($i+1).'.');
                 $ct=$this->types->find($typeId);
                 if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
-                $gasKg=$qty*(float)$ct['capacity_kg'];
+                if(floor($qty)!==$qty) throw new RuntimeException('Cylinder quantity must be a whole number.');
                 $standardRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
                 if($standardRate===null) throw new RuntimeException('No effective package rate exists for '.$ct['name'].'.');
                 if($rate<=0) $rate=$standardRate;
-                if($emptyReceived<0) throw new RuntimeException('Empty cylinder quantity cannot be negative.');
+                $emptyReceived=(float)($line['empty_cylinder_received']??0);
+                if($emptyReceived<0 || floor($emptyReceived)!==$emptyReceived) throw new RuntimeException('Empty cylinder quantity must be a whole number.');
                 if($type==='cylinder_exchange' && $emptyReceived<=0) $emptyReceived=$qty;
                 if($type==='filled_cylinder' && $emptyReceived>0) throw new RuntimeException('Empty cylinder intake must use cylinder exchange.');
-                $inventory[]=['line_no'=>$i+1,'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out'];
-                $inventory[]=['line_no'=>$i+1,'type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>'out'];
-                if($emptyReceived>0) $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$emptyReceived,'direction'=>'in'];
-            }elseif($type==='refill_kg'){
+                $available=$this->cylinders->available($locationId,$typeId,'filled');
+                if(count($available)<(int)$qty) throw new RuntimeException('Insufficient filled cylinders of '.$ct['name'].'.');
+                $selected=array_slice($available,0,(int)$qty);
+                $gasKg=0;
+                foreach($selected as $unit){
+                    $gas=(float)$unit['gas_weight_kg']; $gasKg+=$gas;
+                    $inventory[]=['line_no'=>$i+1,'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gas,'direction'=>'out','unit_id'=>(int)$unit['id']];
+                    $inventory[]=['line_no'=>$i+1,'type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id']];
+                }
+                if($emptyReceived>0){
+                    for($n=0;$n<(int)$emptyReceived;$n++) $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in','unit_id'=>null];
+                }
+            }            }elseif($type==='refill_kg'){
                 $standardRate=$this->rates->currentKgRate($transactionAt);
                 if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
                 $gasKg=(float)($line['gas_weight_kg']??$qty);
@@ -120,7 +132,19 @@ class SalesService
             foreach($prepared as $row){$row['sale_id']=$saleId;$this->db->table('sale_items')->insert($row);}
             $lineIds=[];
             foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row) $lineIds[(int)$row['line_no']]=(int)$row['id'];
-            foreach($inventory as $m) $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'created_by'=>$userId]);
+            foreach($inventory as $m){
+                $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id']??null,'created_by'=>$userId]);
+            }
+            foreach($inventory as $m){
+                if(($m['unit_id']??null) && $m['type']==='filled_cylinder' && $m['direction']==='out') $this->cylinders->markSold((int)$m['unit_id']);
+            }
+            foreach($inventory as $m){
+                if($m['type']==='empty_cylinder' && $m['direction']==='in' && !($m['unit_id']??null)){
+                    $ids=$this->cylinders->createUnits($locationId,(int)$m['cylinder_type_id'],1,'empty',0,$userId,'sale',$saleId);
+                    $moved=$this->db->table('inventory_movements')->where(['source_type'=>'sale','source_id'=>$saleId,'inventory_type'=>'empty_cylinder','direction'=>'in','cylinder_unit_id'=>null])->orderBy('id','DESC')->get()->getRowArray();
+                    if($moved) $this->db->table('inventory_movements')->where('id',$moved['id'])->update(['cylinder_unit_id'=>$ids[0]]);
+                }
+            }
             foreach($payments as $p) $this->db->table('sale_payments')->insert(['sale_id'=>$saleId,'payment_mode'=>$p['payment_mode'],'amount'=>(float)$p['amount'],'reference_no'=>trim((string)($p['reference_no']??''))?:null,'payment_at'=>$transactionAt,'received_by'=>$userId]);
             if($cashAmount>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session) throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$session['id'],$saleId,$cashAmount,$userId,$transactionAt);}
             if(!$this->db->transStatus()) throw new RuntimeException('Sale posting failed.');
@@ -148,7 +172,13 @@ class SalesService
             $this->acquireInventoryLocks($locationId,$movements);
             foreach($movements as $m){
                 $reverse=$m['direction']==='in'?'out':'in';
-                $this->db->table('inventory_movements')->insert(['location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,'created_by'=>$userId,'notes'=>'Reversal of sale '.$sale['sale_no']]);
+                $this->db->table('inventory_movements')->insert(['location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,'cylinder_unit_id'=>$m['cylinder_unit_id']??null,'created_by'=>$userId,'notes'=>'Reversal of sale '.$sale['sale_no']]);
+                $unitId=(int)($m['cylinder_unit_id']??0);
+                if($unitId && $m['inventory_type']==='filled_cylinder' && $m['direction']==='out'){
+                    $gasRow=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->where('inventory_type','gas_kg')->where('direction','out')->where('cylinder_unit_id',$unitId)->orderBy('id')->get()->getRowArray();
+                    $this->cylinders->restoreFilled($unitId,(float)($gasRow['quantity']??0));
+                }elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='out') $this->cylinders->restoreEmpty($unitId);
+                elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='in') $this->cylinders->markSold($unitId);
             }
             $cashRows=$this->db->table('cash_transactions')->where('reference_type','sale')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','in')->get()->getResultArray();
             $existingReversal=(int)$this->db->table('cash_transactions')->where('reference_type','sale_void')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','out')->countAllResults();
