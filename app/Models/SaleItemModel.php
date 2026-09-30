@@ -6,29 +6,18 @@ use CodeIgniter\Model;
 
 class SaleItemModel extends Model
 {
-    protected $table         = 'sale_items';
-    protected $primaryKey    = 'id';
-    protected $returnType    = 'array';
-    protected $useTimestamps = false;
-    protected $allowedFields = [
-        'sale_id', 'cylinder_type_id', 'line_type', 'cylinder_count',
-        'gas_weight_kg', 'rate', 'line_total',
+    protected $table='sale_items';
+    protected $primaryKey='id';
+    protected $returnType='array';
+    protected $useTimestamps=false;
+    protected $allowedFields=[
+        'sale_id','line_no','line_type','cylinder_type_id','quantity','gas_weight_kg',
+        'applied_rate','standard_rate','custom_rate_flag','empty_cylinder_received',
+        'line_discount','line_total','notes'
     ];
 
     public function forSale(int $saleId): array
     {
-        return $this->where('sale_id', $saleId)->findAll();
-    }
-
-    /**
-     * Sale line breakdown joined with cylinder label, for the Sales Search
-     * grid's "5x11.8kg @4,450" style rendering.
-     */
-    public function forSaleWithLabels(int $saleId): array
-    {
-        return $this->select('sale_items.*, cylinder_types.label AS cylinder_label')
-            ->join('cylinder_types', 'cylinder_types.id = sale_items.cylinder_type_id', 'left')
-            ->where('sale_id', $saleId)
-            ->findAll();
+        return $this->where('sale_id',$saleId)->orderBy('line_no')->findAll();
     }
 }
