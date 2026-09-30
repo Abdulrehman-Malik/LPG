@@ -23,11 +23,11 @@ class PurchaseService{
   $total=$subtotal-$discount;$paid=0;
   foreach($payments as $pay){$mode=(string)($pay['payment_mode']??'');$amount=(float)($pay['amount']??0);if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid purchase payment.');$paid+=$amount;if($mode==='cash')$cash+=$amount;if($mode==='credit')$credit+=$amount;}
   if(abs($paid-$total)>0.01)throw new RuntimeException('Payment total must equal purchase total.');
-  if($credit>0 && (float)$supplier['opening_balance']+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');
+  if($credit>0){$currentCredit=$this->supplierBalance($supplierId);if($currentCredit+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');}
   $this->db->transBegin();
   try{
    $supplier=$this->db->query('SELECT * FROM suppliers WHERE id=? FOR UPDATE',[$supplierId])->getRowArray();
-   if($credit>0 && (float)$supplier['opening_balance']+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');
+   if($credit>0){$currentCredit=$this->supplierBalance($supplierId);if($currentCredit+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');}
    foreach($inventory as $m){if($this->inv->stock($locationId,$m['inventory_type'],$m['cylinder_type_id'])<0)throw new RuntimeException('Invalid inventory state.');}
    $no='P'.date('YmdHis').'-'.random_int(100,999);
    $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
@@ -49,5 +49,13 @@ class PurchaseService{
    if(!$this->db->transStatus())throw new RuntimeException('Purchase posting failed.');
    $this->db->transCommit();AuditService::log('CREATE','purchase',$id,null,['purchase_no'=>$no,'total'=>$total],$userId,$locationId);return ['id'=>$id,'purchase_no'=>$no,'total'=>$total];
   }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+ public function supplierBalance(int $supplierId): float
+ {
+  $s=$this->db->table('purchases')->selectSum('credit_amount','credit')->where('supplier_id',$supplierId)->where('status','posted')->get()->getRowArray();
+  $p=$this->db->table('supplier_payments')->selectSum('amount','paid')->where('supplier_id',$supplierId)->where('status','posted')->get()->getRowArray();
+  $supplier=$this->db->table('suppliers')->where('id',$supplierId)->get()->getRowArray();
+  return (float)($supplier['opening_balance']??0)+(float)($s['credit']??0)-(float)($p['paid']??0);
+ }
+
  }
 }
