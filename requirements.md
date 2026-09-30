@@ -26,18 +26,22 @@ Production-ready POS + ERP for LPG retail operations.
 11. Audit logging
 
 ## Sales Use Cases
-1. Filled cylinder sale
-2. Customer-owned-cylinder refill by KG
-3. Cylinder exchange
-4. Empty cylinder intake
-5. Empty cylinder sale
-6. Customer cash receipt against outstanding
+
+The POS provides exactly five business transaction types:
+
+1. **Sell Gas Only** — customer brings their own cylinder. Gas stock is reduced by the entered KG. The user selects the filled-cylinder type used as the gas source. If the sale fully consumes a physical filled cylinder, that exact physical cylinder is moved to empty stock; if only part is consumed, the cylinder remains filled with its remaining actual gas weight.
+2. **Sell Gas by Replacing Same-Capacity Cylinder** — customer returns an empty cylinder and receives one or more filled cylinders of the same type. Gas is charged by actual gas weight; filled-cylinder stock decreases and returned empty-cylinder stock increases.
+3. **Sell Filled Cylinder with Gas + Cylinder Price** — customer buys a filled cylinder. Gas is charged by actual gas weight and the cylinder price is charged separately. Gas stock and filled-cylinder stock decrease.
+4. **Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder** — same as type 3, except the returned empty cylinder may be a different cylinder type/capacity. Gas stock, sold filled-cylinder stock and the received empty-cylinder stock are updated.
+5. **Sell Empty Cylinder Only** — only an empty physical cylinder is sold. Gas stock is not affected; empty-cylinder stock decreases.
+
+The POS user may mark any of these five transaction types as their default for the next sale. The current implementation stores this preference per user in the browser.
 
 ## Critical Rules
 - Rate history stores effective rate, timestamp, old/new values and user.
 - Every sale line stores the actual applied rate.
 - Custom-rate lines are explicitly flagged.
-- Walk-in customers are cash-only and cannot return cylinders or create credit.
+- Walk-in customers are cash-only. Named customers are required when a cylinder is returned in transaction types 2 or 4; walk-in sales may still use type 1, 3 or 5.
 - Credit limit is checked before posting a credit sale.
 - Sales screen displays Previous OS + Current Credit = New OS.
 - Payment modes: cash, cheque, online, credit.
@@ -77,7 +81,7 @@ The following items are intentionally outside the currently implemented function
 - Multiple cash registers / handover workflows beyond the current foundation
 - Cylinder serial-number policy
 - Manager override workflows for credit limits
-- Detailed cylinder package pricing rules
+- Further pricing rules beyond the current gas/kg + cylinder-price model
 
 ## Open Business Decisions
 1. Can one sale contain multiple scenarios?
@@ -90,7 +94,7 @@ The following items are intentionally outside the currently implemented function
 8. Are sale returns/refunds required?
 9. 80mm thermal receipt printer?
 10. Offline POS required?
-11. What exactly is included in cylinder package price?
+11. Are additional taxes/fees required on gas-only or cylinder sales?
 12. Are multiple cash registers required?
 
 ## Completion Rule
