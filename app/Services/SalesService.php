@@ -76,7 +76,7 @@ class SalesService
                 if($emptyReceived>0){
                     for($n=0;$n<(int)$emptyReceived;$n++) $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in','unit_id'=>null];
                 }
-            }            }elseif($type==='refill_kg'){
+            }elseif($type==='refill_kg'){
                 $standardRate=$this->rates->currentKgRate($transactionAt);
                 if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
                 $gasKg=(float)($line['gas_weight_kg']??$qty);
@@ -87,9 +87,16 @@ class SalesService
                 if(!$typeId) throw new RuntimeException('Cylinder type is required for line '.($i+1).'.');
                 $ct=$this->types->find($typeId);
                 if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+                if(floor($qty)!==$qty) throw new RuntimeException('Cylinder quantity must be a whole number.');
                 if($rate<0) throw new RuntimeException('Rate cannot be negative.');
                 $standardRate=$rate;
-                $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>$type==='empty_intake'?'in':'out'];
+                if($type==='empty_sale'){
+                    $available=$this->cylinders->available($locationId,$typeId,'empty');
+                    if(count($available)<(int)$qty) throw new RuntimeException('Insufficient empty cylinders of '.$ct['name'].'.');
+                    foreach(array_slice($available,0,(int)$qty) as $unit) $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id']];
+                } else {
+                    for($n=0;$n<(int)$qty;$n++) $inventory[]=['line_no'=>$i+1,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in','unit_id'=>null];
+                }
             }else{
                 throw new RuntimeException('Unsupported sale line type.');
             }
@@ -136,7 +143,7 @@ class SalesService
                 $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id']??null,'created_by'=>$userId]);
             }
             foreach($inventory as $m){
-                if(($m['unit_id']??null) && $m['type']==='filled_cylinder' && $m['direction']==='out') $this->cylinders->markSold((int)$m['unit_id']);
+                if(($m['unit_id']??null) && in_array($m['type'],['filled_cylinder','empty_cylinder'],true) && $m['direction']==='out') $this->cylinders->markSold((int)$m['unit_id']);
             }
             foreach($inventory as $m){
                 if($m['type']==='empty_cylinder' && $m['direction']==='in' && !($m['unit_id']??null)){
