@@ -4,6 +4,7 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $routes->post('login','Auth::attemptLogin'); $routes->get('logout','Auth::logout');
 $routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
     $routes->get('dashboard','Dashboard::index');
+    $routes->get('shop-settings','ShopSettings::index'); $routes->post('shop-settings/save','ShopSettings::save');
     $routes->get('sales','Sales::index'); $routes->post('sales/save','Sales::save'); $routes->get('sales/receipt/(:num)','Sales::receipt/$1'); $routes->post('sales/void/(:num)','Sales::void/$1');
     $routes->get('cash','Cash::index'); $routes->get('cash/history','Cash::history'); $routes->post('cash/open','Cash::open'); $routes->post('cash/close','Cash::close'); $routes->post('cash/move','Cash::move');
     $routes->get('purchases','Purchases::index'); $routes->post('purchases/save','Purchases::save');
