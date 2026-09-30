@@ -34,7 +34,7 @@ class InventoryControlService
         $unit=$this->db->query('SELECT cu.*,ct.capacity_kg FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id WHERE cu.id=? AND cu.location_id=? FOR UPDATE',[$unitId,$locationId])->getRowArray();
         if(!$unit || $unit['status']!=='filled') throw new RuntimeException('Selected cylinder is not an available filled cylinder.');
         $current=(float)$unit['gas_weight_kg'];
-        if($gasKg>$current+0.00001) throw new RuntimeException('Wastage cannot exceed the gas currently in the cylinder.');
+        if(abs($gasKg-$current)>0.00001) throw new RuntimeException('To make a filled cylinder empty, recorded wastage must equal its current gas weight ('.$current.' kg).');
         $this->db->transBegin();
         try{
             $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'wastage','source_id'=>0,'cylinder_unit_id'=>$unitId,'created_by'=>$userId,'notes'=>$reason]);
