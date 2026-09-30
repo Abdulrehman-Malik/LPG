@@ -13,7 +13,7 @@
 <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100">Save Default</button></div>
 </form>
 <hr><h6>Cylinder-Type Overrides</h6>
-<?php foreach($types as $t):$p=$policies[(int)$t['id']];?>
+<?php foreach($types as $t):$p=$policies[(int)$t['id']] ?? $policies['default'] ?? ['stock_validation_enabled'=>1,'wastage_mode'=>'percent','wastage_percent'=>0,'wastage_fixed_kg'=>0];?>
 <form method="post" action="<?=site_url('inventory/controls/save')?>" class="row g-2 border-top py-2"><?=csrf_field()?><input type="hidden" name="cylinder_type_id" value="<?=$t['id']?>">
 <div class="col-md-2 pt-2"><?=esc($t['code'].' — '.$t['name'])?></div><div class="col-md-2"><select name="stock_validation_enabled" class="form-select"><option value="1" <?=$p['stock_validation_enabled']?'selected':''?>>Validation ON</option><option value="0" <?=!$p['stock_validation_enabled']?'selected':''?>>Validation OFF</option></select></div><div class="col-md-2"><select name="wastage_mode" class="form-select"><option value="percent" <?=$p['wastage_mode']==='percent'?'selected':''?>>Percentage</option><option value="fixed_kg" <?=$p['wastage_mode']==='fixed_kg'?'selected':''?>>Fixed KG</option></select></div><div class="col-md-2"><input name="wastage_percent" class="form-control" type="number" step=".001" min="0" max="100" value="<?=esc($p['wastage_percent'])?>"></div><div class="col-md-2"><input name="wastage_fixed_kg" class="form-control" type="number" step=".001" min="0" value="<?=esc($p['wastage_fixed_kg'])?>"></div><div class="col-md-2"><button class="btn btn-outline-primary w-100">Save Override</button></div></form>
 <?php endforeach;?></div></div>
