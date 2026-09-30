@@ -1,4 +1,28 @@
 <?= $this->extend('layouts/app') ?>
+<?= $this->section('styles') ?>
+<style>
+/* POS workspace: prioritize transaction line entry over the payment summary. */
+.pos-workspace > .pos-lines-panel { flex: 0 0 74%; max-width: 74%; }
+.pos-workspace > .pos-summary-panel { flex: 0 0 26%; max-width: 26%; }
+#lines { width: 100%; table-layout: fixed; }
+#lines th, #lines td { padding: .7rem .55rem; vertical-align: middle; }
+#lines th:nth-child(1) { width: 27%; }
+#lines th:nth-child(2) { width: 22%; }
+#lines th:nth-child(3) { width: 13%; }
+#lines th:nth-child(4) { width: 18%; }
+#lines th:nth-child(5) { width: 15%; }
+#lines th:nth-child(6) { width: 5%; }
+#lines .form-select, #lines .form-control { min-height: 42px; }
+#lines .lineGas { font-size: 1rem; line-height: 1.45; white-space: normal; }
+#lines .lineTotal { font-size: 1.08rem; }
+#lines .remove { min-width: 38px; min-height: 38px; }
+.pos-lines-card .card-body { min-height: 390px; }
+.pos-summary-card .card-body { min-height: 390px; }
+@media (max-width: 1199.98px) {
+  .pos-workspace > .pos-lines-panel, .pos-workspace > .pos-summary-panel { flex: 0 0 100%; max-width: 100%; }
+}
+</style>
+<?= $this->endSection() ?>
 <?= $this->section('content') ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><div><?php if($cashSession): ?><div class="small text-success fw-semibold">Cash session: OPEN — <?=esc($cashSession["register_code"])?></div><?php else: ?><div class="small text-warning fw-semibold">Cash session: NOT OPEN — open Counter Cash before cash sales</div><?php endif; ?></div><span class="badge text-bg-secondary">Phase 3</span></div>
 <?php if(session()->getFlashdata('success')): ?><div class="alert alert-success"><?= session()->getFlashdata('success') ?></div><?php endif; ?>
@@ -18,7 +42,7 @@
 <button type="button" class="btn btn-outline-primary" id="addLine">Add Line</button>
 </div></div></div>
 
-<div class="col-lg-4"><div class="card"><div class="card-body">
+<div class="col-lg-4 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
 <div class="row g-2 mb-3">
 <div class="col-6"><label class="form-label">Total Gas Stock</label><div class="form-control bg-light fw-semibold"><span id="gasStockCurrent"><?= number_format((float)$gasStock, 3) ?></span> KG</div><div class="small text-muted mt-1">After This Sale: <strong id="gasStockAfter"><?= number_format((float)$gasStock, 3) ?> KG</strong></div></div>
 <div class="col-6"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="0.01" value="0" class="form-control"></div>
