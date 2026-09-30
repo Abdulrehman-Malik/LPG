@@ -16,7 +16,7 @@ class Suppliers extends Controller
         return null;
     }
     public function index(){ if($r=$this->guard()) return $r; return view('suppliers/index',['title'=>'Suppliers','suppliers'=>$this->model->orderBy('name')->findAll()]); }
-    public function save()
+    public function ledger(int $id)\n    {\n        if($r=$this->guard()) return $r;\n        $supplier=$this->model->find($id);\n        if(!$supplier) return $this->response->setStatusCode(404)->setBody('Supplier not found');\n        $db=$this->model->db;\n        $purchases=$db->table('purchases')->select('transaction_at,purchase_no,total_amount,credit_amount,status')->where('supplier_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();\n        $payments=$db->table('supplier_payments')->select('payment_at,payment_no,amount,payment_mode,status')->where('supplier_id',$id)->orderBy('payment_at','DESC')->get()->getResultArray();\n        $credit=(float)$supplier['opening_balance']; foreach($purchases as $row) if($row['status']==='posted') $credit+=(float)$row['credit_amount']; foreach($payments as $row) if($row['status']==='posted') $credit-=(float)$row['amount'];\n        $supplier['credit_due']=$credit;\n        return view('suppliers/ledger',['title'=>'Supplier Ledger — '.$supplier['name'],'supplier'=>$supplier,'purchases'=>$purchases,'payments'=>$payments]);\n    }\n\n    public function save()
     {
         if($r=$this->guard()) return $r;
         $id=(int)$this->request->getPost('id');
