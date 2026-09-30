@@ -15,7 +15,7 @@
     <div class="card-header bg-white">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general" type="button">General</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pos" type="button">POS & Sales</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#appearance" type="button">Appearance</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pos" type="button">POS & Sales</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventory" type="button">Inventory Control</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cash" type="button">Cash & Payments</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#receipt" type="button">Receipt & Printing</button></li>
@@ -36,6 +36,7 @@
                 </div>
             </div>
 
+            <div class="tab-pane fade" id="appearance"><div class="row g-3"><div class="col-md-4"><label class="form-label">Theme</label><select name="theme_mode" class="form-select"><option value="light" <?= ($settings['theme_mode'] ?? 'light') === 'light' ? 'selected' : '' ?>>Light</option><option value="dark" <?= ($settings['theme_mode'] ?? 'light') === 'dark' ? 'selected' : '' ?>>Dark</option></select></div><div class="col-md-4"><label class="form-label">Application Font Size (px)</label><input name="pos_font_size_px" type="number" class="form-control" min="10" max="24" step="0.5" value="<?= esc($settings['pos_font_size_px'] ?? 14) ?>"></div><div class="col-md-4"><label class="form-label">Font Style</label><select name="font_family" class="form-select"><?php foreach(['system'=>'System Default','arial'=>'Arial','verdana'=>'Verdana','tahoma'=>'Tahoma','trebuchet'=>'Trebuchet MS','georgia'=>'Georgia','times'=>'Times New Roman'] as $value=>$label): ?><option value="<?= esc($value) ?>" <?= ($settings['font_family'] ?? 'system') === $value ? 'selected' : '' ?>><?= esc($label) ?></option><?php endforeach; ?></select></div><div class="col-md-4"><label class="form-label">Primary Color</label><input name="primary_color" type="color" class="form-control form-control-color" value="<?= esc($settings['primary_color'] ?? '#1b2a3a') ?>"></div><div class="col-md-4"><label class="form-label">Accent Color</label><input name="accent_color" type="color" class="form-control form-control-color" value="<?= esc($settings['accent_color'] ?? '#ff7a1a') ?>"></div><div class="col-12"><div class="alert alert-light border mb-0">These appearance settings apply to the whole application for this branch. Font size is also used by POS; there is no separate POS-only font setting.</div></div></div></div>
             <div class="tab-pane fade" id="pos">
                 <div class="row g-3">
                     <div class="col-md-7">
@@ -53,7 +54,7 @@
                         </select>
                         <div class="form-text">This default is applied to the first POS line. Cashiers can still change the transaction type for a specific line.</div>
                     </div>
-                    <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div><div class="col-md-5"><label class="form-label">POS Font Size (px)</label><input name="pos_font_size_px" type="number" class="form-control" min="10" max="24" step="0.5" value="<?= esc($settings['pos_font_size_px'] ?? 14) ?>"><div class="form-text">Adjusts POS text and controls for different screen sizes. Applies to the POS/Sales page only.</div></div>
+                    <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div>
                 </div>
             </div>
 
