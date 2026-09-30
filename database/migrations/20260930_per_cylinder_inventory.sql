@@ -77,6 +77,6 @@ JOIN (
  FROM (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) ones
  CROSS JOIN (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) tens
  CROSS JOIN (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) hundreds
-) n ON n.n <= FLOOR(x.stock_qty)
-WHERE x.stock_qty>0
+) n ON n.n <= FLOOR(x.stock_qty-COALESCE((SELECT COUNT(*) FROM cylinder_units u WHERE u.location_id=x.location_id AND u.cylinder_type_id=x.cylinder_type_id AND u.status=x.status),0))
+WHERE x.stock_qty>COALESCE((SELECT COUNT(*) FROM cylinder_units u WHERE u.location_id=x.location_id AND u.cylinder_type_id=x.cylinder_type_id AND u.status=x.status),0)
 AND NOT EXISTS (SELECT 1 FROM cylinder_units u WHERE u.location_id=x.location_id AND u.cylinder_type_id=x.cylinder_type_id AND u.status=x.status AND u.source_type='migration_reconcile' AND u.source_id=0);
