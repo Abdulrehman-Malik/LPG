@@ -127,3 +127,10 @@ A requirement is marked Done only after implementation, validation, transaction 
 - The active Counter Cash session status should be prominent at the top-left of the POS screen.
 - Counter Cash must provide a searchable/filterable history view by date range and counter/register, with transaction type, direction, amount, reference and notes visible.
 - Counter Cash expected cash must not double-count the opening float: when an opening_float cash transaction exists, expected cash is calculated from cash-in minus cash-out for the session.
+
+
+## SQA-Confirmed POS Display Requirements
+- The POS transaction hint/help box is not required and should not occupy space on the Sales page.
+- POS font size must be configurable from Shop Settings at branch level.
+- POS font size must apply only to the POS/Sales page; other application pages must retain their normal font sizing.
+- POS font size must be validated to a safe configurable range and persist across POS page reloads.
