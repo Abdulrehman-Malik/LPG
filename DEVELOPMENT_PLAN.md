@@ -19,17 +19,17 @@ Legend:
 - [x] Authentication updated for role table
 - [x] Dashboard updated for target inventory/sales ledgers
 - [x] TESTING.md created as mandatory test gate
-- [ ] User executes schema and tests foundation
-- [ ] User reports PASS/FAIL in TESTING.md
+- [x] User executes schema and tests foundation
+- [x] User reports PASS/FAIL in TESTING.md
 
 ## Phase 2 — Master Data
-- [ ] Customers / Parties
-- [ ] Suppliers
-- [ ] Cylinder Types management
-- [ ] LPG rate management + rate history
-- [ ] Users / Roles / Permissions
-- [ ] Opening inventory
-- [ ] Customer/supplier ledgers
+- [/] Customers / Parties
+- [/] Suppliers
+- [/] Cylinder Types management
+- [/] LPG rate management + rate history
+- [/] Users / Roles / Permissions
+- [/] Opening inventory
+- [/] Customer/supplier ledgers
 
 ## Phase 3 — POS Sales
 - [ ] POS screen
