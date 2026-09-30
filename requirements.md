@@ -79,3 +79,13 @@ A requirement is marked Done only after implementation, validation, transaction 
 - Saving an edit must persist the changed values and retain unchanged values.
 - Editing a user must retain the existing password when the password field is left blank.
 - Automated or manual regression testing should verify create/edit flows after UI changes to prevent modal or form JavaScript regressions.
+
+
+## SQA-Confirmed POS / Inventory Requirements
+- Filled-cylinder POS selection must show the currently available filled-cylinder quantity for the selected cylinder type and a clear gas-stock figure without misleading the user about whether gas is allocated to individual cylinders.
+- The current inventory model treats gas KG as a location-level gas balance and filled cylinders as a cylinder-type quantity. It does **not** currently track the actual gas weight contained in each individual filled cylinder.
+- The system must support partially filled cylinders: a cylinder type defines maximum capacity, while each filled cylinder may contain an actual gas weight from 0 up to that capacity. Inventory must prevent actual gas weight above cylinder capacity and account for actual weight when selling, refilling and exchanging cylinders.
+- POS transaction types must use user-friendly names and display a short operational hint explaining what the selected transaction will do.
+- The active Counter Cash session status should be prominent at the top-left of the POS screen.
+- Counter Cash must provide a searchable/filterable history view by date range and counter/register, with transaction type, direction, amount, reference and notes visible.
+- Counter Cash expected cash must not double-count the opening float: when an opening_float cash transaction exists, expected cash is calculated from cash-in minus cash-out for the session.
