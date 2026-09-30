@@ -29,7 +29,15 @@ class CashService {
   $this->db->table('cash_transactions')->insert(['cash_session_id'=>$sessionId,'transaction_type'=>'sale_cash','direction'=>'in','amount'=>$amount,'transaction_at'=>$at,'reference_type'=>'sale','reference_id'=>$saleId,'created_by'=>$userId]);
   if(!$this->db->transStatus()) throw new RuntimeException('Cash transaction could not be posted.');
  }
- public function postGeneric(int $sessionId,string $type,string $direction,float $amount,string $referenceType,int $referenceId,int $userId,string $notes='',?string $at=null): void {\n  if($amount<=0) throw new RuntimeException('Cash amount must be positive.');\n  if(!in_array($direction,['in','out'],true)) throw new RuntimeException('Invalid cash direction.');\n  $session=$this->db->query("SELECT * FROM cash_sessions WHERE id=? FOR UPDATE",[$sessionId])->getRowArray();\n  if(!$session || $session['status']!=='open') throw new RuntimeException('Cash session is closed or unavailable.');\n  $this->db->table('cash_transactions')->insert(['cash_session_id'=>$sessionId,'transaction_type'=>$type,'direction'=>$direction,'amount'=>$amount,'transaction_at'=>$at?:date('Y-m-d H:i:s'),'reference_type'=>$referenceType,'reference_id'=>$referenceId,'created_by'=>$userId,'notes'=>$notes?:null]);\n  if(!$this->db->transStatus()) throw new RuntimeException('Cash transaction could not be posted.');\n }\n public function summary(int $sessionId): array {
+ public function postGeneric(int $sessionId,string $type,string $direction,float $amount,string $referenceType,int $referenceId,int $userId,string $notes='',?string $at=null): void {
+  if($amount<=0) throw new RuntimeException('Cash amount must be positive.');
+  if(!in_array($direction,['in','out'],true)) throw new RuntimeException('Invalid cash direction.');
+  $session=$this->db->query("SELECT * FROM cash_sessions WHERE id=? FOR UPDATE",[$sessionId])->getRowArray();
+  if(!$session || $session['status']!=='open') throw new RuntimeException('Cash session is closed or unavailable.');
+  $this->db->table('cash_transactions')->insert(['cash_session_id'=>$sessionId,'transaction_type'=>$type,'direction'=>$direction,'amount'=>$amount,'transaction_at'=>$at?:date('Y-m-d H:i:s'),'reference_type'=>$referenceType,'reference_id'=>$referenceId,'created_by'=>$userId,'notes'=>$notes?:null]);
+  if(!$this->db->transStatus()) throw new RuntimeException('Cash transaction could not be posted.');
+ }
+ public function summary(int $sessionId): array {
   $session=$this->db->table('cash_sessions')->where('id',$sessionId)->get()->getRowArray();
   if(!$session) throw new RuntimeException('Cash session not found.');
   $row=$this->db->table('cash_transactions')->select("SUM(CASE WHEN direction='in' THEN amount ELSE 0 END) cash_in,SUM(CASE WHEN direction='out' THEN amount ELSE 0 END) cash_out")->where('cash_session_id',$sessionId)->get()->getRowArray();
