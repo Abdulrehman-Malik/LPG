@@ -92,9 +92,9 @@ customer_id = NULL means:
 
 | Scenario | Gas | Filled cylinder | Empty cylinder |
 |---|---:|---:|---:|
-| Filled cylinder sale | OUT by capacity | OUT | Optional IN |
+| Filled cylinder sale | OUT by actual physical-unit gas weight | OUT | Optional IN |
 | Refill service | OUT by KG | No change | No shell change |
-| Cylinder exchange | OUT by capacity | OUT | IN |
+| Cylinder exchange | OUT by actual physical-unit gas weight | OUT | IN |
 | Empty intake | No change | No change | IN |
 | Empty sale | No gas | No change | OUT |
 | Customer receipt | No change | No change | No change |
@@ -169,3 +169,11 @@ GET /api/reports/customer-ledger
 GET /api/reports/supplier-ledger
 GET /api/reports/counter-cash
 GET /api/reports/rate-overrides
+
+## Physical Cylinder Inventory
+
+Each filled physical cylinder is represented by a `cylinder_units` record with a unique unit code, cylinder type, status and actual gas weight. Actual gas may be below rated capacity but cannot exceed capacity. Filled-cylinder sales, purchases, stock adjustments and wastage update both the physical unit and the immutable inventory movement ledger.
+
+## Wastage Behavior
+
+Partial wastage deducts only the recorded gas loss and leaves the physical cylinder filled with its remaining gas. If the recorded wastage equals all remaining gas, the physical cylinder is moved to empty stock. Wastage is limited by the configured shop/type percentage or fixed-KG allowance and is recorded with physical unit, user, reason and timestamp.
