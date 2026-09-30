@@ -58,5 +58,4 @@ class PurchaseService{
   return (float)($supplier['opening_balance']??0)+(float)($s['credit']??0)-(float)($p['paid']??0);
  }
 
- }
 }
