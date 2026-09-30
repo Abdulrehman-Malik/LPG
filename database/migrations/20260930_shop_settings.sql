@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS shop_settings(
     location_id BIGINT UNSIGNED NOT NULL UNIQUE,
     default_sale_mode ENUM('sell_gas_only','replace_same','sell_filled','replace_different','sell_empty') NOT NULL DEFAULT 'sell_gas_only',
     default_payment_mode ENUM('cash','cheque','online','credit') NOT NULL DEFAULT 'cash',
+    pos_font_size_px DECIMAL(4,1) NOT NULL DEFAULT 14.0,
     stock_validation_enabled BOOLEAN NOT NULL DEFAULT 1,
     allow_stock_override BOOLEAN NOT NULL DEFAULT 1,
     backup_enabled BOOLEAN NOT NULL DEFAULT 0,
@@ -20,6 +21,8 @@ CREATE TABLE IF NOT EXISTS shop_settings(
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY(location_id) REFERENCES locations(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pos_font_size_px DECIMAL(4,1) NOT NULL DEFAULT 14.0 AFTER default_payment_mode;
 
 INSERT INTO shop_settings(location_id)
 SELECT l.id FROM locations l
