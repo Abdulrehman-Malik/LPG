@@ -67,6 +67,18 @@ Production-ready POS + ERP for LPG retail operations.
 - Residual gas/wastage from a cylinder that is made empty must never exceed the cylinder's current actual gas weight.
 - Inventory control and wastage actions must be atomic and auditable.
 
+## Deferred Business Decisions
+
+The following items are intentionally outside the currently implemented functional scope and must be confirmed before adding them:
+- GST/tax
+- Sale returns/refunds
+- Offline POS
+- 80mm thermal printer integration
+- Multiple cash registers / handover workflows beyond the current foundation
+- Cylinder serial-number policy
+- Manager override workflows for credit limits
+- Detailed cylinder package pricing rules
+
 ## Open Business Decisions
 1. Can one sale contain multiple scenarios?
 2. Are cylinder serial numbers required?
@@ -93,7 +105,7 @@ A requirement is marked Done only after implementation, validation, transaction 
 
 ## SQA-Confirmed POS / Inventory Requirements
 - Filled-cylinder POS selection must show the currently available filled-cylinder quantity for the selected cylinder type and a clear gas-stock figure without misleading the user about whether gas is allocated to individual cylinders.
-- The current inventory model treats gas KG as a location-level gas balance and filled cylinders as a cylinder-type quantity. It does **not** currently track the actual gas weight contained in each individual filled cylinder.
+- The current inventory model maintains a location-level gas KG balance plus physical cylinder units. Each filled cylinder unit stores its actual gas weight and status, allowing partial fills and actual-weight deductions.
 - The system must support partially filled cylinders: a cylinder type defines maximum capacity, while each filled cylinder may contain an actual gas weight from 0 up to that capacity. Inventory must prevent actual gas weight above cylinder capacity and account for actual weight when selling, refilling and exchanging cylinders.
 - POS transaction types must use user-friendly names and display a short operational hint explaining what the selected transaction will do.
 - The active Counter Cash session status should be prominent at the top-left of the POS screen.
