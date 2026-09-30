@@ -153,13 +153,22 @@ Phase 3 status: IN DEVELOPMENT — POS CASH-SESSION POSTING IMPLEMENTED; CASH SE
 
 ### Phase 3 Hardening / Cash Control Checks
 - [ ] Cash session concurrency: two open attempts against the same register must not create two open sessions.
-  - SQA Comments / Improvement Notes: Verify duplicate-open prevention under rapid/concurrent requests and confirm only one session remains open.
+  - SQA Comments / Improvement Notes: Register-row locking is implemented. Verify duplicate-open prevention under rapid/concurrent requests and confirm only one session remains open.
   - Evidence / Test Data:
 - [ ] Cash session close integrity: closing a session must lock the session state and calculate expected cash from the committed transaction set.
-  - SQA Comments / Improvement Notes: Verify a second close is rejected and cash sales cannot post after the session is closed.
+  - SQA Comments / Improvement Notes: Session-row locking and post-lock summary calculation are implemented. Verify a second close is rejected and cash sales cannot post after the session is closed.
   - Evidence / Test Data:
 - [ ] Sale void cash reversal idempotency: a posted cash sale must produce one cash reversal only.
-  - SQA Comments / Improvement Notes: Verify repeated void attempts are rejected and no duplicate cash-out reversal is created.
+  - SQA Comments / Improvement Notes: Sale-row locking and duplicate reversal defense are implemented. Verify repeated void attempts are rejected and no duplicate cash-out reversal is created.
+  - Evidence / Test Data:
+- [ ] Inventory concurrency: concurrent sales consuming the same inventory key must not oversell stock.
+  - SQA Comments / Improvement Notes: MySQL named inventory locks are acquired in deterministic key order for each posting/void. Verify two concurrent sales cannot both pass the same stock assertion when combined quantity exceeds available stock.
+  - Evidence / Test Data:
+- [ ] Customer credit concurrency: concurrent credit sales for the same customer must not bypass the credit limit.
+  - SQA Comments / Improvement Notes: Customer row is locked and the credit limit is rechecked inside the posting transaction. Verify two concurrent credit sales cannot commit beyond the configured limit.
+  - Evidence / Test Data:
+- [ ] Cash session vs sale posting concurrency: a cash sale must not commit into a session after that session has been closed.
+  - SQA Comments / Improvement Notes: Cash session row is locked during cash-sale posting, so close waits for the sale transaction and vice versa. Verify no cash transaction can be committed after the session state is closed.
   - Evidence / Test Data:
 
 
