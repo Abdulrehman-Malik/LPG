@@ -15,7 +15,7 @@ class Suppliers extends Controller
         if(!PermissionService::allows('SUPPLIER_MANAGE')) return $this->response->setStatusCode(403)->setBody('Forbidden');
         return null;
     }
-    public function index(){ if($r=$this->guard()) return $r; return view('suppliers/index',['title'=>'Suppliers','suppliers'=>$this->model->orderBy('name')->findAll()]); }
+    public function index(){ if($r=$this->guard()) return $r; $editId=(int)$this->request->getGet('edit'); return view('suppliers/index',['title'=>'Suppliers','suppliers'=>$this->model->orderBy('name')->findAll(),'edit'=>$editId?$this->model->find($editId):null]); }
     public function ledger(int $id)
     {
         if($r=$this->guard()) return $r;
