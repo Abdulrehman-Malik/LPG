@@ -42,7 +42,8 @@ Legend:
 - [/] Credit enforcement
 - [/] OS balance block
 - [/] Custom-rate highlighting
-- [/] Atomic inventory/cash posting
+- [x] Atomic inventory/cash posting
+- [x] Counter Cash session foundation (open/summary/close + POS cash linkage)
 - [ ] Receipt / print
 - [ ] Sale void/reversal
 
