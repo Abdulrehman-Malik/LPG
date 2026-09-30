@@ -1,31 +1,13 @@
 <?php
-
 use CodeIgniter\Router\RouteCollection;
-
-/**
- * @var RouteCollection $routes
- */
-
-// ---------------------------------------------------------------------
-// Public / guest routes
-// ---------------------------------------------------------------------
-$routes->get('/', 'Auth::showLogin');
-$routes->get('login', 'Auth::showLogin');
-$routes->post('login', 'Auth::attemptLogin');
-$routes->get('logout', 'Auth::logout');
-
-// ---------------------------------------------------------------------
-// Authenticated routes (protected by the "auth" filter — see Filters.php)
-// ---------------------------------------------------------------------
-$routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes) {
-    $routes->get('dashboard', 'Dashboard::index');
-
-    // Placeholders wired up for sidebar navigation; controllers for these
-    // land in later steps per claude.md §3 (Remaining Backlog).
-    // $routes->get('sales/new',            'Sales::newSale');
-    // $routes->get('sales/search',         'Sales::search');
-    // $routes->get('customers',            'Customers::index');
-    // $routes->get('cylinder-stock',       'CylinderStock::index');
-    // $routes->get('reports/daily-cash',   'Reports::dailyCash');
-    // $routes->get('settings',             'Settings::index');
+/** @var RouteCollection $routes */
+$routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $routes->post('login','Auth::attemptLogin'); $routes->get('logout','Auth::logout');
+$routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
+    $routes->get('dashboard','Dashboard::index');
+    $routes->get('customers','Customers::index'); $routes->post('customers/save','Customers::save');
+    $routes->get('suppliers','Suppliers::index'); $routes->post('suppliers/save','Suppliers::save');
+    $routes->get('cylinder-types','CylinderTypes::index'); $routes->post('cylinder-types/save','CylinderTypes::save');
+    $routes->get('rates','Rates::index'); $routes->post('rates/save','Rates::save');
+    $routes->get('users','Users::index'); $routes->post('users/save','Users::save'); $routes->post('users/role-permissions','Users::rolePermissions');
+    $routes->get('inventory/opening','InventoryOpening::index'); $routes->post('inventory/opening/save','InventoryOpening::save');
 });
