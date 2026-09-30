@@ -1,520 +1,218 @@
 # Perfect LPG — TESTING.md
 
-Use this file as the test gate between development phases.
+## Test Gate
 
-## Application Starting URL
+This file tracks the development state and the executable functional test gate.
 
-**Starting URL:** http://localhost:180/LPG2/LPG/public/
+**Application URL:** `http://localhost:180/LPG2/LPG/public/`
 
-The application base URL is configured in .env as:
+**Default test login:** `admin / admin123`
 
-    app.baseURL = 'http://localhost:180/LPG2/LPG/public/'
+### Status convention
 
-After starting the application, open the URL above in your browser. The login page is available at:
+- `[x]` = verified PASS by the person who executed the test
+- `[!]` = FAIL; include evidence/reproduction
+- `[ ]` = READY / not yet executed
+- `[-]` = N/A
 
-    http://localhost:180/LPG2/LPG/public/login
+**Important:** Code review or static inspection is not a substitute for browser/DB execution. SQA must execute the browser flows and enter the actual result in **SQA.md**.
 
-## How to use
-1. Pull the latest main branch.
-2. Install PHP 8.2+ with intl, mbstring and MySQLi enabled.
-3. The repository currently contains the CodeIgniter/vendor tree. If rebuilding dependencies locally, use the repository's composer.lock and verify the installed framework version before testing.
-4. Copy 'env' to '.env' if required and set your local MySQL credentials/database settings. The repository configuration uses 'perfect_lpg' as the database.
-5. Execute 'database/schema.sql' once on a fresh MySQL server. If you are continuing with an existing tested database, execute `database/migrations/20260930_per_cylinder_inventory.sql` before testing the new physical-cylinder inventory feature. The migration is retry-safe; if a previous attempt partially ran, it can be run again.
-6. Start the application using the configured local web server and open **http://localhost:180/LPG2/LPG/public/**.
-7. If using CodeIgniter's development server instead, run 'php spark serve' and open the URL reported by Spark (normally http://localhost:8080/).
-8. Test only items marked READY FOR TEST.
-9. Change '[ ]' to '[x]' for PASS or '[!]' for FAIL.
-10. For every FAIL, add the exact error/message and reproduction steps.
-11. Commit/push your updated TESTING.md to GitHub.
-12. I will read the results, fix failures, and only then start the next phase.
+---
 
-Status: [ ] Not tested · [x] Pass · [!] Fail · [-] N/A
+## Current Development Status
 
-## Phase 1 — Database Installation
-- [x] Execute database/schema.sql successfully on a fresh MySQL server.
-- [x] Database perfect_lpg is created.
-- [x] All required tables are created without SQL errors.
-- [x] users contains seeded admin account.
-- [x] cylinder_types contains 6 standard cylinder types.
-- [x] cash_registers contains REG-01.
-- [x] roles, permissions and role_permissions contain seed data.
-Result: [x] PASS / [ ] FAIL
-Database error / notes:
-> Write here.
+The requested functional scope is implemented and the repository has undergone a second code review.
 
-## Phase 1 — Application Configuration
-- [x] .env database connection points to perfect_lpg.
-- [x] Application starts without PHP fatal error.
-- [x] /login opens correctly.
-- [x] Bootstrap/CSS/JS load correctly.
-- [x] Application starting URL is http://localhost:180/LPG2/LPG/public/.
-Result: [x] PASS / [ ] FAIL
-Error / notes:
-> Write here.
+### Completed development
 
-## Phase 1 — Authentication
-- [x] Username: admin
-- [x] Password: admin123
-- [x] Login succeeds.
-- [x] Redirect to /dashboard works.
-- [x] Top-right user shows System Administrator.
-- [x] Role badge shows ADMIN.
-- [x] Invalid password is rejected.
-- [x] Logout returns to /login.
-- [x] Direct /dashboard while logged out redirects to /login.
-Result: [x] PASS / [ ] FAIL
-Error / reproduction steps:
-> Write here.
+- Authentication, sessions and role/permission protection.
+- Dashboard.
+- Customers/parties and customer ledger.
+- Suppliers and supplier ledger.
+- Cylinder types and capacity validation.
+- LPG gas/kg and cylinder-package rates with history.
+- Users, roles and permissions.
+- Opening inventory.
+- Physical cylinder-unit inventory with per-cylinder actual gas weight.
+- POS filled-cylinder sales.
+- POS KG refill.
+- POS cylinder exchange.
+- Empty-cylinder intake and sale.
+- Cash/cheque/online/credit payments.
+- Customer credit-limit enforcement.
+- Customer receipts.
+- Purchases and supplier credit-limit enforcement.
+- Supplier payments.
+- Counter cash opening, movement, history and close/reconciliation.
+- Expenses.
+- Inventory stock adjustments.
+- Configurable stock validation with explicit override confirmation when disabled.
+- Shop-default and cylinder-type inventory policy overrides.
+- Configurable wastage allowance using percentage or fixed KG.
+- Partial physical-cylinder wastage and full conversion to empty stock.
+- Wastage history/report filtering.
+- Sale void/reversal with inventory and cash reversal.
+- Daily reports, ledgers and audit logging.
+- POS numeric rate inputs use 2-decimal increments.
+- Local environment file removed from source control; `.env.example` is provided.
 
-## Phase 1 — Dashboard
-- [x] Dashboard opens after login.
-- [x] Today's Sales shows Rs. 0.00 on fresh database.
-- [x] Cylinder Stock shows 0 on fresh database.
-- [x] Total Gas Stock shows 0.00 kg on fresh database.
-- [x] No SQL/PHP errors appear in page or server log.
-Result: [x] PASS / [ ] FAIL
-Error / notes:
-> Write here.
+### Important inventory behavior
 
-## Phase 2 — Master Data (READY FOR TEST)
-- [x] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. Previous edit-modal defect fixed and retested.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. Previous edit-modal defect fixed and retested.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. Previous edit-modal defect fixed and retested.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Opening Inventory: gas KG, filled cylinders and empty cylinders, date/type uniqueness, non-negative validation.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Customer ledger: opening balance + posted credit sales - posted receipts.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-- [x] Supplier ledger: opening balance + posted credit purchases - posted supplier payments.
-  - SQA Comments / Improvement Notes: 
-  - Evidence / Test Data: 
-Phase 2 status: PASS — USER RETEST COMPLETE
+A filled physical cylinder has:
+- a cylinder type/capacity;
+- a physical unit code;
+- an actual gas weight between 0 and capacity;
+- a status: filled, empty or sold.
 
-### Phase 2 Regression / Improvement Notes
-- Edit actions must open the correct edit modal and preload the selected record; saving an edit must persist the changed values.
-- Edit forms must preserve existing values, including role selection for users; user password must remain unchanged when the password field is left blank during an edit.
-- Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
-- Phase 2 regression completed after the edit retests. Any future SQA observation should be recorded in the per-function comment space above; implementation-impacting items should also be added to requirements.md before scheduling them.
+Selling a filled cylinder deducts its **actual gas weight**, not automatically its rated capacity.
 
-## How to Execute the Functional User Test
+Partial wastage:
+- deducts only the gas reported as wasted;
+- reduces the physical unit's gas weight;
+- keeps the unit filled if gas remains.
 
-Follow the tests in the order below. Do not try to test every screen randomly. Complete the prerequisite step before moving to the next step. These are browser/user tests; do not mark a test PASS unless the result was actually observed locally.
+Full wastage:
+- deducts the remaining gas;
+- moves the physical unit from filled to empty;
+- increases empty-cylinder stock.
 
-### Step 0 — Login and Dashboard
-1. Open **http://localhost:180/LPG2/LPG/public/**.
-2. Login with **admin / admin123**.
-3. Confirm the Dashboard opens and no PHP/SQL error appears.
-4. If this fails, stop and record the complete error and reproduction steps.
+Wastage cannot exceed current gas or the configured percentage/fixed-KG allowance.
 
-### Step 1 — Open Counter Cash
+---
 
-**TEST Result:** PASS
+## Code Review Fixes Applied
 
-**SQA Review / Improvement Notes:**
-- Add a dedicated **Cash History** screen rather than putting a long history table directly on the opening/closing screen.
-- History now supports date-range filtering and counter/register filtering, and displays counter, transaction type, direction, amount, reference and notes.
+1. Fixed duplicate POS JavaScript declaration that could prevent POS submission.
+2. Fixed POS empty-cylinder stock display so it uses real controller stock.
+3. Changed POS and purchase rate number inputs to 2-decimal increments.
+4. Made inventory cylinder adjustments create/remove physical cylinder units instead of changing aggregate counts only.
+5. Added actual-gas input for filled-cylinder inventory adjustments.
+6. Changed wastage from an all-or-nothing operation to correct partial-loss behavior.
+7. Enforced configured wastage allowance and cylinder-type policy override.
+8. Moved wastage physical-unit locking inside the DB transaction.
+9. Applied cylinder-type stock-validation overrides during POS gas validation.
+10. Enforced customer receipt amount against outstanding customer balance.
+11. Enforced supplier payment amount against outstanding supplier balance.
+12. Corrected supplier credit-limit validation to consider existing outstanding credit, not only opening balance.
+13. Removed tracked local `.env`; added `.env.example` and Git ignore rules.
 
-1. Open **Counter Cash**.
-2. Enter Opening Cash: **Rs. 10,000**.
-3. Enter Notes: **SQA test session**.
-4. Click **Open**.
-5. Confirm an open session for register **REG-01** is displayed.
-6. Record the displayed Opening, Cash In, Cash Out and Expected values. If the opening float appears to be counted twice, record it as an SQA defect rather than changing the database manually.
-TEST Result: PASS 
-Suggestion: Show history report in a tab to view all history of cash counter or as seprate report. take the decision as professinal way to keep it user frindly also can be filterd searched for one day or for speccif date or for a month date range or for speifc counter cash history etc.
+---
 
-### Step 2 — Open POS and Post a Normal Cash Sale
+## Phase 1 — Foundation
 
-**TEST Result:** PASS
+Previously user-tested / recorded as PASS:
 
-**SQA Review / Improvement Notes:**
-- **Implemented and READY FOR RETEST:** POS now shows available filled cylinders and the actual gas weight stored against each available cylinder.
-- The inventory model now separates physical filled-cylinder units from the location-level gas balance. Each filled cylinder has an actual gas weight from 0 up to its configured capacity.
-- Filled-cylinder sales consume the selected physical units and deduct their actual gas weights from gas inventory.
-- Keep the active Cash Session status at the top-left of POS.
-- Use user-friendly transaction names and show a short explanation of the selected transaction type.
-- The second `POS Sales` page heading was removed; the main application topbar title remains, giving the POS grid more vertical space.
+- [x] Database schema installation.
+- [x] Database seed data.
+- [x] Application configuration.
+- [x] Authentication.
+- [x] Dashboard.
 
-1. Open **POS**.
-2. Select a Phase 2 test customer.
-3. Select **Filled Cylinder**.
-4. Select a cylinder type with available opening stock.
-5. Enter quantity **1** and use the displayed standard rate.
-6. Set Discount to **0**.
-7. Select **Cash** and enter the exact sale total.
-8. Click **Post Sale**.
-9. Confirm a success message and sale number appear.
-10. Open the receipt and verify sale number, customer, cylinder, quantity, rate, total and payment.
+**Note:** Re-run these as part of the complete SQA regression if the environment/database has been rebuilt.
 
-**New physical-cylinder test:** Before posting a filled-cylinder sale, verify the POS stock area lists each available cylinder unit and its actual gas weight. The sale must consume the correct unit(s), not assume every cylinder is full.
+---
 
-TEST Result: PASS 
-Suggestion:
-1.when select filled cylinder it should show avaialble gas in kg for that cylinders.. so that user can see how much gas is avaialble in my stock.. in which cylidner. 
-2.How system will manage GS stock. suppose a cylidner of 20kg filled cylidner exists in stock it mean we have 20kg in stock.
-while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 filed cylidenr of type 20kg and gas avaialble 40kg. we can sale 40kg gas from that two cylidner types.  if same is already handling then ok other wise tell me how its implemented currently before changeing anything.
-3. we can add cydlidner gas less than its capacity but not more than its capaicty. like we can have filled cylinder of type 20kg with actual filled gas as 18kg. so our gas stock will be 18kg for that specfic cylidner. this is must have feature.
-4.move this at top left side, "Cash session: OPEN — REG-01"
-5.Naming convention more user friendly and understndable to user for transaction type (like refill kg,empty intak, when user select the option show hint at the top what type of transction user is going to perform rule)
-6. Available stock is not showing anywhere in POS screen whne i select cylidner, it showuld reflect.
-7.also POS Sales is shwoing two time in page, remove 2nd one keep the first one as it is so space can be bigger.
-8.Show the balance quanity with cylinder name inside drop down like (cylinder1-gas-stock-avlbl-15kg) rather than in ratestatus palce. remove the rate status column from pos line itme, only keep it in reports for tracking purpose what was actual rate what was applied rate for that line item.
-9.sale can be possible more than available stock gas and it should be configurable. for examaple
-while reflling gas can be wasted during refill so this percenateg should also be configuraeable that how much wastage could be bearable if stock in of a cylidnder is 20kg and we sell only 19kg  and that cylinder marked as empty from adjustment screen or any new screen to handle this. so this 1 kg will be recodered as wasteage..in reports. and recorderd properly.
-10. also how much wastage is ok either percenateg or fix vallue, at cylidern level or shop level. 
-11. stock validation should also be configureable like if validation check is on then system will not allow to sell more than avaialbel stock, if valdiation checck is off then system will allow to sell with only a reminder popup message that are you sure you want to make this sale as stock is not avialable in inventory.... and record it 
-12. there should be seprate report as well how much stock of gas is wasted...by date wise...
-13. we get filled cylidern but due to leakege it gets empty.  this should also be cconsider in wastege screen and properly recorded...through stock adjustment screen.
-### Step 2A — Test Actual Gas Weight and Partial-Fill Cylinders
+## Phase 2 — Master Data
 
-1. Open **Opening Inventory** on a test database or create a dedicated SQA cylinder type, for example **20 kg Test Cylinder** with capacity **20.000 kg**.
-2. Add **2 Filled Cylinders** of this type.
-3. Enter **Actual Gas per Filled Cylinder = 18.000 kg**.
-4. Save the opening inventory.
-5. Open **POS** and select the test cylinder type.
-6. Confirm the available-cylinder display shows **2 cylinders**, each with **18.000 kg**, and the location gas total reflects **36.000 kg** from those cylinders (plus any other loose gas stock).
-7. Post a filled-cylinder sale for quantity **1**.
-8. Confirm only one physical cylinder is consumed and gas inventory decreases by **18.000 kg**, not 20 kg.
-9. Confirm one 18.000 kg filled cylinder remains available.
-10. Attempt to create a cylinder with actual gas **20.001 kg** and confirm the application rejects it.
-11. Attempt to create a cylinder with actual gas **0 kg** as a filled cylinder and confirm the application rejects it.
+Previously user-tested / recorded as PASS:
 
-**Expected result:** actual gas weight is tracked per physical cylinder and can be below capacity but never above capacity.
+- [x] Customers / Parties.
+- [x] Suppliers.
+- [x] Cylinder Types.
+- [x] LPG Rates.
+- [x] Users / Roles / Permissions.
+- [x] Opening Inventory.
+- [x] Customer ledger.
+- [x] Supplier ledger.
 
-### Step 2B — Test Bulk Filled-Cylinder Stock
+**Regression requirement:** SQA must repeat the master-data create/edit/inactive/duplicate/validation cases in SQA.md.
 
-1. Add **2** filled cylinders of a 20 kg type with actual gas **20 kg** each.
-2. Confirm POS displays two available cylinders and a combined cylinder gas amount of **40 kg**.
-3. Sell one filled cylinder.
-4. Confirm one cylinder and **20 kg** of its gas remain.
+---
 
-### Step 2C — Test Configurable Stock Validation and Wastage
-1. Open **Inventory Controls**.
-2. Confirm the shop default stock validation is **ON**.
-3. Set a test cylinder policy to **ON** and verify an attempted gas sale above available gas stock is blocked.
-4. Set the test policy to **OFF**.
-5. Attempt a gas refill above available gas stock. Confirm the POS asks for explicit confirmation before posting.
-6. Confirm the sale is recorded only after confirmation and the inventory result is visible for later reconciliation.
-7. Open **Gas Wastage**.
-8. Select a filled physical cylinder with known actual gas, for example **18.000 kg**.
-9. Record **1.000 kg** wastage with reason **SQA leakage test**.
-10. Confirm gas stock decreases by 1.000 kg, the selected physical cylinder becomes empty, and empty-cylinder stock increases by 1.
-11. Confirm wastage history records date, cylinder type, physical unit, wasted KG, reason and user.
-12. Attempt wastage greater than the cylinder's current gas and confirm rejection.
-13. Filter wastage history by date range and cylinder type.
+## Phase 3/4/5/6 — Full Functional SQA Gate
 
-**Expected result:** stock validation is configurable, oversell requires explicit confirmation when validation is OFF, and physical-cylinder gas loss is separately recorded as wastage.
+The following are now **READY FOR SQA** after development completion:
 
-### Step 3 — Verify Inventory After the Sale
-1. Open **Inventory**.
-2. Find the cylinder type sold in Step 2.
-3. Confirm filled-cylinder stock decreased by the expected quantity.
-4. Confirm gas stock changed by the **actual gas weight of the physical cylinder sold**, not automatically by rated capacity.
-5. Do not manually correct stock during the test.
+- [ ] Counter Cash open / IN / OUT / history / close.
+- [ ] Physical cylinder opening stock and actual gas weight.
+- [ ] POS filled-cylinder sale.
+- [ ] POS KG refill.
+- [ ] POS cylinder exchange.
+- [ ] Empty-cylinder intake.
+- [ ] Empty-cylinder sale.
+- [ ] Custom rates and rate history.
+- [ ] Customer credit sales and credit-limit enforcement.
+- [ ] Customer receipts and outstanding-balance enforcement.
+- [ ] Purchases.
+- [ ] Supplier credit-limit enforcement.
+- [ ] Supplier payments and outstanding-balance enforcement.
+- [ ] Expenses.
+- [ ] Physical inventory adjustments.
+- [ ] Configurable stock validation.
+- [ ] Stock-validation OFF override confirmation.
+- [ ] Cylinder-type stock-policy overrides.
+- [ ] Percentage wastage.
+- [ ] Fixed-KG wastage.
+- [ ] Partial cylinder wastage.
+- [ ] Full cylinder-to-empty wastage.
+- [ ] Wastage report/date/type filtering.
+- [ ] Sale void/reversal.
+- [ ] Inventory reconciliation.
+- [ ] Customer/supplier ledger reconciliation.
+- [ ] Daily reports.
+- [ ] Audit logging.
+- [ ] Browser regression and JavaScript error check.
+- [ ] End-to-end retail-day flow.
 
-### Step 4 — Test KG Refill
-1. Return to **POS**.
-2. Select **Refill KG**.
-3. Enter **5 kg** and use the displayed gas/kg rate.
-4. Select Cash and enter the exact total.
-5. Post the sale.
-6. Confirm the sale and receipt succeed.
-7. Check Inventory and confirm gas stock decreased by **5 kg**.
+Execute the complete matrix in **SQA.md** and record Actual Result, Comments and Status for every case.
 
-### Step 5 — Test Credit Sale and Customer Ledger
-1. Open **POS**.
-2. Select the same test customer.
-3. Create a small sale.
-4. Select **Credit** and post it.
-5. Open **Reports → Customer Ledger**.
-6. Confirm the credit sale appears as a debit and the customer's outstanding balance increases accordingly.
+---
 
-### Step 6 — Test Customer Receipt
-1. Open **Customer Receipts**.
-2. Select the customer used in Step 5.
-3. Enter **Rs. 500** or an amount not greater than the outstanding balance.
-4. Select **Cash**.
-5. Save the receipt.
-6. Confirm the receipt succeeds and Counter Cash increases.
-7. Re-open the customer ledger and confirm the receipt is shown as a credit and the outstanding balance decreases.
+## Required SQA Execution Order
 
-### Step 7 — Test Custom Rate
-1. Open **POS** and create a sale.
-2. Select a line with a displayed standard rate.
-3. Change the rate manually to a different amount, for example standard **250** to applied **260**.
-4. Confirm the line is visibly identified as a custom rate.
-5. Post the sale.
-6. Open the receipt and confirm the applied rate is retained.
+1. Fresh installation/configuration.
+2. Login/permissions.
+3. Master data.
+4. Opening gas and physical-cylinder inventory.
+5. Counter Cash opening.
+6. Purchase/inventory receipt.
+7. POS filled-cylinder sale.
+8. KG refill.
+9. Cylinder exchange/intake/empty sale.
+10. Credit sale and customer receipt.
+11. Supplier credit purchase and supplier payment.
+12. Expense and manual cash movements.
+13. Inventory controls and wastage.
+14. Sale void/reversal.
+15. Reports and audit.
+16. Counter Cash close.
+17. End-to-end reconciliation.
 
-### Step 8 — Test Cylinder Exchange
-1. Open **POS**.
-2. Select **Cylinder Exchange**.
-3. Select a cylinder type and enter quantity **1**.
-4. Post the transaction using the appropriate payment information.
-5. Confirm the transaction succeeds.
-6. Check Inventory for the expected filled-cylinder/gas OUT and empty-cylinder IN effects.
+Do not manually correct database balances during testing. If a result is wrong, record the defect and reproduction steps.
 
-### Step 9 — Test Empty Cylinder Intake
-1. Open **POS**.
-2. Select **Empty Intake**.
-3. Select a cylinder type and quantity **1**.
-4. Post the transaction.
-5. Confirm empty-cylinder stock increases by **1** and is not increased twice.
+---
 
-### Step 10 — Test Empty Cylinder Sale
-1. Open **POS**.
-2. Select **Empty Sale**.
-3. Select a cylinder type with available empty stock.
-4. Enter quantity **1** and a valid rate.
-5. Post the transaction.
-6. Confirm empty-cylinder stock decreases by **1**.
-7. If the requested quantity is greater than available stock, confirm the application rejects the transaction without partial posting.
+## Environment Notes
 
-### Step 11 — Test Purchase
-1. Open **Purchases**.
-2. Select a Phase 2 test supplier.
-3. Add a small purchase line, for example **20 kg gas** or **1 filled cylinder**.
-4. For a filled-cylinder purchase, enter Actual Gas KG per cylinder. Verify the value cannot exceed the cylinder capacity and may be lower than capacity.
-5. Confirm the purchased filled cylinder appears in POS with its actual gas weight.
-6. Enter a valid rate and leave discount at **0**.
-7. Select **Cash** and enter the exact total.
-8. Post the purchase.
-9. Confirm the purchase succeeds, inventory increases, the physical cylinder unit is available in POS, and Counter Cash decreases by the cash payment.
+- PHP 8.2+ with intl, mbstring and MySQLi.
+- MySQL 8+ / InnoDB.
+- Run `database/schema.sql` on a fresh database.
+- For an existing database, run the required physical-cylinder migration:
+  `database/migrations/20260930_per_cylinder_inventory.sql`
+- Local configuration should be created from `.env.example`.
+- The repository intentionally does not contain a local `.env`.
 
-### Step 12 — Test Inventory Adjustment
-1. Open **Inventory**.
-2. Create an **IN** adjustment for quantity **1** with reason **SQA test adjustment**.
-3. Confirm stock increases by 1.
-4. Attempt an **OUT** adjustment greater than available stock.
-5. Confirm the application rejects the adjustment and does not create a negative balance or partial movement.
+## Automated Tests
 
-### Step 13 — Test Manual Cash IN and OUT
-1. Open **Counter Cash** while the session is open.
-2. Post Cash IN of **Rs. 100** with reason **SQA test**.
-3. Confirm Cash In/Expected values change appropriately.
-4. Post Cash OUT of **Rs. 50** with reason **SQA test**.
-5. Confirm Cash Out/Expected values change appropriately.
+The repository contains CodeIgniter/PHPUnit framework example tests, but the business-specific functional test suite is primarily represented by the browser/DB SQA matrix in **SQA.md**.
 
-### Step 14 — Test Expense
-1. Open **Expenses**.
-2. Select an expense category.
-3. Enter **Rs. 100**.
-4. Select **Cash**.
-5. Enter description **SQA test expense**.
-6. Save.
-7. Confirm the expense appears in recent expenses and Counter Cash reflects the cash OUT.
+The current development environment used for this review did not provide the user's local Apache/MySQL/browser runtime, so no local browser test is being falsely marked PASS here.
 
-### Step 15 — Test Supplier Payment
-1. Open **Supplier Payments**.
-2. Select the test supplier.
-3. Enter a small payment.
-4. Select **Cash**.
-5. Save.
-6. Confirm the supplier payment succeeds and Counter Cash reflects the cash OUT.
+## Release Gate
 
-### Step 16 — Test Reports and Audit
-1. Open **Reports** and verify today's sales, purchases, payment-mode summary and credit totals against the transactions you posted.
-2. Open **Customer Ledger** and reconcile the test customer's opening balance, credit sales and receipts.
-3. Open **Inventory** and reconcile gas, filled-cylinder and empty-cylinder stock to the transactions performed.
-4. Open **Audit** and confirm operational create actions are recorded with user, location, entity and timestamp.
-
-### Step 17 — Close Counter Cash
-1. Return to **Counter Cash**.
-2. Review the displayed Expected Cash.
-3. Count the actual cash physically present.
-4. Enter the counted amount.
-5. Click **Close Session**.
-6. Confirm the session closes and the displayed difference equals **Counted Cash - Expected Cash**.
-7. Record the counted cash, expected cash and difference in the Evidence / Test Data section for the cash test.
-
-### What to Send When a Test Fails
-For every failure, record:
-- Screen/function name.
-- Exact values entered.
-- Button/action performed.
-- Complete PHP/SQL/browser error text, if any.
-- Reproduction steps.
-- Screenshot, where possible.
-
-Example: **POS → Filled Cylinder → Customer Test Customer → C11_8 → Qty 1 → Rate 250 → Cash 250 → Post Sale → error: APPPATH\\Services\\CashService.php line 32**.
-
-## SQA Test Results — Current Retest
-
-| Test | Result | Notes |
-|---|---|---|
-| Login / Dashboard | PASS | User retest completed previously. |
-| Counter Cash — open session | PASS | Session opened successfully; expected-cash double-count issue corrected in code. |
-| POS — normal filled-cylinder cash sale | PASS | Sale posted and receipt flow passed. |
-| POS — actual per-cylinder fill weight | READY FOR RETEST | Physical cylinder units and actual gas weights are now implemented; run Steps 2A and 2B. |
-| Cash History | READY FOR RETEST | New screen added after SQA request; verify locally. |
-| POS stock visibility / transaction hints | READY FOR RETEST | UI enhancement added, duplicate POS heading removed, and per-cylinder stock display added; verify locally. |
-
-**Important:** A PASS above records only the functions the user explicitly reported as passed. New code changes after that test cycle are marked READY FOR RETEST, not PASS.
-
-## Phase 3 — POS Sales (READY FOR USER TEST)
-- [x] POS screen: customer selection, line grid, totals, payments, validation.
-  - SQA Comments / Improvement Notes: User retest PASS. Future improvement: verify mixed-line behavior, client/server total agreement, empty-state validation, and that walk-in mode prevents non-cash payment selection. Confirm displayed OS is clearly distinguished from the resulting New OS.
-  - Evidence / Test Data:
-- [x] Filled cylinder sale: capacity-based gas/cylinder inventory OUT and applied package rate.
-  - SQA Comments / Improvement Notes: User retest PASS for the normal cash filled-cylinder sale and receipt. New SQA requirements recorded: show selected cylinder stock, clarify gas-stock handling, support actual per-cylinder fill weight (including partial fills up to capacity), and keep transaction terminology/hints user-friendly. Current implementation tracks physical filled-cylinder units and actual gas weight per unit; historical migrated units use rated capacity because historical per-cylinder weights were not stored.
-  - Evidence / Test Data:
-- [ ] KG refill: KG-based gas inventory OUT and gas/kg rate.
-  - SQA Comments / Improvement Notes: Verify fractional KG precision and that the displayed rate is per KG, not per cylinder.
-  - Evidence / Test Data:
-- [ ] Cylinder exchange: filled cylinder + gas OUT and empty cylinder IN.
-  - SQA Comments / Improvement Notes: Verify exchange defaults empty return quantity to the sold quantity and all three inventory effects post together.
-  - Evidence / Test Data:
-- [ ] Empty cylinder intake: empty-cylinder inventory IN.
-  - SQA Comments / Improvement Notes: Confirm intake is not allowed through the filled-cylinder scenario and that the empty-cylinder stock increases only once.
-  - Evidence / Test Data:
-- [ ] Empty cylinder sale: empty-cylinder inventory OUT.
-  - SQA Comments / Improvement Notes: Verify negative empty stock is rejected and the sale stores the actual applied amount.
-  - Evidence / Test Data:
-- [ ] Cash / cheque / online / credit: payment validation and walk-in restrictions.
-  - SQA Comments / Improvement Notes: SQA improvement to confirm reference-number rules for cheque/online once the open business decision is confirmed. Cash payments now require an open Counter Cash session and post to that session atomically; cheque/online do not enter Counter Cash.
-  - Evidence / Test Data:
-- [ ] Credit-limit enforcement: Previous OS + Current Credit must not exceed Credit Limit.
-  - SQA Comments / Improvement Notes: Test exact-limit acceptance and one-cent-over-limit rejection; include opening balance and posted receipts in the OS calculation.
-  - Evidence / Test Data:
-- [ ] Previous OS + Current Credit = New OS: customer balance calculation and display.
-  - SQA Comments / Improvement Notes: Verify the formula against the customer ledger after posting and ensure the POS display uses the same posted-balance source.
-  - Evidence / Test Data:
-- [ ] Custom-rate detection: applied rate differs from standard rate and is flagged.
-  - SQA Comments / Improvement Notes: Verify both higher and lower custom rates, and confirm the standard rate and applied rate remain visible on the stored sale line.
-  - Evidence / Test Data:
-- [ ] Atomic inventory + financial posting: sale, items, payments, inventory movements and cash movement commit or roll back together.
-  - SQA Comments / Improvement Notes: POS posting now includes cash-session sale_cash movement when cash is used. A missing open session must roll back the entire sale. Verify forced failures leave no partial sale/payment/inventory/cash rows.
-  - Evidence / Test Data:
-- [ ] Receipt / print: print-friendly receipt route implemented and ready for user test with browser print preview/thermal-width layout.
-  - SQA Comments / Improvement Notes: Verify sale number, customer/walk-in identity, line quantities/rates, totals, payment modes and print layout. Confirm voided sales are visibly distinguishable if a receipt is opened after void.
-  - Evidence / Test Data:
-- [ ] Sale void / reversal: service and POS_VOID-protected route implemented and ready for user test.
-  - SQA Comments / Improvement Notes: Verify inventory reversal, sale status='voided', retained original sale/payment rows, required void reason, duplicate-void rejection, and customer OS reversal for credit sales.
-  - Evidence / Test Data:
-Phase 3 status: READY FOR USER TEST — functional POS, cash-session linkage, receipt and void/reversal scope is implemented. Transaction-integrity hardening tests are postponed separately and are NOT a prerequisite for this functional test cycle.
-
-### Phase 3 Hardening / Cash Control Checks — POSTPONED (DO NOT TEST YET)
-- [ ] Cash session concurrency: two open attempts against the same register must not create two open sessions.
-  - SQA Comments / Improvement Notes: Register-row locking is implemented. Verify duplicate-open prevention under rapid/concurrent requests and confirm only one session remains open.
-  - Evidence / Test Data:
-- [ ] Cash session close integrity: closing a session must lock the session state and calculate expected cash from the committed transaction set.
-  - SQA Comments / Improvement Notes: Session-row locking and post-lock summary calculation are implemented. Verify a second close is rejected and cash sales cannot post after the session is closed.
-  - Evidence / Test Data:
-- [ ] Sale void cash reversal idempotency: a posted cash sale must produce one cash reversal only.
-  - SQA Comments / Improvement Notes: Sale-row locking and duplicate reversal defense are implemented. Verify repeated void attempts are rejected and no duplicate cash-out reversal is created.
-  - Evidence / Test Data:
-- [ ] Inventory concurrency: concurrent sales consuming the same inventory key must not oversell stock.
-  - SQA Comments / Improvement Notes: MySQL named inventory locks are acquired in deterministic key order for each posting/void. Verify two concurrent sales cannot both pass the same stock assertion when combined quantity exceeds available stock.
-  - Evidence / Test Data:
-- [ ] Customer credit concurrency: concurrent credit sales for the same customer must not bypass the credit limit.
-  - SQA Comments / Improvement Notes: Customer row is locked and the credit limit is rechecked inside the posting transaction. Verify two concurrent credit sales cannot commit beyond the configured limit.
-  - Evidence / Test Data:
-- [ ] Cash session vs sale posting concurrency: a cash sale must not commit into a session after that session has been closed.
-  - SQA Comments / Improvement Notes: Cash session row is locked during cash-sale posting, so close waits for the sale transaction and vice versa. Verify no cash transaction can be committed after the session state is closed.
-  - Evidence / Test Data:
-
-
-## Phase 4 — Purchases & Inventory (READY FOR USER TEST)
-- [ ] Inventory Controls: shop default and cylinder-type stock-validation/wastage policies can be configured.
-  - SQA Comments / Improvement Notes: Verify ON blocks gas oversell; OFF requires explicit confirmation. Verify percentage/fixed-KG policy values persist and cylinder-type overrides take precedence.
-  - Evidence / Test Data:
-- [ ] Gas Wastage: record cylinder leakage/residual gas and convert filled physical cylinder to empty stock.
-  - SQA Comments / Improvement Notes: Verify gas loss cannot exceed current cylinder gas, empty stock increases exactly once, and the wastage report is filterable by date/type.
-  - Evidence / Test Data:
-- [ ] Purchase entry: create a purchase with gas KG, filled cylinders and empty cylinders, calculate totals and post supplier/payment records.
-  - SQA Comments / Improvement Notes: Verify line validation, discount calculation, supplier credit behavior, inventory IN and cash-session linkage for cash payments.
-  - Evidence / Test Data:
-- [ ] Inventory service / stock view: verify opening balances plus posted movements produce current stock.
-  - SQA Comments / Improvement Notes: Compare displayed stock with SQL-calculated opening + IN - OUT for gas, filled and empty cylinders.
-  - Evidence / Test Data:
-- [ ] Stock adjustments: post authorized inventory IN/OUT adjustments with reason.
-  - SQA Comments / Improvement Notes: Verify zero/negative quantities are rejected and OUT cannot reduce stock below zero.
-  - Evidence / Test Data:
-- [ ] Negative-stock protection: attempted sale/adjustment beyond available stock is rejected without partial posting.
-  - SQA Comments / Improvement Notes: Verify both gas and cylinder stock boundaries.
-  - Evidence / Test Data:
-- [ ] Inventory reports: stock view is readable and location-scoped.
-  - SQA Comments / Improvement Notes: Verify all active cylinder types and gas stock are visible.
-  - Evidence / Test Data:
-Phase 4 status: READY FOR USER TEST
-
-## Phase 5 — Counter Cash & Expenses (READY FOR USER TEST)
-- [x] Cash register/session: open, summary and close a counter session.
-  - SQA Comments / Improvement Notes: User retest PASS for opening the session. Expected-cash calculation was reviewed and corrected so the opening float is not double-counted. Cash History was added with date-range filtering and transaction details.
-  - Evidence / Test Data:
-- [ ] Cash IN/OUT: manual cash movements post to the active session.
-  - SQA Comments / Improvement Notes: Verify direction, amount and reason appear in the cash total.
-  - Evidence / Test Data:
-- [ ] Expenses: post cash, cheque and online expenses.
-  - SQA Comments / Improvement Notes: Verify cash expenses affect Counter Cash and non-cash expenses do not.
-  - Evidence / Test Data:
-- [ ] Customer receipts: post cash, cheque and online receipts.
-  - SQA Comments / Improvement Notes: Verify customer balance decreases by posted receipts and cash receipts affect Counter Cash.
-  - Evidence / Test Data:
-- [ ] Supplier payments: post cash, cheque and online supplier payments.
-  - SQA Comments / Improvement Notes: Verify cash payments affect Counter Cash and payment records remain linked to supplier.
-  - Evidence / Test Data:
-- [ ] Handover / cash movement foundation: manual cash movement is available for operational handover support.
-  - SQA Comments / Improvement Notes: Confirm reason/notes are mandatory in operational practice; formal multi-register handover remains dependent on business decision.
-  - Evidence / Test Data:
-- [ ] Close/reconcile: close an open session and compare counted cash with expected cash.
-  - SQA Comments / Improvement Notes: Verify difference is calculated and session cannot be treated as open afterward.
-  - Evidence / Test Data:
-Phase 5 status: READY FOR USER TEST
-
-## Phase 6 — Reports & Audit (READY FOR USER TEST)
-- [ ] Customer ledger/report: customer credit sales and receipts are traceable.
-  - SQA Comments / Improvement Notes: Verify opening balance, credit sales and receipts reconcile to current OS.
-  - Evidence / Test Data:
-- [ ] Supplier ledger/report: supplier credit purchases and payments are traceable.
-  - SQA Comments / Improvement Notes: Verify supplier outstanding calculation against posted purchase/payment data.
-  - Evidence / Test Data:
-- [ ] Daily transactions: daily sales/purchases summary is location-scoped and excludes voided transactions where appropriate.
-  - SQA Comments / Improvement Notes: Compare summary totals to transaction rows.
-  - Evidence / Test Data:
-- [ ] Custom-rate report: custom-rate sales are identifiable from stored applied/standard rate flags.
-  - SQA Comments / Improvement Notes: Verify higher and lower custom rates are retained for later reporting.
-  - Evidence / Test Data:
-- [ ] Stock report: current gas and cylinder stock is visible.
-  - SQA Comments / Improvement Notes: Reconcile report values to inventory movement totals.
-  - Evidence / Test Data:
-- [ ] Counter cash reconciliation: daily expected vs counted cash is visible from session close.
-  - SQA Comments / Improvement Notes: Verify opening + IN - OUT calculation.
-  - Evidence / Test Data:
-- [ ] Daily expenses: expense entries are recorded with category, amount and payment mode.
-  - SQA Comments / Improvement Notes: Verify cash/non-cash treatment.
-  - Evidence / Test Data:
-- [ ] Outstanding balances: customer and supplier outstanding foundations can be reconciled to ledgers.
-  - SQA Comments / Improvement Notes: Verify voided sales are excluded from customer OS.
-  - Evidence / Test Data:
-- [ ] Audit log: operational create actions are recorded with user, location, entity and timestamp.
-  - SQA Comments / Improvement Notes: Verify audit entries do not expose passwords or sensitive secrets.
-  - Evidence / Test Data:
-Phase 6 status: READY FOR USER TEST
-
-## Test Environment
-- OS:
-- PHP version:
-- CodeIgniter version:
-- MySQL version:
-- Browser:
-- Local URL: http://localhost:180/LPG2/LPG/public/
-
-## Tester Notes
-> Add screenshots, SQL errors, PHP errors or unexpected business behavior here.
-
-## Developer Rule
-A module is not complete until its tests are PASS. FAIL results become the next fix cycle; development does not silently skip failed tests.
+Development is considered functionally complete for the defined scope when:
+- all required implementation items above remain present;
+- SQA executes SQA.md;
+- every required case is PASS or has an explicitly accepted documented exception;
+- all FAIL cases are fixed and re-tested;
+- final SQA sign-off is completed.
