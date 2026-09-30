@@ -57,6 +57,16 @@ Production-ready POS + ERP for LPG retail operations.
 - Outstanding balances
 - Payment-mode analysis
 
+## SQA-Confirmed Inventory Control & Wastage Requirements
+- Stock validation must be configurable at shop/location level, with optional cylinder-type overrides.
+- When stock validation is ON, gas sales must not exceed available gas stock.
+- When stock validation is OFF, a gas sale that exceeds available stock requires an explicit user confirmation and the override must be traceable.
+- The system must provide a separate gas-wastage report with date-range and cylinder-type filtering.
+- A filled physical cylinder can be converted to empty stock through an authorized inventory wastage/leakage adjustment. The gas lost is deducted from gas inventory and recorded with physical cylinder, user, date and reason.
+- Wastage policy must support percentage or fixed-KG configuration, at shop level with cylinder-type override capability.
+- Residual gas/wastage from a cylinder that is made empty must never exceed the cylinder's current actual gas weight.
+- Inventory control and wastage actions must be atomic and auditable.
+
 ## Open Business Decisions
 1. Can one sale contain multiple scenarios?
 2. Are cylinder serial numbers required?
