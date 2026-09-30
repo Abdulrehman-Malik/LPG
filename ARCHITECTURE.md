@@ -52,7 +52,7 @@ Cheque and online payments create no Counter Cash movement.
 
 ### RateService
 - Current gas/KG rate.
-- Current cylinder package rate.
+- Current cylinder price rate.
 - Effective-dated rate history.
 - Old/new change log.
 - Rate override authorization.
@@ -88,16 +88,17 @@ customer_id = NULL means:
 - no cylinder return/intake
 - no customer outstanding
 
-## Six Scenarios
+## Five POS Transaction Scenarios
 
-| Scenario | Gas | Filled cylinder | Empty cylinder |
-|---|---:|---:|---:|
-| Filled cylinder sale | OUT by actual physical-unit gas weight | OUT | Optional IN |
-| Refill service | OUT by KG | No change | No shell change |
-| Cylinder exchange | OUT by actual physical-unit gas weight | OUT | IN |
-| Empty intake | No change | No change | IN |
-| Empty sale | No gas | No change | OUT |
-| Customer receipt | No change | No change | No change |
+| Scenario | Gas | Filled cylinder | Empty cylinder | Price |
+|---|---:|---:|---:|---|
+| Sell Gas Only | OUT by entered KG | Source physical unit is partially consumed or converted to empty when fully consumed | IN only when a source unit is fully consumed | Gas/KG only |
+| Same-Capacity Replacement | OUT by actual filled-unit gas | OUT | IN same type | Gas/KG only |
+| Filled + Gas | OUT by actual filled-unit gas | OUT | No return | Gas/KG + cylinder price |
+| Different-Capacity Replacement | OUT by actual filled-unit gas | OUT | IN received type | Gas/KG + cylinder price |
+| Empty Only | No change | No change | OUT | Cylinder price only |
+
+Every posted scenario is part of the sales/payment ledger. Customer credit increases only by the credit portion of the posted sale, subject to the customer's credit limit.
 
 ## POS UX
 
