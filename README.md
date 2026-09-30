@@ -43,8 +43,8 @@ The POS no longer contains a separate default-transaction preference control. It
 
 1. Create/configure a MySQL 8+ database.
 2. Configure the local environment from `.env.example`.
-3. Run `database/schema.sql` on a fresh database.
-4. For an existing database, run `database/migrations/20260930_shop_settings.sql`.
+3. Run `database/schema.sql` on the database.
+4. Run `database/migrations/20260930_shop_settings.sql` once after the schema (fresh or existing database).
 5. Run Composer dependencies: `composer install`.
 6. Point Apache/Nginx to the project's `public` directory.
 7. Open the application and log in with the configured user.
