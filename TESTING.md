@@ -30,14 +30,11 @@ The requested functional scope is implemented and the repository has undergone a
 - Customers/parties and customer ledger.
 - Suppliers and supplier ledger.
 - Cylinder types and capacity validation.
-- LPG gas/kg and cylinder-package rates with history.
+- LPG gas/kg and cylinder-price rates with history.
 - Users, roles and permissions.
 - Opening inventory.
 - Physical cylinder-unit inventory with per-cylinder actual gas weight.
-- POS filled-cylinder sales.
-- POS KG refill.
-- POS cylinder exchange.
-- Empty-cylinder intake and sale.
+- POS five-mode transaction model: Sell Gas Only; Same-Capacity Replacement; Filled + Gas; Different-Capacity Replacement; Empty Only.
 - Cash/cheque/online/credit payments.
 - Customer credit-limit enforcement.
 - Customer receipts.
@@ -63,6 +60,14 @@ A filled physical cylinder has:
 - a physical unit code;
 - an actual gas weight between 0 and capacity;
 - a status: filled, empty or sold.
+
+POS transaction behavior is explicit:
+- **Sell Gas Only:** gas stock decreases by entered KG; the user selects the filled-cylinder type used as the source. Full consumption converts that physical source cylinder to empty; partial consumption leaves the source cylinder filled with its remaining actual gas.
+- **Same-Capacity Replacement:** customer returns an empty cylinder and receives a filled cylinder of the same type; gas is charged by actual gas weight and the returned empty is added to physical stock.
+- **Filled + Gas:** gas is charged by actual gas weight plus cylinder price; gas and filled-cylinder stock decrease.
+- **Different-Capacity Replacement:** same as Filled + Gas, but the returned empty cylinder is a different type/capacity.
+- **Empty Only:** only empty-cylinder stock is reduced; gas stock is unchanged.
+- Users can save their preferred POS transaction type as their default in the browser for their logged-in user.
 
 Selling a filled cylinder deducts its **actual gas weight**, not automatically its rated capacity.
 
@@ -197,8 +202,7 @@ Do not manually correct database balances during testing. If a result is wrong, 
 - PHP 8.2+ with intl, mbstring and MySQLi.
 - MySQL 8+ / InnoDB.
 - Run `database/schema.sql` on a fresh database.
-- For an existing database, run the required physical-cylinder migration:
-  `database/migrations/20260930_per_cylinder_inventory.sql`
+- For an existing database, preserve the current physical-cylinder tables and data; the five POS modes do not require a schema migration because they use the existing sales, sale_items and inventory movement structures.
 - Local configuration should be created from `.env.example`.
 - The repository intentionally does not contain a local `.env`.
 
