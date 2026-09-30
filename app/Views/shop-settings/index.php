@@ -8,6 +8,7 @@
     <span class="badge text-bg-secondary">Branch configuration</span>
 </div>
 
+<?php if(empty($settings['id'])): ?><div class="alert alert-warning"><strong>Shop Settings storage is not initialized.</strong> Run <code>database/migrations/20260930_shop_settings.sql</code> once on this existing database, then refresh this page.</div><?php endif; ?>
 <form method="post" action="<?= site_url('shop-settings/save') ?>">
 <?= csrf_field() ?>
 <div class="card shadow-sm">
