@@ -44,7 +44,7 @@ class Suppliers extends Controller
             'is_active'=>$this->request->getPost('is_active') ? 1 : 0,
         ];
         if($data['name']==='') return redirect()->back()->withInput()->with('error','Supplier name is required.');
-        if($id) $this->model->update($id,$data); else $this->model->insert($data);
+        try { if($id) $this->model->update($id,$data); else $this->model->insert($data); } catch (\Throwable $e) { return redirect()->back()->withInput()->with('error','Supplier could not be saved. Check the code for duplicates.'); }
         return redirect()->to('/suppliers')->with('success',$id?'Supplier updated.':'Supplier created.');
     }
 }
