@@ -151,6 +151,18 @@ Phase 2 status: PASS — USER RETEST COMPLETE
   - Evidence / Test Data:
 Phase 3 status: IN DEVELOPMENT — POS CASH-SESSION POSTING IMPLEMENTED; CASH SESSION UI/FUNCTIONS ARE READY FOR USER TESTING, BUT PHASE 3 END-TO-END USER TEST IS STILL BLOCKED UNTIL THE REMAINING HARDENING CHECKS ARE COMPLETE
 
+### Phase 3 Hardening / Cash Control Checks
+- [ ] Cash session concurrency: two open attempts against the same register must not create two open sessions.
+  - SQA Comments / Improvement Notes: Verify duplicate-open prevention under rapid/concurrent requests and confirm only one session remains open.
+  - Evidence / Test Data:
+- [ ] Cash session close integrity: closing a session must lock the session state and calculate expected cash from the committed transaction set.
+  - SQA Comments / Improvement Notes: Verify a second close is rejected and cash sales cannot post after the session is closed.
+  - Evidence / Test Data:
+- [ ] Sale void cash reversal idempotency: a posted cash sale must produce one cash reversal only.
+  - SQA Comments / Improvement Notes: Verify repeated void attempts are rejected and no duplicate cash-out reversal is created.
+  - Evidence / Test Data:
+
+
 ## Test Environment
 - OS:
 - PHP version:
