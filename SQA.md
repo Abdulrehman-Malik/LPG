@@ -67,6 +67,22 @@ For financial/inventory cases, capture enough evidence to reconcile:
 | B11 | Cylinder price rate | Set cylinder price for SQA cylinder | POS resolves correct cylinder price for types 3, 4 and 5 | | | NOT EXECUTED |
 | B12 | User/role create/edit | Create SQA user, assign role, edit without password | Role changes persist and blank password does not overwrite existing password | | | NOT EXECUTED |
 
+## C. Shop Settings and Branch Configuration
+
+| ID | Use case | Input / Steps | Expected output / result | Actual result | Comments | Status |
+|---|---|---|---|---|---|---|
+| C01 | Open Shop Settings | Open Shop Settings as Admin/Manager | Professional tabbed configuration page loads for the current branch | | | NOT EXECUTED |
+| C02 | General branch settings | Change branch name/address/city/phone and save | Location details persist and are used by branch UI/receipts | | | NOT EXECUTED |
+| C03 | POS default transaction | Set default to one of the five transaction types; open POS | First POS line uses the configured branch default; no default selector appears on POS | | | NOT EXECUTED |
+| C04 | Default payment mode | Set default payment to Cash/Cheque/Online/Credit; open POS and add payment | New payment defaults to configured branch payment mode, subject to walk-in restrictions | | | NOT EXECUTED |
+| C05 | Stock validation ON | Enable Stock Validation at Sale; attempt gas overstock sale | Sale is blocked when applicable | | | NOT EXECUTED |
+| C06 | Stock validation OFF | Disable Stock Validation; attempt over-stock gas sale | Sale requires explicit override confirmation | | | NOT EXECUTED |
+| C07 | Stock override disabled | Disable both stock validation and stock override | Over-stock gas sale is rejected even if user confirms | | | NOT EXECUTED |
+| C08 | Receipt configuration | Change receipt title/footer/address display | New values appear on printed POS receipt | | | NOT EXECUTED |
+| C09 | Backup configuration | Save backup URL/endpoint and maintenance notes | Values persist; POS does not execute the URL automatically | | | NOT EXECUTED |
+| C10 | Access control | Login as cashier and open Shop Settings | Access denied; branch configuration remains protected | | | NOT EXECUTED |
+| C11 | Branch isolation | In multi-location test data, change current branch settings | Only the active branch's settings change | | | NOT EXECUTED |
+
 ## C. Opening Inventory and Physical Cylinders
 
 | ID | Use case | Input / Steps | Expected output / result | Actual result | Comments | Status |
