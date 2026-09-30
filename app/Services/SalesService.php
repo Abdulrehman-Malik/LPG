@@ -130,12 +130,31 @@ class SalesService
                 if($credit>0 && $this->customerBalance($customerId)+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
             }
             $this->acquireInventoryLocks($locationId,$inventory);
-            $policy=(new InventoryControlService())->policy($locationId);
             $overrideConfirmed=!empty($payload['stock_override_confirmed']);
+            $control=new InventoryControlService();
+            $gasGroups=[];
             foreach($inventory as $m){
-                $skipGasValidation=$m['type']==='gas_kg' && $m['direction']==='out' && !$policy['stock_validation_enabled'];
-                if($skipGasValidation && !$overrideConfirmed) throw new RuntimeException('Gas stock validation is OFF. Confirm the stock override before posting this sale.');
-                if(!$skipGasValidation) $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
+                if($m['type']!=='gas_kg' || $m['direction']!=='out') continue;
+                $lineNo=(int)$m['line_no'];
+                $line=$prepared[$lineNo-1]??null;
+                $policyTypeId=($line && in_array($line['line_type'],['filled_cylinder','cylinder_exchange'],true))?(int)$line['cylinder_type_id']:null;
+                if(!isset($gasGroups[$lineNo])) $gasGroups[$lineNo]=['qty'=>0,'type_id'=>$policyTypeId];
+                $gasGroups[$lineNo]['qty']+=(float)$m['quantity'];
+            }
+            $virtualGasStock=(new InventoryService())->stock($locationId,'gas_kg',null,$transactionAt);
+            foreach($gasGroups as $group){
+                $policy=$control->policy($locationId,$group['type_id']);
+                $qty=(float)$group['qty'];
+                if(!(int)$policy['stock_validation_enabled']){
+                    if(!$overrideConfirmed) throw new RuntimeException('Gas stock validation is OFF. Confirm the stock override before posting this sale.');
+                }elseif($virtualGasStock+0.00001<$qty){
+                    throw new RuntimeException('Insufficient gas stock. Available: '.number_format($virtualGasStock,3).' kg; required: '.number_format($qty,3).' kg.');
+                }
+                $virtualGasStock-=$qty;
+            }
+            foreach($inventory as $m){
+                if($m['type']==='gas_kg') continue;
+                $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
             }
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
             $scenarioTypes=array_values(array_unique(array_column($lines,'line_type')));
