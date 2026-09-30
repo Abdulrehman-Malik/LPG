@@ -77,15 +77,15 @@ Error / notes:
 > Write here.
 
 ## Phase 2 — Master Data (READY FOR TEST)
-- [!] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link.
-- [!] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link.
+- [ ] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.**
+- [ ] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.**
 - [X] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
 - [X] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
-- [!] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked.
+- [ ] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.**
 - [x] Opening Inventory: gas KG, filled cylinders and empty cylinders, date/type uniqueness, non-negative validation.
-- [!] Customer ledger: opening balance + posted credit sales - posted receipts. (notfound)
-- [!] Supplier ledger: opening balance + posted credit purchases - posted supplier payments.(notfound)
-Phase 2 status: READY FOR TEST
+- [ ] Customer ledger: opening balance + posted credit sales - posted receipts. **Retest after fixes.**
+- [ ] Supplier ledger: opening balance + posted credit purchases - posted supplier payments. **Retest after fixes.**
+Phase 2 status: FIXES READY FOR RETEST
 ## Phase 3 — POS Sales (DO NOT TEST YET)
 - [ ] Filled cylinder sale
 - [ ] KG refill
