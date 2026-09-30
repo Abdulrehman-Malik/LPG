@@ -225,38 +225,21 @@ Development is considered functionally complete for the defined scope when:
 - final SQA sign-off is completed.
 
 
-## SQA — POS Display and Shop Font Setting (READY FOR USER TEST)
-
-### POS Display
-- [ ] Open POS Sales and confirm the previous transaction help/hint box is no longer displayed.
-- [ ] Confirm the POS transaction selector and sales controls remain usable without the removed hint box.
-
-### POS Font Size
-1. Open **Shop Settings → POS & Sales**.
-2. Set **POS Font Size (px)** to a test value such as **12** and save.
-3. Open/refresh **POS Sales** and confirm the POS text and controls use the configured size.
-4. Change the setting to **18** and save; refresh POS and confirm the size changes accordingly.
-5. Open Dashboard, Customers, Inventory, Cash and another non-POS page; confirm their normal font size is unchanged.
-6. Refresh/reopen POS and confirm the selected font size persists.
-7. Attempt an invalid value below 10 or above 24 and confirm Shop Settings rejects it.
-
-**SQA Comments / Improvement Notes:**
-
-**Evidence / Test Data:**
-
 
 ## SQA — Global Application Appearance (READY FOR USER TEST)
 
+**Latest fix:** Shared layout now loads saved Shop Settings before generating global CSS variables. This ensures theme, font size, font style, primary color and accent color are applied after saving.
+
 1. Open **Shop Settings → Appearance**.
-2. Select **Light** theme, save, and verify the application uses the light theme across Dashboard, POS, Inventory, Customers, Cash and Reports.
-3. Select **Dark** theme, save, and verify all authenticated application pages use the dark theme consistently.
-4. Change **Application Font Size** to 12 px and verify text and controls across multiple pages become smaller.
-5. Change it to 18 px and verify text and controls across multiple pages become larger.
-6. Change **Font Style** and verify the selected font is used across the application.
-7. Change **Primary Color** and **Accent Color** and verify navigation/branding/action accents reflect the selected colors throughout the application.
-8. Verify appearance settings persist after logout/login and page refresh.
-9. Verify unsupported font/theme/color values are rejected by server validation.
-10. Verify POS no longer has a separate POS-only font-size setting; the global application setting controls it.
+2. Change **Theme**, **Application Font Size**, **Font Style**, **Primary Color**, and **Accent Color** one at a time; save after each change.
+3. Confirm the change is visible immediately after the redirected Shop Settings page loads.
+4. Open/refresh Dashboard, POS, Inventory, Customers, Cash and Reports; confirm the selected appearance is applied globally.
+5. Log out and log back in; confirm the selected appearance persists.
+6. Change font size to 12 and 18 and verify multiple pages change accordingly.
+7. Change font style and verify the selected family is used across the application.
+8. Change primary/accent colors and verify sidebar, navigation active state and action accents reflect the saved values.
+9. Change back to Light/default colors after testing.
+10. Verify invalid theme/font/color/font-size values are rejected by server validation.
 
 **SQA Comments / Improvement Notes:**
 
