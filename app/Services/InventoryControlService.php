@@ -44,7 +44,7 @@ class InventoryControlService
             $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'empty','gas_weight_kg'=>0]);
             if(!$this->db->transStatus()) throw new RuntimeException('Wastage posting failed.');
             $this->db->transCommit();
-        }catch(Throwable $e){$this->db->transRollback();throw $e;}
+        }catch(\Throwable $e){$this->db->transRollback();throw $e;}
     }
 
     public function wastage(int $locationId, ?string $from=null, ?string $to=null, ?int $typeId=null): array
