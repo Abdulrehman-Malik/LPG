@@ -166,6 +166,8 @@ while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 
 3. we can add cydlidner gas less than its capacity but not more than its capaicty. like we can have filled cylinder of type 20kg with actual filled gas as 18kg. so our gas stock will be 18kg for that specfic cylidner. this is must have feature.
 4.move this at top left side, "Cash session: OPEN — REG-01"
 5.Naming convention more user friendly and understndable to user for transaction type (like refill kg,empty intak, when user select the option show hint at the top what type of transction user is going to perform rule)
+6. Available stock is not showing anywhere in POS screen whne i select cylidner, it showuld reflect.
+7.also POS Sales is shwoing two time in page, remove 2nd one keep the first one as it is so space can be bigger.
 ### Step 3 — Verify Inventory After the Sale
 1. Open **Inventory**.
 2. Find the cylinder type sold in Step 2.
