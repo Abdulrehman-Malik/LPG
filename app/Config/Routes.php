@@ -5,7 +5,7 @@ $routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $r
 $routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
     $routes->get('dashboard','Dashboard::index');
     $routes->get('sales','Sales::index'); $routes->post('sales/save','Sales::save'); $routes->get('sales/receipt/(:num)','Sales::receipt/$1'); $routes->post('sales/void/(:num)','Sales::void/$1');
-    $routes->get('cash','Cash::index'); $routes->post('cash/open','Cash::open'); $routes->post('cash/close','Cash::close'); $routes->post('cash/move','Cash::move');
+    $routes->get('cash','Cash::index'); $routes->get('cash/history','Cash::history'); $routes->post('cash/open','Cash::open'); $routes->post('cash/close','Cash::close'); $routes->post('cash/move','Cash::move');
     $routes->get('purchases','Purchases::index'); $routes->post('purchases/save','Purchases::save');
     $routes->get('inventory','Inventory::index'); $routes->post('inventory/adjust','Inventory::adjust');
     $routes->get('expenses','Expenses::index'); $routes->post('expenses/save','Expenses::save');
