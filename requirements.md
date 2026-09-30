@@ -134,3 +134,13 @@ A requirement is marked Done only after implementation, validation, transaction 
 - POS font size must be configurable from Shop Settings at branch level.
 - POS font size must apply only to the POS/Sales page; other application pages must retain their normal font sizing.
 - POS font size must be validated to a safe configurable range and persist across POS page reloads.
+
+
+## Global Application Appearance Requirements
+- Shop Settings must provide a configurable application theme: Light or Dark.
+- Shop Settings must provide a configurable global application font size.
+- Shop Settings must provide a configurable global font style from the supported font list.
+- Shop Settings must provide configurable primary and accent colors.
+- Appearance settings are branch-level and apply consistently across the whole authenticated application through the shared layout.
+- Appearance settings must not be POS-only; all application pages use the same configured appearance.
+- Appearance values must be validated against supported themes, fonts, safe font-size bounds and six-digit hexadecimal colors.
