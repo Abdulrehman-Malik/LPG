@@ -223,3 +223,23 @@ Development is considered functionally complete for the defined scope when:
 - every required case is PASS or has an explicitly accepted documented exception;
 - all FAIL cases are fixed and re-tested;
 - final SQA sign-off is completed.
+
+
+## SQA — POS Display and Shop Font Setting (READY FOR USER TEST)
+
+### POS Display
+- [ ] Open POS Sales and confirm the previous transaction help/hint box is no longer displayed.
+- [ ] Confirm the POS transaction selector and sales controls remain usable without the removed hint box.
+
+### POS Font Size
+1. Open **Shop Settings → POS & Sales**.
+2. Set **POS Font Size (px)** to a test value such as **12** and save.
+3. Open/refresh **POS Sales** and confirm the POS text and controls use the configured size.
+4. Change the setting to **18** and save; refresh POS and confirm the size changes accordingly.
+5. Open Dashboard, Customers, Inventory, Cash and another non-POS page; confirm their normal font size is unchanged.
+6. Refresh/reopen POS and confirm the selected font size persists.
+7. Attempt an invalid value below 10 or above 24 and confirm Shop Settings rejects it.
+
+**SQA Comments / Improvement Notes:**
+
+**Evidence / Test Data:**
