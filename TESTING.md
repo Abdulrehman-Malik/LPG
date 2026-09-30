@@ -52,6 +52,7 @@ The requested functional scope is implemented and the repository has undergone a
 - Daily reports, ledgers and audit logging.
 - POS numeric rate inputs use 2-decimal increments.
 - Local environment file removed from source control; `.env.example` is provided.
+- Branch-level Shop Settings page with POS defaults, stock validation, receipt configuration and backup endpoint configuration.
 
 ### Important inventory behavior
 
@@ -67,7 +68,7 @@ POS transaction behavior is explicit:
 - **Filled + Gas:** gas is charged by actual gas weight plus cylinder price; gas and filled-cylinder stock decrease.
 - **Different-Capacity Replacement:** same as Filled + Gas, but the returned empty cylinder is a different type/capacity.
 - **Empty Only:** only empty-cylinder stock is reduced; gas stock is unchanged.
-- Users can save their preferred POS transaction type as their default in the browser for their logged-in user.
+- Branch administrators set the default POS transaction type in Shop Settings; the POS uses that branch default for new sales.
 
 Selling a filled cylinder deducts its **actual gas weight**, not automatically its rated capacity.
 
@@ -167,6 +168,7 @@ The following are now **READY FOR SQA** after development completion:
 - [ ] Daily reports.
 - [ ] Audit logging.
 - [ ] Browser regression and JavaScript error check.
+- [ ] Shop Settings and branch configuration.
 - [ ] End-to-end retail-day flow.
 
 Execute the complete matrix in **SQA.md** and record Actual Result, Comments and Status for every case.
@@ -204,6 +206,7 @@ Do not manually correct database balances during testing. If a result is wrong, 
 - Run `database/schema.sql` on a fresh database.
 - For an existing database, preserve the current physical-cylinder tables and data; the five POS modes do not require a schema migration because they use the existing sales, sale_items and inventory movement structures.
 - Local configuration should be created from `.env.example`.
+- Existing databases must run `database/migrations/20260930_shop_settings.sql` before using the Shop Settings page.
 - The repository intentionally does not contain a local `.env`.
 
 ## Automated Tests
