@@ -23,16 +23,16 @@ Legend:
 - [x] User reports PASS/FAIL in TESTING.md
 
 ## Phase 2 — Master Data
-- [/] Customers / Parties
-- [/] Suppliers
-- [/] Cylinder Types management
-- [/] LPG rate management + rate history
-- [/] Users / Roles / Permissions
-- [/] Opening inventory
-- [/] Customer/supplier ledgers
+- [x] Customers / Parties
+- [x] Suppliers
+- [x] Cylinder Types management
+- [x] LPG rate management + rate history
+- [x] Users / Roles / Permissions
+- [x] Opening inventory
+- [x] Customer/supplier ledgers
 
 ## Phase 3 — POS Sales
-- [ ] POS screen
+- [/] POS screen
 - [ ] Filled cylinder sale
 - [ ] KG refill
 - [ ] Cylinder exchange
