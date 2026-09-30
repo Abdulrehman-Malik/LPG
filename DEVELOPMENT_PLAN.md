@@ -90,6 +90,7 @@ Legend:
 - [x] Expenses
 - [x] Outstanding balance foundations
 - [x] Audit log
+- [x] Branch-level Shop Settings with POS defaults, sale stock validation, payment/receipt, and backup endpoint configuration.
 - [x] Phase 6 functional scope implemented and released for SQA
 
 ## Workflow Gate
@@ -104,6 +105,7 @@ Phase 3 transaction-integrity hardening tests are explicitly postponed by user r
 - [x] Cylinder-type stock-validation overrides enforced by POS posting.
 - [x] Customer and supplier receipt/payment balance limits enforced.
 - [x] Local environment configuration removed from source control.
+- [x] Branch Shop Settings moved POS defaults/configuration out of the POS screen.
 - [x] SQA.md created as the complete execution matrix.
 - [x] TESTING.md updated to the final functional SQA gate.
 
