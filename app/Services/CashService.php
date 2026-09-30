@@ -7,11 +7,11 @@ class CashService {
  public function __construct(){ $this->db=Database::connect(); }
  public function openSession(int $userId,int $locationId,float $openingCash,string $notes=''): int {
   if($openingCash<0) throw new RuntimeException('Opening cash cannot be negative.');
-  $register=$this->db->table('cash_registers')->where('location_id',$locationId)->where('is_active',1)->orderBy('id')->get()->getRowArray();
-  if(!$register) throw new RuntimeException('No active cash register exists for this location.');
-  if($this->db->table('cash_sessions')->where('register_id',$register['id'])->where('status','open')->get()->getRowArray()) throw new RuntimeException('An open cash session already exists for this register.');
   $this->db->transBegin();
   try {
+   $register=$this->db->query("SELECT * FROM cash_registers WHERE location_id=? AND is_active=1 ORDER BY id LIMIT 1 FOR UPDATE",[$locationId])->getRowArray();
+   if(!$register) throw new RuntimeException('No active cash register exists for this location.');
+   if($this->db->table('cash_sessions')->where('register_id',$register['id'])->where('status','open')->get()->getRowArray()) throw new RuntimeException('An open cash session already exists for this register.');
    $this->db->table('cash_sessions')->insert(['register_id'=>$register['id'],'opened_by'=>$userId,'opening_cash'=>$openingCash,'notes'=>trim($notes)?:null]);
    $id=(int)$this->db->insertID();
    if($openingCash>0) $this->db->table('cash_transactions')->insert(['cash_session_id'=>$id,'transaction_type'=>'opening_float','direction'=>'in','amount'=>$openingCash,'created_by'=>$userId,'notes'=>'Opening float']);
@@ -36,10 +36,12 @@ class CashService {
  }
  public function closeSession(int $sessionId,int $userId,float $countedCash,string $notes=''): array {
   if($countedCash<0) throw new RuntimeException('Counted cash cannot be negative.');
-  $summary=$this->summary($sessionId);
-  if($summary['session']['status']!=='open') throw new RuntimeException('Cash session is already closed.');
   $this->db->transBegin();
   try {
+   $session=$this->db->query("SELECT * FROM cash_sessions WHERE id=? FOR UPDATE",[$sessionId])->getRowArray();
+   if(!$session) throw new RuntimeException('Cash session not found.');
+   if($session['status']!=='open') throw new RuntimeException('Cash session is already closed.');
+   $summary=$this->summary($sessionId);
    $this->db->table('cash_sessions')->where('id',$sessionId)->update(['closed_by'=>$userId,'closed_at'=>date('Y-m-d H:i:s'),'counted_cash'=>$countedCash,'status'=>'closed','notes'=>trim($notes)?:$summary['session']['notes']]);
    if(!$this->db->transStatus()) throw new RuntimeException('Cash session could not be closed.');
    $this->db->transCommit(); return ['expected'=>$summary['expected'],'counted'=>$countedCash,'difference'=>$countedCash-$summary['expected']];
