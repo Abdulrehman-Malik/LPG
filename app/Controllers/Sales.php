@@ -54,7 +54,8 @@ class Sales extends Controller
         if(!$sale) return $this->response->setStatusCode(404)->setBody('Sale not found');
         $items=$db->table('sale_items')->where('sale_id',$id)->orderBy('line_no')->get()->getResultArray();
         $payments=$db->table('sale_payments')->where('sale_id',$id)->orderBy('id')->get()->getResultArray();
-        return view('sales/receipt',['sale'=>$sale,'items'=>$items,'payments'=>$payments]);
+        $shopSettings=(new \App\Models\ShopSettingsModel())->forLocation((int)session()->get('location_id')); $location=$db->table('locations')->where('id',(int)session()->get('location_id'))->get()->getRowArray() ?: [];
+        return view('sales/receipt',['sale'=>$sale,'items'=>$items,'payments'=>$payments,'shopSettings'=>$shopSettings,'location'=>$location]);
     }
 
     public function void(int $id)
