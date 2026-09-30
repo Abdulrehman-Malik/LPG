@@ -35,8 +35,10 @@ class Users extends Controller
         $data=['location_id'=>session()->get('location_id')?:null,'role_id'=>(int)$this->request->getPost('role_id'),'full_name'=>trim((string)$this->request->getPost('full_name')),'username'=>trim((string)$this->request->getPost('username')),'email'=>trim((string)$this->request->getPost('email'))?:null,'is_active'=>$this->request->getPost('is_active')?1:0];
         $password=(string)$this->request->getPost('password');
         if($data['full_name']===''||$data['username']===''||$data['role_id']<=0) return redirect()->back()->withInput()->with('error','Name, username and role are required.');
+        try {
         if($id){ if($password!=='') $data['password_hash']=password_hash($password,PASSWORD_DEFAULT); $this->users->update($id,$data); }
         else { if($password==='') return redirect()->back()->withInput()->with('error','Password is required for a new user.'); $data['password_hash']=password_hash($password,PASSWORD_DEFAULT); $this->users->insert($data); }
+        } catch (\Throwable $e) { return redirect()->back()->withInput()->with('error','User could not be saved. Username or email may already exist.'); }
         return redirect()->to('/users')->with('success',$id?'User updated.':'User created.');
     }
     public function rolePermissions()
