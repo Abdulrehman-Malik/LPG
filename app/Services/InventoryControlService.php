@@ -40,9 +40,8 @@ class InventoryControlService
             $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'wastage','source_id'=>0,'cylinder_unit_id'=>$unitId,'created_by'=>$userId,'notes'=>$reason]);
             $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'filled_cylinder','cylinder_type_id'=>$unit['cylinder_type_id'],'quantity'=>1,'direction'=>'out','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'wastage','source_id'=>0,'cylinder_unit_id'=>$unitId,'created_by'=>$userId,'notes'=>$reason]);
             $this->db->table('inventory_wastage_logs')->insert(['location_id'=>$locationId,'cylinder_type_id'=>$unit['cylinder_type_id'],'cylinder_unit_id'=>$unitId,'gas_weight_kg'=>$gasKg,'reason'=>$reason,'created_by'=>$userId]);
-            if($gasKg+0.00001<$current) $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'empty','gas_weight_kg'=>0]);
-            else $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'empty','gas_weight_kg'=>0]);
-            $this->db->table('cylinder_units')->insert(['location_id'=>$locationId,'cylinder_type_id'=>$unit['cylinder_type_id'],'unit_code'=>'EMPTY-'.date('YmdHis').'-'.random_int(1000,9999),'status'=>'empty','gas_weight_kg'=>0,'source_type'=>'wastage','source_id'=>0,'created_by'=>$userId]);
+            $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$unit['cylinder_type_id'],'quantity'=>1,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'wastage','source_id'=>0,'cylinder_unit_id'=>$unitId,'created_by'=>$userId,'notes'=>'Cylinder made empty after wastage: '.$reason]);
+            $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'empty','gas_weight_kg'=>0]);
             if(!$this->db->transStatus()) throw new RuntimeException('Wastage posting failed.');
             $this->db->transCommit();
         }catch(Throwable $e){$this->db->transRollback();throw $e;}
