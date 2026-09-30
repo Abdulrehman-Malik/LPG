@@ -24,7 +24,8 @@ class CashService {
  }
  public function postSaleCash(int $sessionId,int $saleId,float $amount,int $userId,string $at): void {
   if($amount<=0) return;
-  if(!$this->db->table('cash_sessions')->where('id',$sessionId)->where('status','open')->get()->getRowArray()) throw new RuntimeException('No open cash session is available for this cash sale.');
+  $session=$this->db->query("SELECT * FROM cash_sessions WHERE id=? FOR UPDATE",[$sessionId])->getRowArray();
+  if(!$session || $session['status']!=='open') throw new RuntimeException('No open cash session is available for this cash sale.');
   $this->db->table('cash_transactions')->insert(['cash_session_id'=>$sessionId,'transaction_type'=>'sale_cash','direction'=>'in','amount'=>$amount,'transaction_at'=>$at,'reference_type'=>'sale','reference_id'=>$saleId,'created_by'=>$userId]);
   if(!$this->db->transStatus()) throw new RuntimeException('Cash transaction could not be posted.');
  }
