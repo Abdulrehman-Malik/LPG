@@ -33,7 +33,7 @@ class InventoryOpening extends Controller
         $locationId=(int)session()->get('location_id'); $userId=(int)session()->get('user_id');
         $date=(string)$this->request->getPost('inventory_date'); $kind=(string)$this->request->getPost('inventory_type');
         $typeId=$this->request->getPost('cylinder_type_id')===''?null:(int)$this->request->getPost('cylinder_type_id');
-        $qty=(float)$this->request->getPost('quantity'); $actual=(float)$this->request->getPost('actual_gas_weight_kg');
+        $qty=(float)$this->request->getPost('quantity'); $actualRaw=$this->request->getPost('actual_gas_weight_kg'); $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0;
         if(!$date||!in_array($kind,['gas_kg','filled_cylinder','empty_cylinder'],true)||$qty<0) return redirect()->back()->withInput()->with('error','Valid date, inventory type and non-negative quantity are required.');
         if($kind==='gas_kg' && $typeId!==null) return redirect()->back()->withInput()->with('error','Gas opening balance does not use a cylinder type.');
         if($kind!=='gas_kg' && !$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type.');
