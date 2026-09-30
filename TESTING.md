@@ -201,6 +201,23 @@ while reflling gas can be wasted during refill so this percenateg should also be
 3. Sell one filled cylinder.
 4. Confirm one cylinder and **20 kg** of its gas remain.
 
+### Step 2C — Test Configurable Stock Validation and Wastage
+1. Open **Inventory Controls**.
+2. Confirm the shop default stock validation is **ON**.
+3. Set a test cylinder policy to **ON** and verify an attempted gas sale above available gas stock is blocked.
+4. Set the test policy to **OFF**.
+5. Attempt a gas refill above available gas stock. Confirm the POS asks for explicit confirmation before posting.
+6. Confirm the sale is recorded only after confirmation and the inventory result is visible for later reconciliation.
+7. Open **Gas Wastage**.
+8. Select a filled physical cylinder with known actual gas, for example **18.000 kg**.
+9. Record **1.000 kg** wastage with reason **SQA leakage test**.
+10. Confirm gas stock decreases by 1.000 kg, the selected physical cylinder becomes empty, and empty-cylinder stock increases by 1.
+11. Confirm wastage history records date, cylinder type, physical unit, wasted KG, reason and user.
+12. Attempt wastage greater than the cylinder's current gas and confirm rejection.
+13. Filter wastage history by date range and cylinder type.
+
+**Expected result:** stock validation is configurable, oversell requires explicit confirmation when validation is OFF, and physical-cylinder gas loss is separately recorded as wastage.
+
 ### Step 3 — Verify Inventory After the Sale
 1. Open **Inventory**.
 2. Find the cylinder type sold in Step 2.
@@ -411,6 +428,12 @@ Phase 3 status: READY FOR USER TEST — functional POS, cash-session linkage, re
 
 
 ## Phase 4 — Purchases & Inventory (READY FOR USER TEST)
+- [ ] Inventory Controls: shop default and cylinder-type stock-validation/wastage policies can be configured.
+  - SQA Comments / Improvement Notes: Verify ON blocks gas oversell; OFF requires explicit confirmation. Verify percentage/fixed-KG policy values persist and cylinder-type overrides take precedence.
+  - Evidence / Test Data:
+- [ ] Gas Wastage: record cylinder leakage/residual gas and convert filled physical cylinder to empty stock.
+  - SQA Comments / Improvement Notes: Verify gas loss cannot exceed current cylinder gas, empty stock increases exactly once, and the wastage report is filterable by date/type.
+  - Evidence / Test Data:
 - [ ] Purchase entry: create a purchase with gas KG, filled cylinders and empty cylinders, calculate totals and post supplier/payment records.
   - SQA Comments / Improvement Notes: Verify line validation, discount calculation, supplier credit behavior, inventory IN and cash-session linkage for cash payments.
   - Evidence / Test Data:
