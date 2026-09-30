@@ -21,8 +21,8 @@ CREATE TABLE IF NOT EXISTS cylinder_units(
  FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,
  CHECK(gas_weight_kg>=0)
 ) ENGINE=InnoDB;
-ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS cylinder_unit_id BIGINT UNSIGNED NULL AFTER source_line_id;
-ALTER TABLE inventory_movements ADD KEY IF NOT EXISTS idx_inventory_unit(cylinder_unit_id);
+ALTER TABLE inventory_movements ADD COLUMN cylinder_unit_id BIGINT UNSIGNED NULL AFTER source_line_id;
+ALTER TABLE inventory_movements ADD KEY idx_inventory_unit(cylinder_unit_id);
 ALTER TABLE inventory_movements ADD CONSTRAINT fk_inventory_unit FOREIGN KEY (cylinder_unit_id) REFERENCES cylinder_units(id) ON DELETE SET NULL;
 SET FOREIGN_KEY_CHECKS=1;
 
