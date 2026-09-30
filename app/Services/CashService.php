@@ -41,7 +41,13 @@ class CashService {
   $session=$this->db->table('cash_sessions')->where('id',$sessionId)->get()->getRowArray();
   if(!$session) throw new RuntimeException('Cash session not found.');
   $row=$this->db->table('cash_transactions')->select("SUM(CASE WHEN direction='in' THEN amount ELSE 0 END) cash_in,SUM(CASE WHEN direction='out' THEN amount ELSE 0 END) cash_out")->where('cash_session_id',$sessionId)->get()->getRowArray();
-  return ['session'=>$session,'cash_in'=>(float)($row['cash_in']??0),'cash_out'=>(float)($row['cash_out']??0),'expected'=>(float)$session['opening_cash']+(float)($row['cash_in']??0)-(float)($row['cash_out']??0)];
+  return ['session'=>$session,'cash_in'=>(float)($row['cash_in']??0),'cash_out'=>(float)($row['cash_out']??0),'expected'=>(float)($row['cash_in']??0)-(float)($row['cash_out']??0)];
+ }
+ public function history(int $locationId, ?string $from=null, ?string $to=null, ?int $registerId=null): array {
+  $from=$from?:date('Y-m-d',strtotime('-30 days')); $to=$to?:date('Y-m-d');
+  $q=$this->db->table('cash_transactions ct')->select('ct.*,cs.opened_by,cs.opened_at,cs.closed_at,cs.counted_cash,cr.code register_code,cr.name register_name')->join('cash_sessions cs','cs.id=ct.cash_session_id')->join('cash_registers cr','cr.id=cs.register_id')->where('cr.location_id',$locationId)->where('ct.transaction_at >=',$from.' 00:00:00')->where('ct.transaction_at <=',$to.' 23:59:59');
+  if($registerId) $q->where('cr.id',$registerId);
+  return $q->orderBy('ct.transaction_at','DESC')->orderBy('ct.id','DESC')->get()->getResultArray();
  }
  public function closeSession(int $sessionId,int $userId,float $countedCash,string $notes=''): array {
   if($countedCash<0) throw new RuntimeException('Counted cash cannot be negative.');
