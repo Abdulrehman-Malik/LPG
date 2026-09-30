@@ -41,7 +41,16 @@ class ShopSettings extends Controller
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
         $posFontSize = (float) $this->request->getPost('pos_font_size_px');
         if ($posFontSize < 10 || $posFontSize > 24) {
-            return redirect()->back()->withInput()->with('error', 'POS font size must be between 10 and 24 pixels.');
+            return redirect()->back()->withInput()->with('error', 'Application font size must be between 10 and 24 pixels.');
+        }
+        $themeMode = trim((string) $this->request->getPost('theme_mode'));
+        $fontFamily = trim((string) $this->request->getPost('font_family'));
+        $primaryColor = trim((string) $this->request->getPost('primary_color'));
+        $accentColor = trim((string) $this->request->getPost('accent_color'));
+        if (!in_array($themeMode, ['light','dark'], true)) throw new \RuntimeException('Invalid theme mode.');
+        if (!in_array($fontFamily, ['system','arial','verdana','tahoma','trebuchet','georgia','times'], true)) throw new \RuntimeException('Invalid font family.');
+        foreach (['primaryColor'=>$primaryColor,'accentColor'=>$accentColor] as $label=>$color) {
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) throw new \RuntimeException('Invalid '.$label.' color.');
         }
 
         if (!in_array($saleMode, ShopSettingsModel::SALE_MODES, true)) {
@@ -69,6 +78,10 @@ class ShopSettings extends Controller
                 'default_sale_mode' => $saleMode,
                 'default_payment_mode' => $paymentMode,
                 'pos_font_size_px' => $posFontSize,
+                'theme_mode' => $themeMode,
+                'font_family' => $fontFamily,
+                'primary_color' => $primaryColor,
+                'accent_color' => $accentColor,
                 'stock_validation_enabled' => $this->request->getPost('stock_validation_enabled') ? 1 : 0,
                 'allow_stock_override' => $this->request->getPost('allow_stock_override') ? 1 : 0,
                 'backup_enabled' => $this->request->getPost('backup_enabled') ? 1 : 0,
