@@ -49,6 +49,7 @@ class SalesService
             if(!in_array($mode,$allowed,true)) throw new RuntimeException('Unsupported POS transaction type on line '.($i+1).'.');
 
             $qty=(float)($line['quantity']??0);
+            if(!$customerId && in_array($mode,['replace_same','replace_different'],true)) throw new RuntimeException('A named customer is required when an empty cylinder is returned.');
             $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:null;
             $receivedTypeId=isset($line['received_cylinder_type_id'])&&$line['received_cylinder_type_id']!==''?(int)$line['received_cylinder_type_id']:null;
             $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
