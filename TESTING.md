@@ -19,7 +19,7 @@ After starting the application, open the URL above in your browser. The login pa
 2. Install PHP 8.2+ with intl, mbstring and MySQLi enabled.
 3. The repository currently contains the CodeIgniter/vendor tree. If rebuilding dependencies locally, use the repository's composer.lock and verify the installed framework version before testing.
 4. Copy 'env' to '.env' if required and set your local MySQL credentials/database settings. The repository configuration uses 'perfect_lpg' as the database.
-5. Execute 'database/schema.sql' once on a fresh MySQL server. If you are continuing with an existing tested database, execute `database/migrations/20260930_per_cylinder_inventory.sql` once before testing the new physical-cylinder inventory feature.
+5. Execute 'database/schema.sql' once on a fresh MySQL server. If you are continuing with an existing tested database, execute `database/migrations/20260930_per_cylinder_inventory.sql` before testing the new physical-cylinder inventory feature. The migration is retry-safe; if a previous attempt partially ran, it can be run again.
 6. Start the application using the configured local web server and open **http://localhost:180/LPG2/LPG/public/**.
 7. If using CodeIgniter's development server instead, run 'php spark serve' and open the URL reported by Spark (normally http://localhost:8080/).
 8. Test only items marked READY FOR TEST.
@@ -352,7 +352,7 @@ Example: **POS → Filled Cylinder → Customer Test Customer → C11_8 → Qty 
   - SQA Comments / Improvement Notes: User retest PASS. Future improvement: verify mixed-line behavior, client/server total agreement, empty-state validation, and that walk-in mode prevents non-cash payment selection. Confirm displayed OS is clearly distinguished from the resulting New OS.
   - Evidence / Test Data:
 - [x] Filled cylinder sale: capacity-based gas/cylinder inventory OUT and applied package rate.
-  - SQA Comments / Improvement Notes: User retest PASS for the normal cash filled-cylinder sale and receipt. New SQA requirements recorded: show selected cylinder stock, clarify gas-stock handling, support actual per-cylinder fill weight (including partial fills up to capacity), and keep transaction terminology/hints user-friendly. Current implementation does not track actual gas weight per individual cylinder; gas_kg is a location-level balance and filled-cylinder quantity is tracked separately.
+  - SQA Comments / Improvement Notes: User retest PASS for the normal cash filled-cylinder sale and receipt. New SQA requirements recorded: show selected cylinder stock, clarify gas-stock handling, support actual per-cylinder fill weight (including partial fills up to capacity), and keep transaction terminology/hints user-friendly. Current implementation tracks physical filled-cylinder units and actual gas weight per unit; historical migrated units use rated capacity because historical per-cylinder weights were not stored.
   - Evidence / Test Data:
 - [ ] KG refill: KG-based gas inventory OUT and gas/kg rate.
   - SQA Comments / Improvement Notes: Verify fractional KG precision and that the displayed rate is per KG, not per cylinder.
