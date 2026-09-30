@@ -37,6 +37,11 @@ class CylinderUnitService
         )->getResultArray();
     }
 
+    public function availableForDisplay(int $locationId,int $typeId,string $status='filled'): array
+    {
+        return $this->db->table('cylinder_units')->where(['location_id'=>$locationId,'cylinder_type_id'=>$typeId,'status'=>$status])->orderBy('id')->get()->getResultArray();
+    }
+
     public function markSold(int $unitId): void
     {
         $u=$this->db->query("SELECT * FROM cylinder_units WHERE id=? FOR UPDATE",[$unitId])->getRowArray();
