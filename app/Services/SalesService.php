@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CylinderTypeModel;
 use App\Models\CustomerModel;
 use App\Models\GasRateModel;
+use App\Services\CashService;
 use Config\Database;
 use RuntimeException;
 
@@ -14,6 +15,7 @@ class SalesService
     protected $types;
     protected $customers;
     protected $rates;
+    protected $cash;
 
     public function __construct()
     {
@@ -21,6 +23,7 @@ class SalesService
         $this->types=new CylinderTypeModel();
         $this->customers=new CustomerModel();
         $this->rates=new GasRateModel();
+        $this->cash=new CashService();
     }
 
     public function post(array $payload,int $userId,int $locationId): array
@@ -88,12 +91,12 @@ class SalesService
 
         $discount=max(0,(float)($payload['discount_amount']??0));
         if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
-        $total=$subtotal-$discount;$paymentTotal=0;$credit=0;
+        $total=$subtotal-$discount;$paymentTotal=0;$credit=0;$cashAmount=0;
         foreach($payments as $p){
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0) throw new RuntimeException('Invalid payment.');
             if(!$customerId && $mode!=='cash') throw new RuntimeException('Walk-in sales are cash only.');
-            $paymentTotal+=$amount;if($mode==='credit') $credit+=$amount;
+            $paymentTotal+=$amount;if($mode==='credit') $credit+=$amount;if($mode==='cash') $cashAmount+=$amount;
         }
         if(abs($paymentTotal-$total)>0.01) throw new RuntimeException('Payment total must equal sale total.');
         if($customerId && $credit>0 && $this->customerBalance($customerId)+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
@@ -111,6 +114,7 @@ class SalesService
             foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row) $lineIds[(int)$row['line_no']]=(int)$row['id'];
             foreach($inventory as $m) $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'created_by'=>$userId]);
             foreach($payments as $p) $this->db->table('sale_payments')->insert(['sale_id'=>$saleId,'payment_mode'=>$p['payment_mode'],'amount'=>(float)$p['amount'],'reference_no'=>trim((string)($p['reference_no']??''))?:null,'payment_at'=>$transactionAt,'received_by'=>$userId]);
+            if($cashAmount>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session) throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$session['id'],$saleId,$cashAmount,$userId,$transactionAt);}
             if(!$this->db->transStatus()) throw new RuntimeException('Sale posting failed.');
             $this->db->transCommit();
             return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$credit];
