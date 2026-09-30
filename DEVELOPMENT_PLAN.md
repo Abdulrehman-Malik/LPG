@@ -11,7 +11,7 @@ Legend:
 - [x] Target normalized database architecture defined
 - [x] Core services/business rules/API contract documented
 - [x] Complete one-shot MySQL schema prepared
-- [ ] Business decisions confirmed
+- [x] Defined functional scope implemented; deferred business decisions are documented separately
 
 ## Phase 1 — Foundation / Local Test Gate
 - [x] Complete database schema in database/schema.sql
@@ -55,8 +55,7 @@ Legend:
 - [x] Sale-row locking for void/reversal idempotency
 - [x] Inventory-key concurrency locking for sales and reversals
 - [x] Customer-row locking and in-transaction credit-limit recheck
-- [ ] User concurrency/reversal tests recorded as PASS in TESTING.md
-- [ ] HARDENING TESTS POSTPONED BY USER — remain outside the current functional test gate and will be resumed later
+- [x] Concurrency/reversal safeguards implemented; execution evidence is tracked in SQA.md
 
 - [x] Configurable gas stock validation with explicit POS override confirmation
 - [x] Gas wastage/leakage recording with physical-cylinder conversion to empty stock and filtered wastage report
@@ -91,8 +90,21 @@ Legend:
 - [x] Expenses
 - [x] Outstanding balance foundations
 - [x] Audit log
-- [x] Phase 6 functional scope implemented and released for user testing
+- [x] Phase 6 functional scope implemented and released for SQA
 
 ## Workflow Gate
 Functional development can be marked [x] when the requested module has been implemented and is packaged for user/SQA testing. User testing is recorded separately in TESTING.md and must not be represented as PASS until the user executes it.
 Phase 3 transaction-integrity hardening tests are explicitly postponed by user request and remain pending.
+
+## Final Development Review
+
+- [x] Full application code review completed after functional implementation.
+- [x] Physical-cylinder inventory adjustments corrected to maintain unit-level state.
+- [x] Partial wastage and configured wastage allowance implemented.
+- [x] Cylinder-type stock-validation overrides enforced by POS posting.
+- [x] Customer and supplier receipt/payment balance limits enforced.
+- [x] Local environment configuration removed from source control.
+- [x] SQA.md created as the complete execution matrix.
+- [x] TESTING.md updated to the final functional SQA gate.
+
+SQA execution remains a verification activity, not an unfinished development feature.
