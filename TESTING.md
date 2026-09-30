@@ -171,6 +171,13 @@ while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 
 5.Naming convention more user friendly and understndable to user for transaction type (like refill kg,empty intak, when user select the option show hint at the top what type of transction user is going to perform rule)
 6. Available stock is not showing anywhere in POS screen whne i select cylidner, it showuld reflect.
 7.also POS Sales is shwoing two time in page, remove 2nd one keep the first one as it is so space can be bigger.
+8.Show the balance quanity with cylinder name inside drop down like (cylinder1-gas-stock-avlbl-15kg) rather than in ratestatus palce. remove the rate status column from pos line itme, only keep it in reports for tracking purpose what was actual rate what was applied rate for that line item.
+9.sale can be possible more than available stock gas and it should be configurable. for examaple
+while reflling gas can be wasted during refill so this percenateg should also be configuraeable that how much wastage could be bearable if stock in of a cylidnder is 20kg and we sell only 19kg  and that cylinder marked as empty from adjustment screen or any new screen to handle this. so this 1 kg will be recodered as wasteage..in reports. and recorderd properly.
+10. also how much wastage is ok either percenateg or fix vallue, at cylidern level or shop level. 
+11. stock validation should also be configureable like if validation check is on then system will not allow to sell more than avaialbel stock, if valdiation checck is off then system will allow to sell with only a reminder popup message that are you sure you want to make this sale as stock is not avialable in inventory.... and record it 
+12. there should be seprate report as well how much stock of gas is wasted...by date wise...
+13. we get filled cylidern but due to leakege it gets empty.  this should also be cconsider in wastege screen and properly recorded...through stock adjustment screen.
 ### Step 2A — Test Actual Gas Weight and Partial-Fill Cylinders
 
 1. Open **Opening Inventory** on a test database or create a dedicated SQA cylinder type, for example **20 kg Test Cylinder** with capacity **20.000 kg**.
