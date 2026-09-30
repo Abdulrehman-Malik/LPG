@@ -47,6 +47,15 @@ Legend:
 - [ ] Receipt / print
 - [ ] Sale void/reversal
 
+### Phase 3 — Transaction Integrity Hardening
+- [x] Cash-session open concurrency protection
+- [x] Cash-session close locking and committed-summary calculation
+- [x] Cash-sale vs cash-session-close concurrency protection
+- [x] Sale-row locking for void/reversal idempotency
+- [x] Inventory-key concurrency locking for sales and reversals
+- [x] Customer-row locking and in-transaction credit-limit recheck
+- [ ] User concurrency/reversal tests recorded as PASS in TESTING.md
+
 ## Phase 4 — Purchases & Inventory
 - [ ] Purchase entry
 - [ ] Inventory service
