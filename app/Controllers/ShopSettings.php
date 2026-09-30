@@ -39,6 +39,10 @@ class ShopSettings extends Controller
         $locationId = (int) session()->get('location_id');
         $saleMode = trim((string) $this->request->getPost('default_sale_mode'));
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
+        $posFontSize = (float) $this->request->getPost('pos_font_size_px');
+        if ($posFontSize < 10 || $posFontSize > 24) {
+            return redirect()->back()->withInput()->with('error', 'POS font size must be between 10 and 24 pixels.');
+        }
 
         if (!in_array($saleMode, ShopSettingsModel::SALE_MODES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default POS transaction type.');
@@ -64,6 +68,7 @@ class ShopSettings extends Controller
                 'location_id' => $locationId,
                 'default_sale_mode' => $saleMode,
                 'default_payment_mode' => $paymentMode,
+                'pos_font_size_px' => $posFontSize,
                 'stock_validation_enabled' => $this->request->getPost('stock_validation_enabled') ? 1 : 0,
                 'allow_stock_override' => $this->request->getPost('allow_stock_override') ? 1 : 0,
                 'backup_enabled' => $this->request->getPost('backup_enabled') ? 1 : 0,
