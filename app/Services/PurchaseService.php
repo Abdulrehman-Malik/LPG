@@ -49,6 +49,7 @@ class PurchaseService{
    if(!$this->db->transStatus())throw new RuntimeException('Purchase posting failed.');
    $this->db->transCommit();AuditService::log('CREATE','purchase',$id,null,['purchase_no'=>$no,'total'=>$total],$userId,$locationId);return ['id'=>$id,'purchase_no'=>$no,'total'=>$total];
   }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+ }
  public function supplierBalance(int $supplierId): float
  {
   $s=$this->db->table('purchases')->selectSum('credit_amount','credit')->where('supplier_id',$supplierId)->where('status','posted')->get()->getRowArray();
