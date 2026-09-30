@@ -33,16 +33,16 @@ Legend:
 
 ## Phase 3 — POS Sales
 - [/] POS screen
-- [ ] Filled cylinder sale
-- [ ] KG refill
-- [ ] Cylinder exchange
-- [ ] Empty cylinder intake
-- [ ] Empty cylinder sale
-- [ ] Payment modes
-- [ ] Credit enforcement
-- [ ] OS balance block
-- [ ] Custom-rate highlighting
-- [ ] Atomic inventory/cash posting
+- [/] Filled cylinder sale
+- [/] KG refill
+- [/] Cylinder exchange
+- [/] Empty cylinder intake
+- [/] Empty cylinder sale
+- [/] Payment modes
+- [/] Credit enforcement
+- [/] OS balance block
+- [/] Custom-rate highlighting
+- [/] Atomic inventory/cash posting
 - [ ] Receipt / print
 - [ ] Sale void/reversal
 
