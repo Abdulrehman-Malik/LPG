@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\CustomerModel;
 use App\Models\CylinderTypeModel;
 use App\Models\GasRateModel;
+use App\Models\ShopSettingsModel;
 use App\Services\PermissionService;
 use App\Services\SalesService;
 use CodeIgniter\Controller;
@@ -28,8 +29,9 @@ class Sales extends Controller
         $rateModel=new GasRateModel();
         $cylinderRates=[];
         foreach($types as $type) $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']);
+        $shopSettings=(new ShopSettingsModel())->forLocation((int)session()->get('location_id')); $defaultSaleMode=(string)($shopSettings['default_sale_mode']??'sell_gas_only');
         $cashSession=(new \App\Services\CashService())->openSessionForLocation((int)session()->get('location_id')); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=0.0; foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock((int)session()->get('location_id'),'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay((int)session()->get('location_id'),$typeId,'filled'); foreach($filledUnits[$typeId] as $unit) $gasStock+=(float)$unit['gas_weight_kg']; $emptyStock[$typeId]=$inv->stock((int)session()->get('location_id'),'empty_cylinder',$typeId);}
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy((int)session()->get('location_id'))]);
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultSaleMode'=>$defaultSaleMode,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy((int)session()->get('location_id'))]);
     }
 
     public function save()
