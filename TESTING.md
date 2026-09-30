@@ -125,7 +125,7 @@ Follow the tests in the order below. Do not try to test every screen randomly. C
 
 **SQA Review / Improvement Notes:**
 - Add a dedicated **Cash History** screen rather than putting a long history table directly on the opening/closing screen.
-- History now supports date-range filtering and displays counter, transaction type, direction, amount, reference and notes. Counter/register filtering is prepared for multiple registers.
+- History now supports date-range filtering and counter/register filtering, and displays counter, transaction type, direction, amount, reference and notes.
 
 1. Open **Counter Cash**.
 2. Enter Opening Cash: **Rs. 10,000**.
