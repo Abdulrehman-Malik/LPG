@@ -1,0 +1,10 @@
+<?php
+namespace App\Controllers;
+use CodeIgniter\Controller;
+use Config\Database;
+class Reports extends Controller{
+ private function guard(){return \App\Services\PermissionService::allows('REPORT_VIEW')?null:$this->response->setStatusCode(403)->setBody('Forbidden');}
+ public function index(){if($r=$this->guard())return $r;$db=Database::connect();$loc=(int)session()->get('location_id');$today=date('Y-m-d');$sales=$db->table('sales')->select('COUNT(*) count,SUM(total_amount) total,SUM(credit_amount) credit')->where(['location_id'=>$loc,'status'=>'posted'])->where('DATE(transaction_at)',$today)->get()->getRowArray();$p=$db->table('purchases')->select('COUNT(*) count,SUM(total_amount) total,SUM(credit_amount) credit')->where(['location_id'=>$loc,'status'=>'posted'])->where('DATE(transaction_at)',$today)->get()->getRowArray();$payments=$db->table('sale_payments sp')->select('payment_mode,SUM(amount) amount')->join('sales s','s.id=sp.sale_id')->where('s.location_id',$loc)->where('s.status','posted')->where('DATE(sp.payment_at)',$today)->groupBy('payment_mode')->get()->getResultArray();return view('reports/index',['title'=>'Reports','sales'=>$sales,'purchases'=>$p,'payments'=>$payments,'today'=>$today]);}
+ public function stock(){if($r=$this->guard())return $r;return redirect()->to('/inventory');}
+ public function ledger(int $customerId){if($r=$this->guard())return $r;$db=Database::connect();$c=$db->table('customers')->where('id',$customerId)->get()->getRowArray();if(!$c)return $this->response->setStatusCode(404)->setBody('Customer not found');$sales=$db->table('sales')->where(['customer_id'=>$customerId,'status'=>'posted'])->orderBy('transaction_at')->get()->getResultArray();$receipts=$db->table('customer_receipts')->where(['customer_id'=>$customerId,'status'=>'posted'])->orderBy('receipt_at')->get()->getResultArray();return view('reports/ledger',['title'=>'Customer Ledger','customer'=>$c,'sales'=>$sales,'receipts'=>$receipts]);}
+}
