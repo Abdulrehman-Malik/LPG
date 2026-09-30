@@ -1,18 +1,18 @@
 <?php
-namespace AppControllers;
-use AppServicesInventoryControlService;
-use CodeIgniterController;
-use ConfigDatabase;
+namespace App\Controllers;
+use App\Services\InventoryControlService;
+use CodeIgniter\Controller;
+use Config\Database;
 
 class InventoryControls extends Controller
 {
- private function guard(){return AppServicesPermissionService::allows('INVENTORY_MANAGE')?null:$this->response->setStatusCode(403)->setBody('Forbidden');}
+ private function guard(){return \App\Services\PermissionService::allows('INVENTORY_MANAGE')?null:$this->response->setStatusCode(403)->setBody('Forbidden');}
  public function index(){
   if($r=$this->guard()) return $r;
   $db=Database::connect(); $loc=(int)session()->get('location_id');
   $types=$db->table('cylinder_types')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
   $svc=new InventoryControlService(); $policies=[];
-  foreach($types as $t) $policies[(int)$t['id']=$svc->policy($loc,(int)$t['id']);
+  foreach($types as $t) $policies[(int)$t['id']]=$svc->policy($loc,(int)$t['id']);
   $policies['default']=$svc->policy($loc);
   return view('inventory/controls',['title'=>'Inventory Controls & Wastage','types'=>$types,'policies'=>$policies]);
  }
@@ -22,7 +22,7 @@ class InventoryControls extends Controller
    $svc=new InventoryControlService(); $loc=(int)session()->get('location_id'); $type=$this->request->getPost('cylinder_type_id'); $typeId=$type!==''? (int)$type:null;
    $svc->savePolicy($loc,$typeId,(bool)$this->request->getPost('stock_validation_enabled'),(string)$this->request->getPost('wastage_mode'),(float)$this->request->getPost('wastage_percent'),(float)$this->request->getPost('wastage_fixed_kg'),(int)session()->get('user_id'));
    return redirect()->back()->with('success','Inventory control settings saved.');
-  }catch(Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
+  }catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
  }
  public function wastage(){
   if($r=$this->guard()) return $r;
