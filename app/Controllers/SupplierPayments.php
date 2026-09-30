@@ -1,0 +1,11 @@
+<?php
+namespace App\Controllers;
+use App\Services\CashService;
+use App\Services\AuditService;
+use CodeIgniter\Controller;
+use Config\Database;
+class SupplierPayments extends Controller{
+ private function guard(){return \App\Services\PermissionService::allows('PURCHASE_MANAGE')?null:$this->response->setStatusCode(403)->setBody('Forbidden');}
+ public function index(){if($r=$this->guard())return $r;$db=Database::connect();return view('supplier_payments/index',['title'=>'Supplier Payments','suppliers'=>$db->table('suppliers')->where('is_active',1)->orderBy('name')->get()->getResultArray()]);}
+ public function save(){if($r=$this->guard())return $r;try{$supplier=(int)$this->request->getPost('supplier_id');$amount=(float)$this->request->getPost('amount');$mode=(string)$this->request->getPost('payment_mode');if(!$supplier||$amount<=0||!in_array($mode,['cash','cheque','online'],true))throw new \RuntimeException('Invalid supplier payment.');$db=Database::connect();$db->transBegin();$no='SP'.date('YmdHis').'-'.random_int(100,999);$db->table('supplier_payments')->insert(['payment_no'=>$no,'location_id'=>(int)session()->get('location_id'),'supplier_id'=>$supplier,'status'=>'posted','amount'=>$amount,'payment_mode'=>$mode,'payment_at'=>date('Y-m-d H:i:s'),'reference_no'=>trim((string)$this->request->getPost('reference_no'))?:null,'notes'=>trim((string)$this->request->getPost('notes'))?:null,'created_by'=>(int)session()->get('user_id')]);$id=(int)$db->insertID();if($mode==='cash'){$s=(new CashService())->openSessionForLocation((int)session()->get('location_id'));if(!$s)throw new \RuntimeException('Open the counter cash session before a cash supplier payment.');(new CashService())->postGeneric((int)$s['id'],'supplier_payment','out',$amount,'supplier_payment',$id,(int)session()->get('user_id'),'Supplier cash payment');}if(!$db->transStatus())throw new \RuntimeException('Supplier payment failed.');$db->transCommit();AuditService::log('CREATE','supplier_payment',$id,null,['payment_no'=>$no,'amount'=>$amount],(int)session()->get('user_id'),(int)session()->get('location_id'));return redirect()->to('/supplier-payments')->with('success','Supplier payment '.$no.' posted.');}catch(\Throwable $e){if(isset($db)&&$db->transStatus()!==false)$db->transRollback();return redirect()->back()->withInput()->with('error',$e->getMessage());}}
+}
