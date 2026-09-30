@@ -109,7 +109,7 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
 - Phase 2 regression completed after the edit retests. Any future SQA observation should be recorded in the per-function comment space above; implementation-impacting items should also be added to requirements.md before scheduling them.
 
-## Phase 3 — POS Sales (IN DEVELOPMENT — DO NOT TEST YET)
+## Phase 3 — POS Sales (READY FOR USER TEST)
 - [ ] POS screen: customer selection, line grid, totals, payments, validation.
   - SQA Comments / Improvement Notes: Verify mixed-line behavior, client/server total agreement, empty-state validation, and that walk-in mode prevents non-cash payment selection. Confirm displayed OS is clearly distinguished from the resulting New OS.
   - Evidence / Test Data:
@@ -143,15 +143,15 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - [ ] Atomic inventory + financial posting: sale, items, payments, inventory movements and cash movement commit or roll back together.
   - SQA Comments / Improvement Notes: POS posting now includes cash-session sale_cash movement when cash is used. A missing open session must roll back the entire sale. Verify forced failures leave no partial sale/payment/inventory/cash rows.
   - Evidence / Test Data:
-- [x] Receipt / print: print-friendly receipt route implemented; user test still required with browser print preview/thermal-width layout.
+- [ ] Receipt / print: print-friendly receipt route implemented and ready for user test with browser print preview/thermal-width layout.
   - SQA Comments / Improvement Notes: Verify sale number, customer/walk-in identity, line quantities/rates, totals, payment modes and print layout. Confirm voided sales are visibly distinguishable if a receipt is opened after void.
   - Evidence / Test Data:
-- [x] Sale void / reversal: service and POS_VOID-protected route implemented; user test still required.
+- [ ] Sale void / reversal: service and POS_VOID-protected route implemented and ready for user test.
   - SQA Comments / Improvement Notes: Verify inventory reversal, sale status='voided', retained original sale/payment rows, required void reason, duplicate-void rejection, and customer OS reversal for credit sales.
   - Evidence / Test Data:
-Phase 3 status: IN DEVELOPMENT — POS CASH-SESSION POSTING IMPLEMENTED; CASH SESSION UI/FUNCTIONS ARE READY FOR USER TESTING, BUT PHASE 3 END-TO-END USER TEST IS STILL BLOCKED UNTIL THE REMAINING HARDENING CHECKS ARE COMPLETE
+Phase 3 status: READY FOR USER TEST — functional POS, cash-session linkage, receipt and void/reversal scope is implemented. Transaction-integrity hardening tests are postponed separately and are NOT a prerequisite for this functional test cycle.
 
-### Phase 3 Hardening / Cash Control Checks
+### Phase 3 Hardening / Cash Control Checks — POSTPONED (DO NOT TEST YET)
 - [ ] Cash session concurrency: two open attempts against the same register must not create two open sessions.
   - SQA Comments / Improvement Notes: Register-row locking is implemented. Verify duplicate-open prevention under rapid/concurrent requests and confirm only one session remains open.
   - Evidence / Test Data:
@@ -171,6 +171,78 @@ Phase 3 status: IN DEVELOPMENT — POS CASH-SESSION POSTING IMPLEMENTED; CASH SE
   - SQA Comments / Improvement Notes: Cash session row is locked during cash-sale posting, so close waits for the sale transaction and vice versa. Verify no cash transaction can be committed after the session state is closed.
   - Evidence / Test Data:
 
+
+## Phase 4 — Purchases & Inventory (READY FOR USER TEST)
+- [ ] Purchase entry: create a purchase with gas KG, filled cylinders and empty cylinders, calculate totals and post supplier/payment records.
+  - SQA Comments / Improvement Notes: Verify line validation, discount calculation, supplier credit behavior, inventory IN and cash-session linkage for cash payments.
+  - Evidence / Test Data:
+- [ ] Inventory service / stock view: verify opening balances plus posted movements produce current stock.
+  - SQA Comments / Improvement Notes: Compare displayed stock with SQL-calculated opening + IN - OUT for gas, filled and empty cylinders.
+  - Evidence / Test Data:
+- [ ] Stock adjustments: post authorized inventory IN/OUT adjustments with reason.
+  - SQA Comments / Improvement Notes: Verify zero/negative quantities are rejected and OUT cannot reduce stock below zero.
+  - Evidence / Test Data:
+- [ ] Negative-stock protection: attempted sale/adjustment beyond available stock is rejected without partial posting.
+  - SQA Comments / Improvement Notes: Verify both gas and cylinder stock boundaries.
+  - Evidence / Test Data:
+- [ ] Inventory reports: stock view is readable and location-scoped.
+  - SQA Comments / Improvement Notes: Verify all active cylinder types and gas stock are visible.
+  - Evidence / Test Data:
+Phase 4 status: READY FOR USER TEST
+
+## Phase 5 — Counter Cash & Expenses (READY FOR USER TEST)
+- [ ] Cash register/session: open, summary and close a counter session.
+  - SQA Comments / Improvement Notes: Verify opening float, expected cash and counted/difference values.
+  - Evidence / Test Data:
+- [ ] Cash IN/OUT: manual cash movements post to the active session.
+  - SQA Comments / Improvement Notes: Verify direction, amount and reason appear in the cash total.
+  - Evidence / Test Data:
+- [ ] Expenses: post cash, cheque and online expenses.
+  - SQA Comments / Improvement Notes: Verify cash expenses affect Counter Cash and non-cash expenses do not.
+  - Evidence / Test Data:
+- [ ] Customer receipts: post cash, cheque and online receipts.
+  - SQA Comments / Improvement Notes: Verify customer balance decreases by posted receipts and cash receipts affect Counter Cash.
+  - Evidence / Test Data:
+- [ ] Supplier payments: post cash, cheque and online supplier payments.
+  - SQA Comments / Improvement Notes: Verify cash payments affect Counter Cash and payment records remain linked to supplier.
+  - Evidence / Test Data:
+- [ ] Handover / cash movement foundation: manual cash movement is available for operational handover support.
+  - SQA Comments / Improvement Notes: Confirm reason/notes are mandatory in operational practice; formal multi-register handover remains dependent on business decision.
+  - Evidence / Test Data:
+- [ ] Close/reconcile: close an open session and compare counted cash with expected cash.
+  - SQA Comments / Improvement Notes: Verify difference is calculated and session cannot be treated as open afterward.
+  - Evidence / Test Data:
+Phase 5 status: READY FOR USER TEST
+
+## Phase 6 — Reports & Audit (READY FOR USER TEST)
+- [ ] Customer ledger/report: customer credit sales and receipts are traceable.
+  - SQA Comments / Improvement Notes: Verify opening balance, credit sales and receipts reconcile to current OS.
+  - Evidence / Test Data:
+- [ ] Supplier ledger/report: supplier credit purchases and payments are traceable.
+  - SQA Comments / Improvement Notes: Verify supplier outstanding calculation against posted purchase/payment data.
+  - Evidence / Test Data:
+- [ ] Daily transactions: daily sales/purchases summary is location-scoped and excludes voided transactions where appropriate.
+  - SQA Comments / Improvement Notes: Compare summary totals to transaction rows.
+  - Evidence / Test Data:
+- [ ] Custom-rate report: custom-rate sales are identifiable from stored applied/standard rate flags.
+  - SQA Comments / Improvement Notes: Verify higher and lower custom rates are retained for later reporting.
+  - Evidence / Test Data:
+- [ ] Stock report: current gas and cylinder stock is visible.
+  - SQA Comments / Improvement Notes: Reconcile report values to inventory movement totals.
+  - Evidence / Test Data:
+- [ ] Counter cash reconciliation: daily expected vs counted cash is visible from session close.
+  - SQA Comments / Improvement Notes: Verify opening + IN - OUT calculation.
+  - Evidence / Test Data:
+- [ ] Daily expenses: expense entries are recorded with category, amount and payment mode.
+  - SQA Comments / Improvement Notes: Verify cash/non-cash treatment.
+  - Evidence / Test Data:
+- [ ] Outstanding balances: customer and supplier outstanding foundations can be reconciled to ledgers.
+  - SQA Comments / Improvement Notes: Verify voided sales are excluded from customer OS.
+  - Evidence / Test Data:
+- [ ] Audit log: operational create actions are recorded with user, location, entity and timestamp.
+  - SQA Comments / Improvement Notes: Verify audit entries do not expose passwords or sensitive secrets.
+  - Evidence / Test Data:
+Phase 6 status: READY FOR USER TEST
 
 ## Test Environment
 - OS:
