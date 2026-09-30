@@ -11,7 +11,7 @@ class ShopSettingsModel extends Model
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'location_id','default_sale_mode','default_payment_mode',
+        'location_id','default_sale_mode','default_payment_mode','pos_font_size_px',
         'stock_validation_enabled','allow_stock_override',
         'backup_enabled','db_backup_url','backup_notes',
         'receipt_title','receipt_footer','show_address_on_receipt',
@@ -35,6 +35,7 @@ class ShopSettingsModel extends Model
             'location_id' => $locationId,
             'default_sale_mode' => 'sell_gas_only',
             'default_payment_mode' => 'cash',
+            'pos_font_size_px' => 14,
             'stock_validation_enabled' => 1,
             'allow_stock_override' => 1,
             'backup_enabled' => 0,
