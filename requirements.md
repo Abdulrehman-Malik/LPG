@@ -35,7 +35,19 @@ The POS provides exactly five business transaction types:
 4. **Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder** — same as type 3, except the returned empty cylinder may be a different cylinder type/capacity. Gas stock, sold filled-cylinder stock and the received empty-cylinder stock are updated.
 5. **Sell Empty Cylinder Only** — only an empty physical cylinder is sold. Gas stock is not affected; empty-cylinder stock decreases.
 
-The POS user may mark any of these five transaction types as their default for the next sale. The current implementation stores this preference per user in the browser.
+The branch administrator sets the default POS transaction type in **Shop Settings**. The POS uses that branch default for the first new sale line.
+
+## Shop / Branch Configuration
+
+Shop Settings is branch-level and provides tabs for:
+- General branch identity/contact details.
+- POS default transaction type and default payment mode.
+- Sale stock-validation control and stock-override permission.
+- Cash/payment defaults.
+- Receipt title, footer and address display.
+- Database backup URL/endpoint and maintenance notes.
+
+Cylinder-type inventory policy overrides remain available under Inventory Controls.
 
 ## Critical Rules
 - Rate history stores effective rate, timestamp, old/new values and user.
