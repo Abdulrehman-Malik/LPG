@@ -73,3 +73,9 @@ Production-ready POS + ERP for LPG retail operations.
 
 ## Completion Rule
 A requirement is marked Done only after implementation, validation, transaction testing, UI testing, relevant reporting and tracker update.
+
+## Master Data UI Quality Requirements
+- Edit actions for master-data records must open the correct edit form and preload the selected record's current values.
+- Saving an edit must persist the changed values and retain unchanged values.
+- Editing a user must retain the existing password when the password field is left blank.
+- Automated or manual regression testing should verify create/edit flows after UI changes to prevent modal or form JavaScript regressions.
