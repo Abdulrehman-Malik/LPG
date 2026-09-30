@@ -28,8 +28,8 @@ class Sales extends Controller
         $rateModel=new GasRateModel();
         $cylinderRates=[];
         foreach($types as $type) $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']);
-        $cashSession=(new \App\Services\CashService())->openSessionForLocation((int)session()->get('location_id'));
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession]);
+        $cashSession=(new \App\Services\CashService())->openSessionForLocation((int)session()->get('location_id')); $inv=new \App\Services\InventoryService(); $filledStock=[]; $gasStock=$inv->stock((int)session()->get('location_id'),'gas_kg'); foreach($types as $type){$filledStock[$type['id']]=$inv->stock((int)session()->get('location_id'),'filled_cylinder',(int)$type['id']);}
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'gasStock'=>$gasStock]);
     }
 
     public function save()
