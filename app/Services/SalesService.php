@@ -130,7 +130,13 @@ class SalesService
                 if($credit>0 && $this->customerBalance($customerId)+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
             }
             $this->acquireInventoryLocks($locationId,$inventory);
-            foreach($inventory as $m) $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
+            $policy=(new InventoryControlService())->policy($locationId);
+            $overrideConfirmed=!empty($payload['stock_override_confirmed']);
+            foreach($inventory as $m){
+                $skipGasValidation=$m['type']==='gas_kg' && $m['direction']==='out' && !$policy['stock_validation_enabled'];
+                if($skipGasValidation && !$overrideConfirmed) throw new RuntimeException('Gas stock validation is OFF. Confirm the stock override before posting this sale.');
+                if(!$skipGasValidation) $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
+            }
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
             $scenarioTypes=array_values(array_unique(array_column($lines,'line_type')));
             $transactionType=count($scenarioTypes)>1?'mixed':($scenarioTypes[0]==='refill_kg'?'refill_service':$scenarioTypes[0]);
