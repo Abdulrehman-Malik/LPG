@@ -39,7 +39,7 @@ class Sales extends Controller
             $lines=json_decode((string)$this->request->getPost('lines_json'),true);
             $payments=json_decode((string)$this->request->getPost('payments_json'),true);
             if(!is_array($lines)||!is_array($payments)) throw new \RuntimeException('Invalid POS line or payment data.');
-            $result=(new SalesService())->post(['customer_id'=>$this->request->getPost('customer_id'),'transaction_at'=>$this->request->getPost('transaction_at'),'discount_amount'=>$this->request->getPost('discount_amount'),'lines'=>$lines,'payments'=>$payments,'notes'=>$this->request->getPost('notes')],(int)session()->get('user_id'),(int)session()->get('location_id'));
+            $result=(new SalesService())->post(['customer_id'=>$this->request->getPost('customer_id'),'transaction_at'=>$this->request->getPost('transaction_at'),'discount_amount'=>$this->request->getPost('discount_amount'),'lines'=>$lines,'payments'=>$payments,'notes'=>$this->request->getPost('notes'),'stock_override_confirmed'=>$this->request->getPost('stock_override_confirmed')],(int)session()->get('user_id'),(int)session()->get('location_id'));
             return redirect()->to('/sales')->with('success','Sale '.$result['sale_no'].' posted successfully. <a href="'.site_url('sales/receipt/'.$result['id']).'">Print receipt</a>');
         }catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
     }
