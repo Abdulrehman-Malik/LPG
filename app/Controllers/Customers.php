@@ -50,6 +50,7 @@ class Customers extends Controller
             'is_active'=>$this->request->getPost('is_active') ? 1 : 0,
         ];
         if($data['name']==='') return redirect()->back()->withInput()->with('error','Customer name is required.');
+        if($data['credit_limit']<0||$data['opening_balance']<0) return redirect()->back()->withInput()->with('error','Credit limit and opening balance cannot be negative.');
         try { if($id) $this->model->update($id,$data); else $this->model->insert($data); } catch (\Throwable $e) { return redirect()->back()->withInput()->with('error','Customer could not be saved. Check the code for duplicates.'); }
         return redirect()->to('/customers')->with('success',$id?'Customer updated.':'Customer created.');
     }
