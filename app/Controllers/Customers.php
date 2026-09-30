@@ -20,7 +20,7 @@ class Customers extends Controller
     public function index()
     {
         if($r=$this->guard()) return $r;
-        return view('customers/index',['title'=>'Customers / Parties','customers'=>$this->model->orderBy('name')->findAll()]);
+        $editId=(int)$this->request->getGet('edit'); return view('customers/index',['title'=>'Customers / Parties','customers'=>$this->model->orderBy('name')->findAll(),'edit'=>$editId?$this->model->find($editId):null]);
     }
 
     public function ledger(int $id)
