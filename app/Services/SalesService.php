@@ -43,6 +43,7 @@ class SalesService
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;$inventory=[];
         foreach($lines as $i=>$line){
             $type=(string)($line['line_type']??'');
+            if(!$customerId && in_array($type,['cylinder_exchange','empty_intake'],true)) throw new RuntimeException('Walk-in sales cannot include cylinder returns.');
             $qty=(float)($line['quantity']??0);
             $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:null;
             $rate=(float)($line['rate']??0);
