@@ -40,8 +40,8 @@ class InventoryOpening extends Controller
         if($kind!=='gas_kg' && floor($qty)!==$qty) return redirect()->back()->withInput()->with('error','Cylinder quantity must be a whole number.');
         if($kind==='filled_cylinder'){
             $ct=$this->types->find($typeId); if(!$ct) return redirect()->back()->withInput()->with('error','Cylinder type not found.');
-            $actual=$actual>0?$actual:(float)$ct['capacity_kg'];
-            if($actual<=0||$actual>(float)$ct['capacity_kg']) return redirect()->back()->withInput()->with('error','Actual gas weight cannot exceed cylinder capacity.');
+            $actual=$actualRaw!==null && $actualRaw!==''?$actual:(float)$ct['capacity_kg'];
+            if($actual<=0||$actual>(float)$ct['capacity_kg']) return redirect()->back()->withInput()->with('error','Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
         } else $actual=0;
         $existing=$this->model->where(['location_id'=>$locationId,'inventory_date'=>$date,'inventory_type'=>$kind,'cylinder_type_id'=>$typeId])->first();
         $db=Database::connect(); $db->transBegin();
