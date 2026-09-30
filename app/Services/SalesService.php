@@ -313,7 +313,10 @@ class SalesService
                     $gasRow=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->where('inventory_type','gas_kg')->where('direction','out')->where('cylinder_unit_id',$unitId)->orderBy('id')->get()->getRowArray();
                     $this->cylinders->restoreFilled($unitId,(float)($gasRow['quantity']??0));
                 }elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='out') $this->cylinders->restoreEmpty($unitId);
-                elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='in') $this->cylinders->markSold($unitId);
+                elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='in') {
+                    $converted=(int)$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->where('inventory_type','filled_cylinder')->where('direction','out')->where('cylinder_unit_id',$unitId)->countAllResults()>0;
+                    if(!$converted) $this->cylinders->markSold($unitId);
+                }
             }
             $cashRows=$this->db->table('cash_transactions')->where('reference_type','sale')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','in')->get()->getResultArray();
             $existingReversal=(int)$this->db->table('cash_transactions')->where('reference_type','sale_void')->where('reference_id',$saleId)->where('transaction_type','sale_cash')->where('direction','out')->countAllResults();
