@@ -21,9 +21,34 @@ CREATE TABLE IF NOT EXISTS cylinder_units(
  FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,
  CHECK(gas_weight_kg>=0)
 ) ENGINE=InnoDB;
-ALTER TABLE inventory_movements ADD COLUMN cylinder_unit_id BIGINT UNSIGNED NULL AFTER source_line_id;
-ALTER TABLE inventory_movements ADD KEY idx_inventory_unit(cylinder_unit_id);
-ALTER TABLE inventory_movements ADD CONSTRAINT fk_inventory_unit FOREIGN KEY (cylinder_unit_id) REFERENCES cylinder_units(id) ON DELETE SET NULL;
+-- The ALTER statements below are deliberately idempotent so this one-time migration can be safely retried
+-- after a partial run or after the column/table was already added.
+SET @has_cylinder_unit_id := (
+ SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+ WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_movements' AND COLUMN_NAME='cylinder_unit_id'
+);
+SET @sql := IF(@has_cylinder_unit_id=0,
+ 'ALTER TABLE inventory_movements ADD COLUMN cylinder_unit_id BIGINT UNSIGNED NULL AFTER source_line_id',
+ 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_inventory_unit_key := (
+ SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+ WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_movements' AND INDEX_NAME='idx_inventory_unit'
+);
+SET @sql := IF(@has_inventory_unit_key=0,
+ 'ALTER TABLE inventory_movements ADD KEY idx_inventory_unit(cylinder_unit_id)',
+ 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @has_inventory_unit_fk := (
+ SELECT COUNT(*) FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+ WHERE CONSTRAINT_SCHEMA=DATABASE() AND CONSTRAINT_NAME='fk_inventory_unit' AND TABLE_NAME='inventory_movements'
+);
+SET @sql := IF(@has_inventory_unit_fk=0,
+ 'ALTER TABLE inventory_movements ADD CONSTRAINT fk_inventory_unit FOREIGN KEY (cylinder_unit_id) REFERENCES cylinder_units(id) ON DELETE SET NULL',
+ 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- Backfill existing filled/empty cylinder stock as full-capacity units.
