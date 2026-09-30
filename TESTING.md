@@ -77,21 +77,37 @@ Error / notes:
 > Write here.
 
 ## Phase 2 — Master Data (READY FOR TEST)
-- [x] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify the existing record values load into the edit form and changes persist.
-- [x] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify the existing record values load into the edit form and changes persist.
+- [x] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. Previous edit-modal defect fixed and retested.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
+- [x] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. Previous edit-modal defect fixed and retested.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
 - [x] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
 - [x] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
-- [x] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.** Previous failure: edit modal did not open due to a view JavaScript error; fix committed. Retest must verify existing user values load, role selection is preserved, and changes persist without requiring a password when unchanged.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
+- [x] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. Previous edit-modal defect fixed and retested.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
 - [x] Opening Inventory: gas KG, filled cylinders and empty cylinders, date/type uniqueness, non-negative validation.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
 - [x] Customer ledger: opening balance + posted credit sales - posted receipts.
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
 - [x] Supplier ledger: opening balance + posted credit purchases - posted supplier payments.
-Phase 2 status: BLOCKED — 3 ITEMS AWAITING USER RETEST
+  - SQA Comments / Improvement Notes: 
+  - Evidence / Test Data: 
+Phase 2 status: PASS — USER RETEST COMPLETE
 
 ### Phase 2 Regression / Improvement Notes
 - Edit actions must open the correct edit modal and preload the selected record; saving an edit must persist the changed values.
 - Edit forms must preserve existing values, including role selection for users; user password must remain unchanged when the password field is left blank during an edit.
 - Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
-- After the edit retests pass, perform one regression pass over the already-passed Phase 2 modules before unlocking Phase 3.
+- Phase 2 regression completed after the edit retests. Any future SQA observation should be recorded in the per-function comment space above; implementation-impacting items should also be added to requirements.md before scheduling them.
 
 ## Phase 3 — POS Sales (DO NOT TEST YET)
 - [ ] Filled cylinder sale
