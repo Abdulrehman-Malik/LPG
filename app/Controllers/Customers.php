@@ -23,7 +23,18 @@ class Customers extends Controller
         return view('customers/index',['title'=>'Customers / Parties','customers'=>$this->model->orderBy('name')->findAll()]);
     }
 
-    public function ledger(int $id)\n    {\n        if($r=$this->guard()) return $r;\n        $customer=$this->model->withLedgerTotals($id);\n        if(!$customer) return $this->response->setStatusCode(404)->setBody('Customer not found');\n        $db=$this->model->db;\n        $sales=$db->table('sales')->select('transaction_at,sale_no,total_amount,credit_amount,status')->where('customer_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();\n        $receipts=$db->table('customer_receipts')->select('receipt_at,receipt_no,amount,payment_mode,status')->where('customer_id',$id)->orderBy('receipt_at','DESC')->get()->getResultArray();\n        return view('customers/ledger',['title'=>'Customer Ledger — '.$customer['name'],'customer'=>$customer,'sales'=>$sales,'receipts'=>$receipts]);\n    }\n\n    public function save()
+    public function ledger(int $id)
+    {
+        if($r=$this->guard()) return $r;
+        $customer=$this->model->withLedgerTotals($id);
+        if(!$customer) return $this->response->setStatusCode(404)->setBody('Customer not found');
+        $db=$this->model->db;
+        $sales=$db->table('sales')->select('transaction_at,sale_no,total_amount,credit_amount,status')->where('customer_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();
+        $receipts=$db->table('customer_receipts')->select('receipt_at,receipt_no,amount,payment_mode,status')->where('customer_id',$id)->orderBy('receipt_at','DESC')->get()->getResultArray();
+        return view('customers/ledger',['title'=>'Customer Ledger — '.$customer['name'],'customer'=>$customer,'sales'=>$sales,'receipts'=>$receipts]);
+    }
+
+    public function save()
     {
         if($r=$this->guard()) return $r;
         $id=(int)$this->request->getPost('id');
