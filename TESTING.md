@@ -77,11 +77,11 @@ Error / notes:
 > Write here.
 
 ## Phase 2 — Master Data (READY FOR TEST)
-- [!] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
-- [!] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
+- [X] Customers / Parties: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
+- [X] Suppliers: create, edit, active/inactive, required fields, duplicate-code handling, ledger link. **Retest after fixes.** Test result=> [edit function not wokring]
 - [X] Cylinder Types: create, edit, capacity/tare validation, active/inactive, duplicate-code handling.
 - [X] LPG Rates: gas/kg and cylinder-package rates, effective date/time, rate history, old/new change log.
-- [!] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.** [edit function not wokring]
+- [X] Users / Roles / Permissions: create/update user, password hashing, role assignment, permission matrix, unauthorized access blocked. **Retest after fixes.** [edit function not wokring]
 - [x] Opening Inventory: gas KG, filled cylinders and empty cylinders, date/type uniqueness, non-negative validation.
 - [X] Customer ledger: opening balance + posted credit sales - posted receipts. **Retest after fixes.**
 - [X] Supplier ledger: opening balance + posted credit purchases - posted supplier payments. **Retest after fixes.**
