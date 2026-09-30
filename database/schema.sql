@@ -4,7 +4,7 @@ CREATE DATABASE IF NOT EXISTS perfect_lpg CHARACTER SET utf8mb4 COLLATE utf8mb4_
 USE perfect_lpg;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS=0;
-DROP TABLE IF EXISTS audit_logs,cash_transactions,cash_sessions,cash_registers,expenses,expense_categories,inventory_movements,inventory_opening_balances,customer_receipts,supplier_payments,purchase_payments,purchase_items,purchases,sale_payments,sale_items,sales,rate_change_log,rate_cards,customers,suppliers,role_permissions,permissions,users,roles,locations,cylinder_types;
+DROP TABLE IF EXISTS audit_logs,cash_transactions,cash_sessions,cash_registers,expenses,expense_categories,inventory_movements,cylinder_units,inventory_opening_balances,customer_receipts,supplier_payments,purchase_payments,purchase_items,purchases,sale_payments,sale_items,sales,rate_change_log,rate_cards,customers,suppliers,role_permissions,permissions,users,roles,locations,cylinder_types;
 SET FOREIGN_KEY_CHECKS=1;
 
 CREATE TABLE locations(id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,code VARCHAR(30) NOT NULL UNIQUE,name VARCHAR(120) NOT NULL,address VARCHAR(255),city VARCHAR(80),phone VARCHAR(30),is_active BOOLEAN NOT NULL DEFAULT 1,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)ENGINE=InnoDB;
