@@ -1,6 +1,6 @@
 <?php
-namespace AppServices;
-use ConfigDatabase;
+namespace App\Services;
+use Config\Database;
 use RuntimeException;
 
 class InventoryControlService
