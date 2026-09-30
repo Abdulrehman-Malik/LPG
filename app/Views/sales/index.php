@@ -92,7 +92,7 @@ function addLine(mode=transactionType.value||'sell_gas_only'){
  const tr=document.createElement('tr');
  tr.innerHTML='<td><select class="form-select kind"><option value="sell_gas_only">Gas Only</option><option value="replace_same">Replace Same</option><option value="sell_filled">Filled + Gas</option><option value="replace_different">Filled + Different Return</option><option value="sell_empty">Empty Only</option></select></td><td><select class="form-select cyl"></select><div class="receivedWrap mt-1" style="display:none"><small class="text-muted">Received Empty Type</small><select class="form-select receivedCyl"></select></div></td><td><input class="form-control qty" type="number" min="0.001" step="0.001" value="1"></td><td><div class="gasRateWrap small" style="display:none"><label class="form-label mb-0">Gas / KG</label><input class="form-control form-control-sm gasRate" type="number" min="0" step="0.01"></div><div class="cylRateWrap small mt-1" style="display:none"><label class="form-label mb-0">Cylinder Price</label><input class="form-control form-control-sm cylRate" type="number" min="0" step="0.01"></div></td><td class="lineGas small text-muted">Gas: 0.000 KG<br><strong class="lineTotal">Rs. 0.00</strong></td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
  tbody.appendChild(tr);tr.querySelector('.kind').value=mode;
- const kind=tr.querySelector('.kind');kind.onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.cyl').onchange=()=>recalc();tr.querySelector('.receivedCyl').onchange=()=>recalc();tr.querySelector('.qty').oninput=()=>recalc();tr.querySelector('.gasRate').oninput=()=>recalc();tr.querySelector('.cylRate').oninput=()=>recalc();tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};refreshLineFields(tr);
+ const kind=tr.querySelector('.kind');kind.onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.cyl').onchange=()=>{refreshLineFields(tr);recalc();};tr.querySelector('.receivedCyl').onchange=()=>recalc();tr.querySelector('.qty').oninput=()=>recalc();tr.querySelector('.gasRate').oninput=()=>recalc();tr.querySelector('.cylRate').oninput=()=>recalc();tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};refreshLineFields(tr);
 }
 function recalc(){
  let total=0,gasDeduction=0;const usedByType={};
@@ -103,7 +103,7 @@ function recalc(){
    if(mode==='sell_gas_only'||mode==='replace_same') lineTotal=gas*gasRate;
    else if(mode==='sell_filled'||mode==='replace_different') lineTotal=gas*gasRate+Math.floor(qty)*cylRate;
    else if(mode==='sell_empty') lineTotal=Math.floor(qty)*cylRate;
-   gasDeduction+=gas;total+=lineTotal;tr.querySelector('.lineGas').innerHTML='Gas: '+gas.toFixed(3)+' KG<br><strong class="lineTotal">Rs. '+lineTotal.toFixed(2)+'</strong>';
+   gasDeduction+=gas;total+=lineTotal;tr.dataset.previewGas=gas.toFixed(3);tr.querySelector('.lineGas').innerHTML='Gas: '+gas.toFixed(3)+' KG<br><strong class="lineTotal">Rs. '+lineTotal.toFixed(2)+'</strong>';
  });
  total-=Number(document.getElementById('discount').value||0);document.getElementById('total').textContent=Math.max(0,total).toFixed(2);
  const after=Number(gasStock||0)-gasDeduction,afterEl=document.getElementById('gasStockAfter');afterEl.textContent=after.toFixed(3)+' KG';afterEl.classList.toggle('text-danger',after<0);afterEl.classList.toggle('text-success',after>=0);
