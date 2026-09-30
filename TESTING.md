@@ -109,6 +109,167 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - Use only `[x]` for PASS and `[!]` for FAIL; do not use uppercase `[X]`, because the documented status convention is case-sensitive for this test gate.
 - Phase 2 regression completed after the edit retests. Any future SQA observation should be recorded in the per-function comment space above; implementation-impacting items should also be added to requirements.md before scheduling them.
 
+## How to Execute the Functional User Test
+
+Follow the tests in the order below. Do not try to test every screen randomly. Complete the prerequisite step before moving to the next step. These are browser/user tests; do not mark a test PASS unless the result was actually observed locally.
+
+### Step 0 — Login and Dashboard
+1. Open **http://localhost:180/LPG2/LPG/public/**.
+2. Login with **admin / admin123**.
+3. Confirm the Dashboard opens and no PHP/SQL error appears.
+4. If this fails, stop and record the complete error and reproduction steps.
+
+### Step 1 — Open Counter Cash
+1. Open **Counter Cash**.
+2. Enter Opening Cash: **Rs. 10,000**.
+3. Enter Notes: **SQA test session**.
+4. Click **Open**.
+5. Confirm an open session for register **REG-01** is displayed.
+6. Record the displayed Opening, Cash In, Cash Out and Expected values. If the opening float appears to be counted twice, record it as an SQA defect rather than changing the database manually.
+
+### Step 2 — Open POS and Post a Normal Cash Sale
+1. Open **POS**.
+2. Select a Phase 2 test customer.
+3. Select **Filled Cylinder**.
+4. Select a cylinder type with available opening stock.
+5. Enter quantity **1** and use the displayed standard rate.
+6. Set Discount to **0**.
+7. Select **Cash** and enter the exact sale total.
+8. Click **Post Sale**.
+9. Confirm a success message and sale number appear.
+10. Open the receipt and verify sale number, customer, cylinder, quantity, rate, total and payment.
+
+### Step 3 — Verify Inventory After the Sale
+1. Open **Inventory**.
+2. Find the cylinder type sold in Step 2.
+3. Confirm filled-cylinder stock decreased by the expected quantity.
+4. Confirm gas stock also changed according to the cylinder capacity.
+5. Do not manually correct stock during the test.
+
+### Step 4 — Test KG Refill
+1. Return to **POS**.
+2. Select **Refill KG**.
+3. Enter **5 kg** and use the displayed gas/kg rate.
+4. Select Cash and enter the exact total.
+5. Post the sale.
+6. Confirm the sale and receipt succeed.
+7. Check Inventory and confirm gas stock decreased by **5 kg**.
+
+### Step 5 — Test Credit Sale and Customer Ledger
+1. Open **POS**.
+2. Select the same test customer.
+3. Create a small sale.
+4. Select **Credit** and post it.
+5. Open **Reports → Customer Ledger**.
+6. Confirm the credit sale appears as a debit and the customer's outstanding balance increases accordingly.
+
+### Step 6 — Test Customer Receipt
+1. Open **Customer Receipts**.
+2. Select the customer used in Step 5.
+3. Enter **Rs. 500** or an amount not greater than the outstanding balance.
+4. Select **Cash**.
+5. Save the receipt.
+6. Confirm the receipt succeeds and Counter Cash increases.
+7. Re-open the customer ledger and confirm the receipt is shown as a credit and the outstanding balance decreases.
+
+### Step 7 — Test Custom Rate
+1. Open **POS** and create a sale.
+2. Select a line with a displayed standard rate.
+3. Change the rate manually to a different amount, for example standard **250** to applied **260**.
+4. Confirm the line is visibly identified as a custom rate.
+5. Post the sale.
+6. Open the receipt and confirm the applied rate is retained.
+
+### Step 8 — Test Cylinder Exchange
+1. Open **POS**.
+2. Select **Cylinder Exchange**.
+3. Select a cylinder type and enter quantity **1**.
+4. Post the transaction using the appropriate payment information.
+5. Confirm the transaction succeeds.
+6. Check Inventory for the expected filled-cylinder/gas OUT and empty-cylinder IN effects.
+
+### Step 9 — Test Empty Cylinder Intake
+1. Open **POS**.
+2. Select **Empty Intake**.
+3. Select a cylinder type and quantity **1**.
+4. Post the transaction.
+5. Confirm empty-cylinder stock increases by **1** and is not increased twice.
+
+### Step 10 — Test Empty Cylinder Sale
+1. Open **POS**.
+2. Select **Empty Sale**.
+3. Select a cylinder type with available empty stock.
+4. Enter quantity **1** and a valid rate.
+5. Post the transaction.
+6. Confirm empty-cylinder stock decreases by **1**.
+7. If the requested quantity is greater than available stock, confirm the application rejects the transaction without partial posting.
+
+### Step 11 — Test Purchase
+1. Open **Purchases**.
+2. Select a Phase 2 test supplier.
+3. Add a small purchase line, for example **20 kg gas** or **1 filled cylinder**.
+4. Enter a valid rate and leave discount at **0**.
+5. Select **Cash** and enter the exact total.
+6. Post the purchase.
+7. Confirm the purchase succeeds, inventory increases, and Counter Cash decreases by the cash payment.
+
+### Step 12 — Test Inventory Adjustment
+1. Open **Inventory**.
+2. Create an **IN** adjustment for quantity **1** with reason **SQA test adjustment**.
+3. Confirm stock increases by 1.
+4. Attempt an **OUT** adjustment greater than available stock.
+5. Confirm the application rejects the adjustment and does not create a negative balance or partial movement.
+
+### Step 13 — Test Manual Cash IN and OUT
+1. Open **Counter Cash** while the session is open.
+2. Post Cash IN of **Rs. 100** with reason **SQA test**.
+3. Confirm Cash In/Expected values change appropriately.
+4. Post Cash OUT of **Rs. 50** with reason **SQA test**.
+5. Confirm Cash Out/Expected values change appropriately.
+
+### Step 14 — Test Expense
+1. Open **Expenses**.
+2. Select an expense category.
+3. Enter **Rs. 100**.
+4. Select **Cash**.
+5. Enter description **SQA test expense**.
+6. Save.
+7. Confirm the expense appears in recent expenses and Counter Cash reflects the cash OUT.
+
+### Step 15 — Test Supplier Payment
+1. Open **Supplier Payments**.
+2. Select the test supplier.
+3. Enter a small payment.
+4. Select **Cash**.
+5. Save.
+6. Confirm the supplier payment succeeds and Counter Cash reflects the cash OUT.
+
+### Step 16 — Test Reports and Audit
+1. Open **Reports** and verify today's sales, purchases, payment-mode summary and credit totals against the transactions you posted.
+2. Open **Customer Ledger** and reconcile the test customer's opening balance, credit sales and receipts.
+3. Open **Inventory** and reconcile gas, filled-cylinder and empty-cylinder stock to the transactions performed.
+4. Open **Audit** and confirm operational create actions are recorded with user, location, entity and timestamp.
+
+### Step 17 — Close Counter Cash
+1. Return to **Counter Cash**.
+2. Review the displayed Expected Cash.
+3. Count the actual cash physically present.
+4. Enter the counted amount.
+5. Click **Close Session**.
+6. Confirm the session closes and the displayed difference equals **Counted Cash - Expected Cash**.
+7. Record the counted cash, expected cash and difference in the Evidence / Test Data section for the cash test.
+
+### What to Send When a Test Fails
+For every failure, record:
+- Screen/function name.
+- Exact values entered.
+- Button/action performed.
+- Complete PHP/SQL/browser error text, if any.
+- Reproduction steps.
+- Screenshot, where possible.
+
+Example: **POS → Filled Cylinder → Customer Test Customer → C11_8 → Qty 1 → Rate 250 → Cash 250 → Post Sale → error: APPPATH\\Services\\CashService.php line 32**.
+
 ## Phase 3 — POS Sales (READY FOR USER TEST)
 - [ ] POS screen: customer selection, line grid, totals, payments, validation.
   - SQA Comments / Improvement Notes: Verify mixed-line behavior, client/server total agreement, empty-state validation, and that walk-in mode prevents non-cash payment selection. Confirm displayed OS is clearly distinguished from the resulting New OS.
