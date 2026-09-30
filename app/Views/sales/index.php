@@ -16,7 +16,7 @@
 <div class="table-responsive"><table class="table table-sm align-middle" id="lines"><thead><tr><th>Type</th><th>Cylinder</th><th>Qty / KG</th><th>Rate</th><th>Total</th><th></th></tr></thead><tbody></tbody></table></div>
 <button type="button" class="btn btn-outline-primary" id="addLine">Add Line</button>
 </div></div></div>
-<div class="col-lg-4"><div class="card"><div class="card-body"><div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Total Gas Stock</label><div class="form-control bg-light fw-semibold"><?= number_format((float)$gasStock, 3) ?> KG</div></div><div class="col-6"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="0.01" value="0" class="form-control"></div></div><div class="mb-3"><strong>Total: Rs. <span id="total">0.00</span></strong></div><div id="payments"></div><button type="button" class="btn btn-outline-secondary mb-3" id="addPayment">Add Payment</button><textarea name="notes" class="form-control mb-3" placeholder="Notes"></textarea><button class="btn btn-primary w-100" id="saveBtn">Post Sale</button></div></div></div>
+<div class="col-lg-4"><div class="card"><div class="card-body"><div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Total Gas Stock</label><div class="form-control bg-light fw-semibold"><span id="gasStockCurrent"><?= number_format((float)$gasStock, 3) ?></span> KG</div><div class="small text-muted mt-1">After This Sale: <strong id="gasStockAfter"><?= number_format((float)$gasStock, 3) ?> KG</strong></div></div><div class="col-6"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="0.01" value="0" class="form-control"></div></div><div class="mb-3"><strong>Total: Rs. <span id="total">0.00</span></strong></div><div id="payments"></div><button type="button" class="btn btn-outline-secondary mb-3" id="addPayment">Add Payment</button><textarea name="notes" class="form-control mb-3" placeholder="Notes"></textarea><button class="btn btn-primary w-100" id="saveBtn">Post Sale</button></div></div></div>
 </div></form>
 <script>
 const types=<?= json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>;
@@ -43,7 +43,26 @@ function refreshCustomer(){const c=selectedCustomer(),box=document.getElementByI
 function addLine(){const tr=document.createElement('tr');tr.innerHTML='<td><select class="form-select kind"><option value="filled_cylinder">Sell Filled Cylinder</option><option value="refill_kg">Refill Customer Cylinder by KG</option><option value="cylinder_exchange">Cylinder Exchange (Full for Empty)</option><option value="empty_intake">Receive Empty Cylinder</option><option value="empty_sale">Sell Empty Cylinder</option></select></td><td><select class="form-select cyl"></select></td><td><input class="form-control qty" type="number" min="0.001" step="0.001" value="1"></td><td><input class="form-control rate" type="number" min="0" step="0.01"></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';tbody.appendChild(tr);bindLine(tr);}
 function transactionHint(kind){const hints={filled_cylinder:'Sell Filled Cylinder — the system selects an available physical filled cylinder and deducts its actual gas weight.',refill_kg:'Refill Customer Cylinder by KG — charges the customer by the entered gas weight; this is not a filled-stock cylinder sale.',cylinder_exchange:'Cylinder Exchange — customer receives a filled physical cylinder and returns an empty cylinder.',empty_intake:'Receive Empty Cylinder — records an empty cylinder received into stock.',empty_sale:'Sell Empty Cylinder — sells one or more empty physical cylinders from stock.'};document.getElementById('transactionHint').innerHTML='<strong>Transaction:</strong> '+(hints[kind]||'Select a transaction type.');}
 function bindLine(tr){const kind=tr.querySelector('.kind'),cyl=tr.querySelector('.cyl'),qty=tr.querySelector('.qty'),rate=tr.querySelector('.rate');function refreshCylinderOptions(){const current=cyl.value;cyl.innerHTML=options(kind.value);if([...cyl.options].some(o=>o.value===current))cyl.value=current;}function sync(){transactionHint(kind.value);refreshCylinderOptions();const r=kind.value==='refill_kg'?kgRate:(rates[cyl.value]??0);if(document.activeElement!==rate)rate.value=r??'';tr.querySelector('.lineTotal').textContent=(Number(qty.value||0)*Number(rate.value||0)).toFixed(2);calc();}kind.onchange=sync;cyl.onchange=sync;qty.oninput=sync;rate.oninput=sync;tr.querySelector('.remove').onclick=()=>{tr.remove();calc();};sync();}
-function calc(){let total=0;tbody.querySelectorAll('tr').forEach(tr=>total+=Number(tr.querySelector('.lineTotal').textContent||0));total-=Number(document.getElementById('discount').value||0);document.getElementById('total').textContent=Math.max(0,total).toFixed(2);}
+function gasStockAfterSale(){
+ let deduction=0;
+ const usedByType={};
+ tbody.querySelectorAll('tr').forEach(tr=>{
+   const kind=tr.querySelector('.kind').value;
+   const qty=Math.max(0,Number(tr.querySelector('.qty').value||0));
+   const typeId=tr.querySelector('.cyl').value;
+   if(kind==='refill_kg'){deduction+=qty;return;}
+   if(!['filled_cylinder','cylinder_exchange'].includes(kind)||!typeId||qty<=0)return;
+   const units=filledUnits[typeId]||[];
+   const start=Number(usedByType[typeId]||0);
+   const count=Math.floor(qty);
+   for(let i=0;i<count;i++){const unit=units[start+i];if(unit)deduction+=Number(unit.gas_weight_kg||0);}
+   usedByType[typeId]=start+count;
+ });
+ const after=Math.max(0,Number(gasStock||0)-deduction);
+ document.getElementById('gasStockAfter').textContent=after.toFixed(3)+' KG';
+ return after;
+}
+function calc(){let total=0;tbody.querySelectorAll('tr').forEach(tr=>total+=Number(tr.querySelector('.lineTotal').textContent||0));total-=Number(document.getElementById('discount').value||0);document.getElementById('total').textContent=Math.max(0,total).toFixed(2);gasStockAfterSale();}
 function addPayment(){const div=document.createElement('div');div.className='input-group mb-2 payment';div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="0.01" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';payments.appendChild(div);div.querySelector('.mode').onchange=syncPaymentModes;div.querySelector('.remove').onclick=()=>div.remove();syncPaymentModes();}
 function syncPaymentModes(){const walkIn=!document.getElementById('customer_id').value;payments.querySelectorAll('.payment').forEach(p=>{const mode=p.querySelector('.mode');[...mode.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash');if(walkIn)mode.value='cash';});}
 function paymentTotal(){return [...payments.querySelectorAll('.payment')].reduce((s,p)=>s+Number(p.querySelector('.amount').value||0),0);}
