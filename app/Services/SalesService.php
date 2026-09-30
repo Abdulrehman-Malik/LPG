@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\CylinderTypeModel;
 use App\Models\CustomerModel;
 use App\Models\GasRateModel;
-use App\Services\CashService;
 use Config\Database;
 use RuntimeException;
 
@@ -16,6 +15,7 @@ class SalesService
     protected $customers;
     protected $rates;
     protected $cash;
+    protected array $inventoryLocks = [];
 
     public function __construct()
     {
@@ -104,6 +104,13 @@ class SalesService
 
         $this->db->transBegin();
         try{
+            if($customerId){
+                $lockedCustomer=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();
+                if(!$lockedCustomer || !(int)$lockedCustomer['is_active']) throw new RuntimeException('Customer is unavailable.');
+                $customer=$lockedCustomer;
+                if($credit>0 && $this->customerBalance($customerId)+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
+            }
+            $this->acquireInventoryLocks($locationId,$inventory);
             foreach($inventory as $m) $this->assertStock($locationId,$m['type'],$m['cylinder_type_id'],$m['quantity'],$m['direction'],$transactionAt);
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
             $scenarioTypes=array_values(array_unique(array_column($lines,'line_type')));
@@ -118,8 +125,13 @@ class SalesService
             if($cashAmount>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session) throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$session['id'],$saleId,$cashAmount,$userId,$transactionAt);}
             if(!$this->db->transStatus()) throw new RuntimeException('Sale posting failed.');
             $this->db->transCommit();
+            $this->releaseInventoryLocks();
             return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$credit];
-        }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+        }catch(\Throwable $e){
+            $this->releaseInventoryLocks();
+            $this->db->transRollback();
+            throw $e;
+        }
     }
 
     public function void(int $saleId,int $userId,int $locationId,string $reason): string
@@ -128,11 +140,12 @@ class SalesService
         if($reason==='') throw new RuntimeException('Void reason is required.');
         $this->db->transBegin();
         try{
-            $sale=$this->db->table('sales')->where('id',$saleId)->where('location_id',$locationId)->get()->getRowArray();
+            $sale=$this->db->query("SELECT * FROM sales WHERE id=? AND location_id=? FOR UPDATE",[$saleId,$locationId])->getRowArray();
             if(!$sale) throw new RuntimeException('Sale not found.');
             if($sale['status']!=='posted') throw new RuntimeException('Only posted sales can be voided.');
 
             $movements=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->get()->getResultArray();
+            $this->acquireInventoryLocks($locationId,$movements);
             foreach($movements as $m){
                 $reverse=$m['direction']==='in'?'out':'in';
                 $this->db->table('inventory_movements')->insert(['location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,'created_by'=>$userId,'notes'=>'Reversal of sale '.$sale['sale_no']]);
@@ -150,8 +163,13 @@ class SalesService
             $this->db->table('sales')->where('id',$saleId)->update(['status'=>'voided','voided_by'=>$userId,'voided_at'=>date('Y-m-d H:i:s'),'void_reason'=>$reason]);
             if(!$this->db->transStatus()) throw new RuntimeException('Sale void failed.');
             $this->db->transCommit();
+            $this->releaseInventoryLocks();
             return $sale['sale_no'];
-        }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+        }catch(\Throwable $e){
+            $this->releaseInventoryLocks();
+            $this->db->transRollback();
+            throw $e;
+        }
     }
 
     public function customerBalance(int $customerId): float
@@ -160,6 +178,33 @@ class SalesService
         $r=$this->db->table('customer_receipts')->selectSum('amount','paid')->where('customer_id',$customerId)->where('status','posted')->get()->getRowArray();
         $c=$this->customers->find($customerId);
         return (float)($c['opening_balance']??0)+(float)($s['credit']??0)-(float)($r['paid']??0);
+    }
+
+    protected function acquireInventoryLocks(int $locationId,array $movements): void
+    {
+        $keys=[];
+        foreach($movements as $m){
+            $type=(string)$m['type'];
+            $typeId=$m['cylinder_type_id']??null;
+            $keys[$type.'|'.($typeId===null?'null':(string)$typeId)]=true;
+        }
+        $keys=array_keys($keys);
+        sort($keys,SORT_STRING);
+        foreach($keys as $key){
+            $lockKey='lpg_inv_'.$locationId.'_'.substr(hash('sha256',$key),0,48);
+            $result=$this->db->query("SELECT GET_LOCK(?,5) AS locked",[$lockKey])->getRowArray();
+            if((int)($result['locked']??0)!==1) throw new RuntimeException('Inventory is busy; please retry the transaction.');
+            $this->inventoryLocks[]=$lockKey;
+        }
+    }
+
+    protected function releaseInventoryLocks(): void
+    {
+        if(!$this->inventoryLocks) return;
+        foreach(array_reverse($this->inventoryLocks) as $lockKey){
+            $this->db->query("SELECT RELEASE_LOCK(?) AS released",[$lockKey]);
+        }
+        $this->inventoryLocks=[];
     }
 
     protected function assertStock(int $locationId,string $type,?int $typeId,float $qty,string $direction,string $at): void
