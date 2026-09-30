@@ -61,10 +61,12 @@ Legend:
 ## Phase 4 — Purchases & Inventory
 - [x] Purchase entry
 - [x] Inventory service
+- [x] Physical cylinder unit inventory with actual gas weight per cylinder
 - [x] Stock adjustments
 - [x] Negative-stock protection
 - [x] Inventory reports / stock view
 - [x] Phase 4 functional scope implemented and released for user testing
+- [x] Per-cylinder gas-weight inventory enhancement implemented and released for user retest
 
 ## Phase 5 — Counter Cash & Expenses
 - [x] Cash register/session
