@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CylinderTypeModel;
 use App\Models\CustomerModel;
 use App\Models\GasRateModel;
+use App\Models\ShopSettingsModel;
 use Config\Database;
 use RuntimeException;
 
@@ -167,12 +168,15 @@ class SalesService
                 $gasGroups[$idx]['qty']+=(float)$row['gas_weight_kg'];
             }
             $overrideConfirmed=!empty($payload['stock_override_confirmed']);
+            $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
+            $allowStockOverride=(int)($shopSettings['allow_stock_override']??1)===1;
             $control=new InventoryControlService();
             $virtualGasStock=$gasAvailable;
             foreach($gasGroups as $group){
                 $policy=$control->policy($locationId,$group['type_id']);
                 $qty=(float)$group['qty'];
                 if(!(int)$policy['stock_validation_enabled']){
+                    if(!$allowStockOverride) throw new RuntimeException('Gas stock validation is OFF, but stock override is disabled in Shop Settings.');
                     if(!$overrideConfirmed) throw new RuntimeException('Gas stock validation is OFF. Confirm the stock override before posting this sale.');
                 }elseif($virtualGasStock+0.00001<$qty){
                     throw new RuntimeException('Insufficient gas stock. Available: '.number_format($virtualGasStock,3).' kg; required: '.number_format($qty,3).' kg.');
