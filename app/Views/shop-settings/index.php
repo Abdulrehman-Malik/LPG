@@ -53,14 +53,6 @@
                         </select>
                         <div class="form-text">This default is applied to the first POS line. Cashiers can still change the transaction type for a specific line.</div>
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label">Default Payment Mode</label>
-                        <select name="default_payment_mode" class="form-select">
-                            <?php foreach(['cash'=>'Cash','cheque'=>'Cheque','online'=>'Online','credit'=>'Credit'] as $value=>$label): ?>
-                                <option value="<?= esc($value) ?>" <?= ($settings['default_payment_mode'] ?? 'cash') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div>
                 </div>
             </div>
@@ -89,7 +81,7 @@
 
             <div class="tab-pane fade" id="cash">
                 <div class="row g-3">
-                    <div class="col-md-6"><label class="form-label">Default Payment Mode</label><input class="form-control" value="<?= esc(ucfirst($settings['default_payment_mode'] ?? 'cash')) ?>" readonly></div>
+                    <div class="col-md-6"><label class="form-label">Default Payment Mode</label><select name="default_payment_mode" class="form-select"><?php foreach(['cash'=>'Cash','cheque'=>'Cheque','online'=>'Online','credit'=>'Credit'] as $value=>$label): ?><option value="<?= esc($value) ?>" <?= ($settings['default_payment_mode'] ?? 'cash') === $value ? 'selected' : '' ?>><?= esc($label) ?></option><?php endforeach; ?></select><div class="form-text">New POS payment lines use this mode by default.</div></div>
                     <div class="col-md-6"><label class="form-label">Counter Cash</label><div class="form-control bg-light">Open cash session is required for cash sales and cash movements.</div></div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Cash, cheque, online and credit remain supported. Non-cash payments do not increase Counter Cash.</div></div>
                 </div>
