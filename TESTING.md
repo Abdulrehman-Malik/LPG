@@ -19,7 +19,7 @@ After starting the application, open the URL above in your browser. The login pa
 2. Install PHP 8.2+ with intl, mbstring and MySQLi enabled.
 3. The repository currently contains the CodeIgniter/vendor tree. If rebuilding dependencies locally, use the repository's composer.lock and verify the installed framework version before testing.
 4. Copy 'env' to '.env' if required and set your local MySQL credentials/database settings. The repository configuration uses 'perfect_lpg' as the database.
-5. Execute 'database/schema.sql' once on a fresh MySQL server.
+5. Execute 'database/schema.sql' once on a fresh MySQL server. If you are continuing with an existing tested database, execute `database/migrations/20260930_per_cylinder_inventory.sql` once before testing the new physical-cylinder inventory feature.
 6. Start the application using the configured local web server and open **http://localhost:180/LPG2/LPG/public/**.
 7. If using CodeIgniter's development server instead, run 'php spark serve' and open the URL reported by Spark (normally http://localhost:8080/).
 8. Test only items marked READY FOR TEST.
@@ -141,11 +141,12 @@ Suggestion: Show history report in a tab to view all history of cash counter or 
 **TEST Result:** PASS
 
 **SQA Review / Improvement Notes:**
-- Show available filled-cylinder quantity for the selected cylinder type and clearly distinguish it from overall location gas stock.
-- Current implementation uses separate location-level `gas_kg` stock plus cylinder-type filled stock. It assumes a filled-cylinder sale consumes the cylinder's configured full capacity.
-- Actual gas weight per individual cylinder is **not currently tracked**. A 20 kg cylinder is therefore treated as 20 kg for the filled-cylinder inventory movement. This does not yet support a 20 kg cylinder containing 18 kg and must be implemented as a dedicated inventory enhancement before this requirement can be marked PASS.
+- **Implemented and READY FOR RETEST:** POS now shows available filled cylinders and the actual gas weight stored against each available cylinder.
+- The inventory model now separates physical filled-cylinder units from the location-level gas balance. Each filled cylinder has an actual gas weight from 0 up to its configured capacity.
+- Filled-cylinder sales consume the selected physical units and deduct their actual gas weights from gas inventory.
 - Keep the active Cash Session status at the top-left of POS.
 - Use user-friendly transaction names and show a short explanation of the selected transaction type.
+- The second `POS Sales` page heading was removed; the main application topbar title remains, giving the POS grid more vertical space.
 
 1. Open **POS**.
 2. Select a Phase 2 test customer.
@@ -158,6 +159,8 @@ Suggestion: Show history report in a tab to view all history of cash counter or 
 9. Confirm a success message and sale number appear.
 10. Open the receipt and verify sale number, customer, cylinder, quantity, rate, total and payment.
 
+**New physical-cylinder test:** Before posting a filled-cylinder sale, verify the POS stock area lists each available cylinder unit and its actual gas weight. The sale must consume the correct unit(s), not assume every cylinder is full.
+
 TEST Result: PASS 
 Suggestion:
 1.when select filled cylinder it should show avaialble gas in kg for that cylinders.. so that user can see how much gas is avaialble in my stock.. in which cylidner. 
@@ -168,11 +171,34 @@ while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 
 5.Naming convention more user friendly and understndable to user for transaction type (like refill kg,empty intak, when user select the option show hint at the top what type of transction user is going to perform rule)
 6. Available stock is not showing anywhere in POS screen whne i select cylidner, it showuld reflect.
 7.also POS Sales is shwoing two time in page, remove 2nd one keep the first one as it is so space can be bigger.
+### Step 2A — Test Actual Gas Weight and Partial-Fill Cylinders
+
+1. Open **Opening Inventory** on a test database or create a dedicated SQA cylinder type, for example **20 kg Test Cylinder** with capacity **20.000 kg**.
+2. Add **2 Filled Cylinders** of this type.
+3. Enter **Actual Gas per Filled Cylinder = 18.000 kg**.
+4. Save the opening inventory.
+5. Open **POS** and select the test cylinder type.
+6. Confirm the available-cylinder display shows **2 cylinders**, each with **18.000 kg**, and the location gas total reflects **36.000 kg** from those cylinders (plus any other loose gas stock).
+7. Post a filled-cylinder sale for quantity **1**.
+8. Confirm only one physical cylinder is consumed and gas inventory decreases by **18.000 kg**, not 20 kg.
+9. Confirm one 18.000 kg filled cylinder remains available.
+10. Attempt to create a cylinder with actual gas **20.001 kg** and confirm the application rejects it.
+11. Attempt to create a cylinder with actual gas **0 kg** as a filled cylinder and confirm the application rejects it.
+
+**Expected result:** actual gas weight is tracked per physical cylinder and can be below capacity but never above capacity.
+
+### Step 2B — Test Bulk Filled-Cylinder Stock
+
+1. Add **2** filled cylinders of a 20 kg type with actual gas **20 kg** each.
+2. Confirm POS displays two available cylinders and a combined cylinder gas amount of **40 kg**.
+3. Sell one filled cylinder.
+4. Confirm one cylinder and **20 kg** of its gas remain.
+
 ### Step 3 — Verify Inventory After the Sale
 1. Open **Inventory**.
 2. Find the cylinder type sold in Step 2.
 3. Confirm filled-cylinder stock decreased by the expected quantity.
-4. Confirm gas stock also changed according to the cylinder capacity.
+4. Confirm gas stock changed by the **actual gas weight of the physical cylinder sold**, not automatically by rated capacity.
 5. Do not manually correct stock during the test.
 
 ### Step 4 — Test KG Refill
@@ -237,10 +263,12 @@ while adding stock if we select cylider 20kg and add 2 in qty it mean we have 2 
 1. Open **Purchases**.
 2. Select a Phase 2 test supplier.
 3. Add a small purchase line, for example **20 kg gas** or **1 filled cylinder**.
-4. Enter a valid rate and leave discount at **0**.
-5. Select **Cash** and enter the exact total.
-6. Post the purchase.
-7. Confirm the purchase succeeds, inventory increases, and Counter Cash decreases by the cash payment.
+4. For a filled-cylinder purchase, enter Actual Gas KG per cylinder. Verify the value cannot exceed the cylinder capacity and may be lower than capacity.
+5. Confirm the purchased filled cylinder appears in POS with its actual gas weight.
+6. Enter a valid rate and leave discount at **0**.
+7. Select **Cash** and enter the exact total.
+8. Post the purchase.
+9. Confirm the purchase succeeds, inventory increases, the physical cylinder unit is available in POS, and Counter Cash decreases by the cash payment.
 
 ### Step 12 — Test Inventory Adjustment
 1. Open **Inventory**.
@@ -306,9 +334,9 @@ Example: **POS → Filled Cylinder → Customer Test Customer → C11_8 → Qty 
 | Login / Dashboard | PASS | User retest completed previously. |
 | Counter Cash — open session | PASS | Session opened successfully; expected-cash double-count issue corrected in code. |
 | POS — normal filled-cylinder cash sale | PASS | Sale posted and receipt flow passed. |
-| POS — actual per-cylinder fill weight | NOT IMPLEMENTED | Current model does not track gas weight per individual cylinder. |
+| POS — actual per-cylinder fill weight | READY FOR RETEST | Physical cylinder units and actual gas weights are now implemented; run Steps 2A and 2B. |
 | Cash History | READY FOR RETEST | New screen added after SQA request; verify locally. |
-| POS stock visibility / transaction hints | READY FOR RETEST | UI enhancement added; verify locally. |
+| POS stock visibility / transaction hints | READY FOR RETEST | UI enhancement added, duplicate POS heading removed, and per-cylinder stock display added; verify locally. |
 
 **Important:** A PASS above records only the functions the user explicitly reported as passed. New code changes after that test cycle are marked READY FOR RETEST, not PASS.
 
