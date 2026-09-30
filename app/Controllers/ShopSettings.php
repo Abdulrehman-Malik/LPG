@@ -47,10 +47,16 @@ class ShopSettings extends Controller
         $fontFamily = trim((string) $this->request->getPost('font_family'));
         $primaryColor = trim((string) $this->request->getPost('primary_color'));
         $accentColor = trim((string) $this->request->getPost('accent_color'));
-        if (!in_array($themeMode, ['light','dark'], true)) throw new \RuntimeException('Invalid theme mode.');
-        if (!in_array($fontFamily, ['system','arial','verdana','tahoma','trebuchet','georgia','times'], true)) throw new \RuntimeException('Invalid font family.');
+        if (!in_array($themeMode, ['light','dark'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid theme mode.');
+        }
+        if (!in_array($fontFamily, ['system','arial','verdana','tahoma','trebuchet','georgia','times'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid font style.');
+        }
         foreach (['primaryColor'=>$primaryColor,'accentColor'=>$accentColor] as $label=>$color) {
-            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) throw new \RuntimeException('Invalid '.$label.' color.');
+            if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+                return redirect()->back()->withInput()->with('error', 'Invalid '.$label.' color.');
+            }
         }
 
         if (!in_array($saleMode, ShopSettingsModel::SALE_MODES, true)) {
