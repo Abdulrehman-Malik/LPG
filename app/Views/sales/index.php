@@ -1,6 +1,6 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('content') ?>
-<div class="pos-page" style="--pos-font-size: <?= esc((float)($shopSettings['pos_font_size_px'] ?? 14)) ?>px"><div class="d-flex justify-content-between align-items-center mb-3"><div><?php if($cashSession): ?><div class="small text-success fw-semibold">Cash session: OPEN — <?=esc($cashSession["register_code"])?></div><?php else: ?><div class="small text-warning fw-semibold">Cash session: NOT OPEN — open Counter Cash before cash sales</div><?php endif; ?></div><span class="badge text-bg-secondary">Phase 3</span></div>
+<div class="d-flex justify-content-between align-items-center mb-3"><div><?php if($cashSession): ?><div class="small text-success fw-semibold">Cash session: OPEN — <?=esc($cashSession["register_code"])?></div><?php else: ?><div class="small text-warning fw-semibold">Cash session: NOT OPEN — open Counter Cash before cash sales</div><?php endif; ?></div><span class="badge text-bg-secondary">Phase 3</span></div>
 <?php if(session()->getFlashdata('success')): ?><div class="alert alert-success"><?= session()->getFlashdata('success') ?></div><?php endif; ?>
 <?php if(session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 <form method="post" action="<?= site_url('sales/save') ?>" id="saleForm"><?= csrf_field() ?>
@@ -28,7 +28,6 @@
 <textarea name="notes" class="form-control mb-3" placeholder="Notes"></textarea><button class="btn btn-primary w-100" id="saveBtn">Post Sale</button>
 </div></div></div>
 </div></form>
-<style>.pos-page{font-size:var(--pos-font-size,14px)}.pos-page .form-control,.pos-page .form-select,.pos-page .btn,.pos-page .form-label,.pos-page .form-text,.pos-page .alert,.pos-page .table,.pos-page .badge{font-size:inherit}.pos-page .small{font-size:.9em!important}</style>
 <script>
 const types=<?= json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>;
 const rates=<?= json_encode($cylinderRates) ?>, kgRate=<?= json_encode($kgRate) ?>, filledStock=<?= json_encode($filledStock) ?>, filledUnits=<?= json_encode($filledUnits) ?>, emptyStock=<?= json_encode($emptyStock) ?>, gasStock=<?= json_encode($gasStock) ?>;
@@ -120,4 +119,4 @@ document.getElementById('saleForm').onsubmit=()=>{
 };
 addLine(defaultSaleMode);addPayment();refreshCustomer();recalc();
 </script>
-</div><?= $this->endSection() ?>
+<?= $this->endSection() ?>
