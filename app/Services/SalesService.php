@@ -184,8 +184,9 @@ class SalesService
     {
         $keys=[];
         foreach($movements as $m){
-            $type=(string)$m['type'];
+            $type=(string)($m['type']??$m['inventory_type']??'');
             $typeId=$m['cylinder_type_id']??null;
+            if($type==='') throw new RuntimeException('Invalid inventory lock key.');
             $keys[$type.'|'.($typeId===null?'null':(string)$typeId)]=true;
         }
         $keys=array_keys($keys);
