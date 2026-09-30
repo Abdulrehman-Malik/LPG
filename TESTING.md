@@ -129,7 +129,7 @@ Phase 2 status: PASS — USER RETEST COMPLETE
   - SQA Comments / Improvement Notes: Verify negative empty stock is rejected and the sale stores the actual applied amount.
   - Evidence / Test Data:
 - [ ] Cash / cheque / online / credit: payment validation and walk-in restrictions.
-  - SQA Comments / Improvement Notes: SQA improvement to confirm reference-number rules for cheque/online once the open business decision is confirmed. Counter-cash session posting remains coupled to Phase 5 cash-session implementation.
+  - SQA Comments / Improvement Notes: SQA improvement to confirm reference-number rules for cheque/online once the open business decision is confirmed. Cash payments now require an open Counter Cash session and post to that session atomically; cheque/online do not enter Counter Cash.
   - Evidence / Test Data:
 - [ ] Credit-limit enforcement: Previous OS + Current Credit must not exceed Credit Limit.
   - SQA Comments / Improvement Notes: Test exact-limit acceptance and one-cent-over-limit rejection; include opening balance and posted receipts in the OS calculation.
@@ -140,8 +140,8 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - [ ] Custom-rate detection: applied rate differs from standard rate and is flagged.
   - SQA Comments / Improvement Notes: Verify both higher and lower custom rates, and confirm the standard rate and applied rate remain visible on the stored sale line.
   - Evidence / Test Data:
-- [ ] Atomic inventory + financial posting: sale, items, payments and inventory movements commit or roll back together.
-  - SQA Comments / Improvement Notes: Current Phase 3 implementation is transactional for sales, sale items, sale payments and inventory movements. Actual Counter Cash transaction/session posting remains a Phase 5 dependency and must not be treated as complete here.
+- [ ] Atomic inventory + financial posting: sale, items, payments, inventory movements and cash movement commit or roll back together.
+  - SQA Comments / Improvement Notes: POS posting now includes cash-session sale_cash movement when cash is used. A missing open session must roll back the entire sale. Verify forced failures leave no partial sale/payment/inventory/cash rows.
   - Evidence / Test Data:
 - [x] Receipt / print: print-friendly receipt route implemented; user test still required with browser print preview/thermal-width layout.
   - SQA Comments / Improvement Notes: Verify sale number, customer/walk-in identity, line quantities/rates, totals, payment modes and print layout. Confirm voided sales are visibly distinguishable if a receipt is opened after void.
@@ -149,7 +149,7 @@ Phase 2 status: PASS — USER RETEST COMPLETE
 - [x] Sale void / reversal: service and POS_VOID-protected route implemented; user test still required.
   - SQA Comments / Improvement Notes: Verify inventory reversal, sale status='voided', retained original sale/payment rows, required void reason, duplicate-void rejection, and customer OS reversal for credit sales.
   - Evidence / Test Data:
-Phase 3 status: IN DEVELOPMENT — RECEIPT/VOID IMPLEMENTED; CASH-SESSION POSTING REMAINS A PHASE 5 DEPENDENCY — NOT READY FOR USER TEST
+Phase 3 status: IN DEVELOPMENT — POS CASH-SESSION POSTING IMPLEMENTED; CASH SESSION UI/FUNCTIONS ARE READY FOR USER TESTING, BUT PHASE 3 END-TO-END USER TEST IS STILL BLOCKED UNTIL THE REMAINING HARDENING CHECKS ARE COMPLETE
 
 ## Test Environment
 - OS:
