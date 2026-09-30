@@ -53,7 +53,7 @@
                         </select>
                         <div class="form-text">This default is applied to the first POS line. Cashiers can still change the transaction type for a specific line.</div>
                     </div>
-                    <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div>
+                    <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div><div class="col-md-5"><label class="form-label">POS Font Size (px)</label><input name="pos_font_size_px" type="number" class="form-control" min="10" max="24" step="0.5" value="<?= esc($settings['pos_font_size_px'] ?? 14) ?>"><div class="form-text">Adjusts POS text and controls for different screen sizes. Applies to the POS/Sales page only.</div></div>
                 </div>
             </div>
 
