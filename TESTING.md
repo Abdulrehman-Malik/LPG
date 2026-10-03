@@ -209,6 +209,10 @@ Do not manually correct database balances during testing. If a result is wrong, 
 - Existing databases must run `database/migrations/20260930_shop_settings.sql` before using the Shop Settings page.
 - The repository intentionally does not contain a local `.env`.
 
+## Permission-Aware Navigation — Ready for Browser Regression
+
+The shared sidebar now renders menu entries from the authenticated user's current permission codes. Reports and other modules are visible only when the corresponding right is granted. Server-side controller guards remain authoritative, so hiding a menu does not weaken authorization.
+
 ## Latest POS Sale Page Changes — Ready for Browser Regression
 
 The Sales page now has stock-aware cylinder-type selectors, safe transaction-type switching, professional line/payment remove controls, an Add Line action in the grid header, and editable Security Deposit Amount only in the Security Deposit / Issue Cylinder workflow. Browser testing must cover all four header transaction types and confirm there are no JavaScript console errors when switching between them.
