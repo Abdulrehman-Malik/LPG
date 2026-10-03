@@ -126,3 +126,13 @@ Recommended setup:
 `Windows PC/XAMPP -> Cloudflare Tunnel -> public HTTPS staging URL -> browser testing`.
 
 Do not expose the production application/database. Use a dedicated test database and test credentials.
+
+
+## Environment Configuration Rule — Important
+
+- **Never add Cloudflare/tunnel-specific URL logic to application code.**
+- The application must use the normal CodeIgniter `app.baseURL` configuration from the local `.env` file.
+- For staging, set `app.baseURL` in the staging machine's local `.env` to the staging HTTPS URL.
+- For production, set `app.baseURL` in the production machine's local `.env` to the production URL.
+- Do not commit tunnel URLs, environment-specific hostnames, production URLs, or environment secrets to the repository.
+- Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
