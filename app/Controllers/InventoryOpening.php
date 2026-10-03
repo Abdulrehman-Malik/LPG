@@ -100,10 +100,16 @@ class InventoryOpening extends Controller
             return redirect()->back()->withInput()->with('error', 'Cylinder type not found.');
         }
 
+        $actualProvided = $actualRaw !== null && $actualRaw !== '';
+
         if ($kind === 'filled_cylinder') {
-            $actual = $actualRaw !== null && $actualRaw !== '' ? $actual : (float) $ct['capacity_kg'];
-            if ($actual <= 0 || $actual > (float) $ct['capacity_kg']) {
-                return redirect()->back()->withInput()->with('error', 'Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
+            if ($actualProvided) {
+                $actual = (float) $actualRaw;
+                if ($actual <= 0 || $actual > (float) $ct['capacity_kg']) {
+                    return redirect()->back()->withInput()->with('error', 'Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
+                }
+            } else {
+                $actual = (float) $ct['capacity_kg'];
             }
         } else {
             $actual = 0;
@@ -172,7 +178,18 @@ class InventoryOpening extends Controller
                 ->whereIn('status', ['filled', 'empty'])
                 ->get()->getResultArray();
 
+            if ($kind === 'filled_cylinder' && !$actualProvided && $existing) {
+                $existingFilledWeights = array_values(array_filter(
+                    array_map(static fn(array $unit): float => (float) $unit['gas_weight_kg'], $units),
+                    static fn(float $weight): bool => $weight > 0
+                ));
+                if ($existingFilledWeights) {
+                    $actual = $existingFilledWeights[0];
+                }
+            }
+
             $activeCount = count($units);
+            $newUnitGasWeight = $actual;
             if ($activeCount > $qty) {
                 throw new \RuntimeException('Opening quantity cannot be reduced below cylinders already in active opening stock. Use stock transactions instead.');
             }
@@ -183,7 +200,7 @@ class InventoryOpening extends Controller
                     $typeId,
                     (int) $qty - $activeCount,
                     $kind === 'filled_cylinder' ? 'filled' : 'empty',
-                    $actual,
+                    $newUnitGasWeight,
                     $userId,
                     'opening',
                     $openingId
@@ -205,15 +222,19 @@ class InventoryOpening extends Controller
                     ->get()->getResultArray();
 
                 foreach ($current as $unit) {
-                    $db->table('cylinder_units')
-                        ->where('id', $unit['id'])
-                        ->update(['gas_weight_kg' => $actual]);
+                    $unitGasWeight = (float) $unit['gas_weight_kg'];
+                    if ($actualProvided) {
+                        $unitGasWeight = $actual;
+                        $db->table('cylinder_units')
+                            ->where('id', $unit['id'])
+                            ->update(['gas_weight_kg' => $unitGasWeight]);
+                    }
 
                     $db->table('inventory_movements')->insert([
                         'location_id' => $locationId,
                         'inventory_type' => 'gas_kg',
                         'cylinder_type_id' => null,
-                        'quantity' => $actual,
+                        'quantity' => $unitGasWeight,
                         'direction' => 'in',
                         'movement_at' => $date . ' 00:00:00',
                         'source_type' => 'opening_cylinder',
@@ -232,7 +253,17 @@ class InventoryOpening extends Controller
                 'cylinder_type_id' => $typeId,
                 'quantity' => $qty,
                 'comments' => $comments !== '' ? $comments : null,
-                'gas_stock_kg' => $kind === 'filled_cylinder' ? $actual * $qty : 0,
+                'gas_stock_kg' => $kind === 'filled_cylinder'
+                    ? (float) $db->table('cylinder_units')
+                        ->selectSum('gas_weight_kg')
+                        ->where([
+                            'location_id' => $locationId,
+                            'source_type' => 'opening',
+                            'source_id' => $openingId,
+                            'status' => 'filled',
+                        ])
+                        ->get()->getRow('gas_weight_kg')
+                    : 0,
             ];
 
             AuditService::log(
