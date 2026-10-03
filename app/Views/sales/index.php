@@ -106,8 +106,12 @@
 
 <div class="col-lg-3 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
 <div class="mb-3">
-  <label class="form-label fw-semibold">Gas / Cylinder Amount</label>
+  <label class="form-label fw-semibold">Current Sale</label>
   <div class="form-control bg-light fw-semibold">Rs. <span id="saleTotal">0.00</span></div>
+</div>
+<div class="mb-3">
+  <label class="form-label">Previous OS Balance</label>
+  <div class="form-control bg-light">Rs. <span id="previousOs">0.00</span></div>
 </div>
 <div class="mb-3">
   <label class="form-label">Discount</label>
@@ -121,7 +125,7 @@
 <div class="mb-3">
   <label class="form-label">Net Amount Payable</label>
   <div class="form-control bg-light fw-bold">Rs. <span id="netPayable">0.00</span></div>
-  <div class="small text-muted mt-1">Gas/Cylinder + Security Deposit</div>
+  <div class="small text-muted mt-1">Current Sale + Previous OS + Security Deposit</div>
 </div>
 <div class="mb-3" id="refundBox" style="display:none">
   <div class="form-control bg-light text-danger fw-semibold">Customer Refund: Rs. <span id="refundAmount">0.00</span></div>
@@ -237,9 +241,15 @@ function recalc(){
    gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent='Rs. '+amount.toFixed(2);
  });
  const discount=Math.max(0,Number(document.getElementById('discount').value||0));saleTotal=Math.max(0,saleTotal-discount);
+ const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
  document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
- document.getElementById('netPayable').textContent=(saleTotal+deposit).toFixed(2);
+ document.getElementById('previousOs').textContent=previousOs.toFixed(2);
+ document.getElementById('netPayable').textContent=(saleTotal+previousOs+deposit).toFixed(2);
+ const paid=t==='cylinder_return'?0:paymentTotal();
+ const balanceAfter=Math.max(0,saleTotal+previousOs+deposit-paid);
+ document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
+ document.getElementById('typeHint').title='Balance after entered payment: Rs. '+balanceAfter.toFixed(2);
  const after=Number(gasStock||0)-gasRequired;
  const hint=document.getElementById('typeHint');
  if(t==='gas_sale'||t==='cylinder_sale'){hint.classList.toggle('text-danger',after<0);hint.textContent='Gas stock after transaction: '+after.toFixed(2)+' KG';}
@@ -280,9 +290,10 @@ document.getElementById('saleForm').onsubmit=()=>{
    const units=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));if(!customerId){alert('Select a customer for Cylinder Return.');return false;}if(!units.length){alert('Select at least one customer custody cylinder to return.');return false;}
  }
  const pays=t==='cylinder_return'?[]:[...payments.querySelectorAll('.payment')].map(p=>({payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
- const saleTotal=Number(document.getElementById('saleTotal').textContent||0),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0;
- const expected=t==='security_deposit'?deposit:saleTotal;
- if(t!=='cylinder_return'&&(!pays.length||Math.abs(paymentTotal()-expected)>0.01)){alert('Payment total must equal Net Amount Payable of Rs. '+expected.toFixed(2)+'.');return false;}
+ const saleTotal=Number(document.getElementById('saleTotal').textContent||0),previousOs=customerId?Number(document.getElementById('previousOs').textContent||0):0,deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0;
+ const expected=t==='security_deposit'?deposit:saleTotal+previousOs;
+ if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
+ if(t!=='cylinder_return'&&paymentTotal()>expected+0.01){alert('Payment cannot exceed the Net Amount Receivable of Rs. '+expected.toFixed(2)+'.');return false;}
  if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
  let gasRequired=0; if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0); else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
  if((t==='gas_sale'||t==='cylinder_sale')&&gasRequired>Number(gasStock||0)+0.00001){
