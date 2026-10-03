@@ -659,9 +659,9 @@ class SalesService
         return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>$newOs];
     }
 
-    protected function postCustomerSettlement(array $settlements,int $locationId,int $saleId,int $customerId,string $at,int $userId): void
+    protected function postCustomerSettlement(array $settlements,int $locationId,int $saleId,?int $customerId,string $at,int $userId): void
     {
-        if(!$settlements)return;
+        if(!$settlements || $customerId===null)return;
         foreach($settlements as $p){
             $amount=(float)$p['amount'];$mode=(string)$p['payment_mode'];
             $no='R'.date('YmdHis').'-'.random_int(100,999);
