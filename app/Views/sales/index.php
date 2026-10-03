@@ -97,8 +97,8 @@ function refreshLineFields(tr){
  const typeId=cyl.value;
  gasRate.value=isGasMode(mode)&&kgRate!==null?Number(kgRate).toFixed(2):'';
  cylRate.value=(['sell_filled','replace_different','sell_empty'].includes(mode)&&typeId&&rates[typeId]!=null)?Number(rates[typeId]).toFixed(2):'';
- gasRate.style.display=isGasMode(mode)?'block':'none';
- cylRate.style.display=['sell_filled','replace_different','sell_empty'].includes(mode)?'block':'none';
+ tr.querySelector('.gasRateWrap').style.display=isGasMode(mode)?'block':'none';
+ tr.querySelector('.cylRateWrap').style.display=['sell_filled','replace_different','sell_empty'].includes(mode)?'block':'none';
 
 }
 function addLine(mode=defaultSaleMode||'sell_gas_only'){
