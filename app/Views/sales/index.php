@@ -285,7 +285,7 @@ function recalc(){
  document.getElementById('typeHint').title='Balance after entered payment: Rs. '+balanceAfter.toFixed(2);
  const after=Number(gasStock||0)-gasRequired;
  const hint=document.getElementById('typeHint');
- if(t==='gas_sale'||t==='cylinder_sale'){hint.classList.toggle('text-danger',after<0);hint.textContent='Gas stock after transaction: '+after.toFixed(2)+' KG';}
+ if(t==='gas_sale'||t==='cylinder_sale'){hint.classList.toggle('text-danger',after<0);hint.textContent=t==='gas_sale'?'Gas stock after transaction: '+after.toFixed(2)+' KG | Each line consumes only the selected cylinder. Add another line for another cylinder.':'Gas stock after transaction: '+after.toFixed(2)+' KG';}
  updateRefund();
 }
 function refreshForm(){
