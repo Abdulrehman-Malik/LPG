@@ -2,6 +2,8 @@
 
 A branch-aware LPG retail POS/ERP built with CodeIgniter 4, PHP 8.2+ and MySQL 8+.
 
+- **Permission-aware navigation** — sidebar items are shown only when the current user's role grants the permission used by that module.
+
 ## Core Modules
 
 - Authentication and role-based access
