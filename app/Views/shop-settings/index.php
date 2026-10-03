@@ -42,7 +42,7 @@
                     <div class="col-md-7">
                         <label class="form-label">Default POS Transaction Type</label>
                         <select name="default_transaction_type" class="form-select">
-                            <?php foreach(AppModelsShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
+                            <?php foreach(\App\Models\ShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
                                 <option value="<?= esc($value) ?>" <?= ($settings['default_transaction_type'] ?? 'gas_sale') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
                             <?php endforeach; ?>
                         </select>
