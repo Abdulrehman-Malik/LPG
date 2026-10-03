@@ -333,63 +333,161 @@ class SalesService
     {
         if(!$lines) throw new RuntimeException('At least one gas line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
+
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
         foreach($lines as $i=>$line){
-            $n=$i+1;$typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
-            $qty=(float)($line['quantity']??0);$gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
+            $n=$i+1;
+            $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
+            $sourceId=isset($line['source_cylinder_unit_id'])&&$line['source_cylinder_unit_id']!==''?(int)$line['source_cylinder_unit_id']:0;
+            $qty=(float)($line['quantity']??0);
+            $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
             $targetId=isset($line['customer_cylinder_unit_id'])&&$line['customer_cylinder_unit_id']!==''?(int)$line['customer_cylinder_unit_id']:null;
             if(!$typeId) throw new RuntimeException('Cylinder type is required on gas line '.$n.'.');
-            $type=$this->types->find($typeId);if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on gas line '.$n.'.');
+            if(!$sourceId) throw new RuntimeException('Source filled cylinder is required on gas line '.$n.'.');
+            $type=$this->types->find($typeId);
+            if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on gas line '.$n.'.');
             if($qty<=0) throw new RuntimeException('Gas quantity on line '.$n.' must be greater than zero.');
             if($gasRateInput!==null&&$gasRateInput<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
-            $standardRate=$this->rates->currentKgRate($transactionAt);if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
-            $gasRate=$gasRateInput??$standardRate;$custom=$gasRateInput!==null&&abs($gasRate-$standardRate)>0.00001;$customRate=$customRate||$custom;
-            if($targetId){
-                if(!$customerId) throw new RuntimeException('Select a named customer before choosing a customer custody cylinder.');
-                $target=$this->db->query("SELECT cu.*,ct.capacity_kg,cc.id custody_id FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id JOIN cylinder_custody cc ON cc.cylinder_unit_id=cu.id AND cc.status='issued' AND cc.customer_id=? WHERE cu.id=? AND cu.location_id=? AND cu.status='custody' FOR UPDATE",[$customerId,$targetId,$locationId])->getRowArray();
-                if(!$target) throw new RuntimeException('Selected customer custody cylinder is not available.');
-                if((int)$target['cylinder_type_id']!==$typeId) throw new RuntimeException('Gas refill cylinder type must match the selected custody cylinder type.');
-                if((float)$target['gas_weight_kg']+$qty>(float)$target['capacity_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds the remaining capacity of the selected customer cylinder.');
-            }
-            $prepared[]=['line_no'=>$n,'type_id'=>$typeId,'quantity'=>$qty,'gas_weight_kg'=>$qty,'gas_rate'=>$gasRate,'standard_rate'=>$standardRate,'custom_rate_flag'=>$custom?1:0,'target_id'=>$targetId,'line_total'=>$qty*$gasRate];
+            $standardRate=$this->rates->currentKgRate($transactionAt);
+            if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
+            $gasRate=$gasRateInput??$standardRate;
+            $custom=$gasRateInput!==null&&abs($gasRate-$standardRate)>0.00001;
+            $customRate=$customRate||$custom;
+            $prepared[]=[
+                'line_no'=>$n,'type_id'=>$typeId,'source_id'=>$sourceId,'source_gas'=>null,
+                'quantity'=>$qty,'gas_weight_kg'=>$qty,'gas_rate'=>$gasRate,'standard_rate'=>$standardRate,
+                'custom_rate_flag'=>$custom?1:0,'target_id'=>$targetId,'line_total'=>$qty*$gasRate
+            ];
             $subtotal+=$qty*$gasRate;$totalKg+=$qty;
         }
-        $discount=max(0,(float)($payload['discount_amount']??0));if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
+
+        $discount=max(0,(float)($payload['discount_amount']??0));
+        if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
         $total=$subtotal-$discount;
+
         $this->db->transBegin();
         try{
-            if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
-            $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
-            $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>'filled_cylinder','cylinder_type_id'=>(int)$row['type_id']],$prepared));
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
-            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],'custom_rate_flag'=>$this->paymentCustom($prepared),'notes'=>$notes,'created_by'=>$userId]);
-            $saleId=(int)$this->db->insertID();$inventory=[];
-            foreach($prepared as $row){
-                $remaining=$row['gas_weight_kg'];$units=$this->cylinders->available($locationId,$row['type_id'],'filled');
-                foreach($units as $unit){
-                    if($remaining<=0.00001)break;
-                    $before=(float)$unit['gas_weight_kg'];$used=min($before,$remaining);$after=$before-$used;
-                    $inventory[]=['line_no'=>$row['line_no'],'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$unit['id']];
-                    if($after<=0.00001){
-                        $this->db->table('cylinder_units')->where('id',(int)$unit['id'])->update(['status'=>'empty','gas_weight_kg'=>0]);
-                        $inventory[]=['line_no'=>$row['line_no'],'type'=>'filled_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id']];
-                        $inventory[]=['line_no'=>$row['line_no'],'type'=>'empty_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'in','unit_id'=>(int)$unit['id']];
-                    }else $this->db->table('cylinder_units')->where('id',(int)$unit['id'])->update(['gas_weight_kg'=>$after]);
-                    $remaining-=$used;
-                }
-                if($remaining>0.00001)throw new RuntimeException('Gas stock changed while posting. Please retry.');
-                $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>'refill_kg','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>$row['target_id'],'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_weight_kg'],'applied_rate'=>$row['gas_rate'],'standard_rate'=>$row['standard_rate'],'custom_rate_flag'=>$row['custom_rate_flag'],'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>$row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill']);
-                if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
+            if($customerId){
+                $locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();
+                if(!$locked||!(int)$locked['is_active']) throw new RuntimeException('Customer is unavailable.');
+                $customer=$locked;
             }
-            $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
-            foreach($inventory as $m)$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id']??null,'created_by'=>$userId,'notes'=>'Gas sale']);
+
+            $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
+
+            $lockKeys=array_map(static fn($row)=>['type'=>'filled_cylinder','cylinder_type_id'=>(int)$row['type_id']],$prepared);
+            $this->acquireInventoryLocks($locationId,$lockKeys);
+
+            $sourceIds=array_values(array_unique(array_map(static fn($row)=>(int)$row['source_id'],$prepared)));
+            $placeholders=implode(',',array_fill(0,count($sourceIds),'?'));
+            $sourceRows=$this->db->query(
+                "SELECT cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg
+                 FROM cylinder_units cu
+                 JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
+                 WHERE cu.location_id=? AND cu.status='filled' AND cu.id IN ($placeholders)
+                 FOR UPDATE",
+                array_merge([$locationId],$sourceIds)
+            )->getResultArray();
+            $sources=[];
+            foreach($sourceRows as $row)$sources[(int)$row['id']]=$row;
+
+            $requestedBySource=[];
+            foreach($prepared as $idx=>&$row){
+                $source=$sources[$row['source_id']]??null;
+                if(!$source) throw new RuntimeException('Selected source cylinder on gas line '.$row['line_no'].' is no longer a filled company cylinder.');
+                if((int)$source['cylinder_type_id']!==$row['type_id']) throw new RuntimeException('Gas line '.$row['line_no'].' cylinder type does not match the selected source cylinder.');
+                $available=(float)$source['gas_weight_kg'];
+                if($available<=0.00001) throw new RuntimeException('Selected source cylinder '.$source['unit_code'].' has no gas remaining.');
+                $requestedBySource[$row['source_id']]=($requestedBySource[$row['source_id']]??0)+(float)$row['quantity'];
+                if($requestedBySource[$row['source_id']]>$available+0.00001){
+                    throw new RuntimeException('Gas line '.$row['line_no'].' exceeds the selected source cylinder '.$source['unit_code'].' stock. Available: '.number_format($available,2).' KG.');
+                }
+                $row['source_gas']=$available;
+                $row['source_unit_code']=$source['unit_code'];
+            }
+            unset($row);
+
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('sales')->insert([
+                'sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale',
+                'status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,
+                'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,
+                'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
+                'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId
+            ]);
+            $saleId=(int)$this->db->insertID();
+
+            foreach($prepared as $row){
+                if($row['target_id']){
+                    if(!$customerId) throw new RuntimeException('Select a named customer before choosing a customer custody cylinder.');
+                    $target=$this->db->query(
+                        "SELECT cu.*,ct.capacity_kg,cc.id custody_id
+                         FROM cylinder_units cu
+                         JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
+                         JOIN cylinder_custody cc ON cc.cylinder_unit_id=cu.id AND cc.status='issued' AND cc.customer_id=?
+                         WHERE cu.id=? AND cu.location_id=? AND cu.status='custody'
+                         FOR UPDATE",
+                        [$customerId,$row['target_id'],$locationId]
+                    )->getRowArray();
+                    if(!$target) throw new RuntimeException('Selected customer custody cylinder is not available.');
+                    if((int)$target['cylinder_type_id']!==$row['type_id']) throw new RuntimeException('Gas refill cylinder type must match the selected customer custody cylinder type.');
+                    if((float)$target['gas_weight_kg']+(float)$row['quantity']>(float)$target['capacity_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds the remaining capacity of the selected customer cylinder.');
+                }
+
+                $source=$sources[$row['source_id']];
+                $before=(float)$source['gas_weight_kg'];
+                $used=(float)$row['quantity'];
+                $after=$before-$used;
+                $newStatus=$after<=0.00001?'empty':'filled';
+                $this->db->table('cylinder_units')->where('id',(int)$source['id'])->update([
+                    'gas_weight_kg'=>max(0,$after),'status'=>$newStatus
+                ]);
+                $source['gas_weight_kg']=max(0,$after);$source['status']=$newStatus;
+
+                $this->db->table('sale_items')->insert([
+                    'sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>'refill_kg','cylinder_type_id'=>$row['type_id'],
+                    'customer_cylinder_unit_id'=>$row['target_id'],'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_weight_kg'],
+                    'applied_rate'=>$row['gas_rate'],'standard_rate'=>$row['standard_rate'],'custom_rate_flag'=>$row['custom_rate_flag'],
+                    'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],
+                    'notes'=>($row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill').' | Source: '.$row['source_unit_code']
+                ]);
+                $saleItemId=(int)$this->db->insertID();
+
+                $movements=[
+                    ['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Gas sold from '.$row['source_unit_code']]
+                ];
+                if($newStatus==='empty'){
+                    $movements[]=['type'=>'filled_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Cylinder became empty after gas sale'];
+                    $movements[]=['type'=>'empty_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'in','unit_id'=>(int)$source['id'],'notes'=>'Cylinder became empty after gas sale'];
+                }
+                foreach($movements as $m){
+                    $this->db->table('inventory_movements')->insert([
+                        'location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],
+                        'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,
+                        'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$saleItemId,'cylinder_unit_id'=>$m['unit_id'],
+                        'created_by'=>$userId,'notes'=>$m['notes']
+                    ]);
+                }
+
+                if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
+                unset($sources[(int)$source['id']]);
+                $sources[(int)$source['id']]=$source;
+            }
+
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
             $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
-            $cash=$this->paymentCash($paymentPlan['sale_payments']);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
-            if(!$this->db->transStatus())throw new RuntimeException('Gas sale posting failed.');
+            $cash=$this->paymentCash($paymentPlan['sale_payments']);
+            if($cash>0){
+                $s=$this->cash->openSessionForLocation($locationId);
+                if(!$s) throw new RuntimeException('Open the counter cash session before posting a cash sale.');
+                $this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);
+            }
+            if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed.');
             $this->db->transCommit();$this->releaseInventoryLocks();
             return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$paymentPlan['credit_amount']];
-        }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
+        }catch(Throwable $e){
+            $this->releaseInventoryLocks();$this->db->transRollback();throw $e;
+        }
     }
 
     protected function postCylinderSaleHeader(array $payload,int $userId,int $locationId,?int $customerId,string $transactionAt,?string $notes,array $lines,array $payments): array
