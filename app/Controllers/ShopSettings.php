@@ -38,6 +38,7 @@ class ShopSettings extends Controller
 
         $locationId = (int) session()->get('location_id');
         $saleMode = trim((string) $this->request->getPost('default_sale_mode'));
+        $transactionType = trim((string) $this->request->getPost('default_transaction_type'));
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
         $posFontSize = (float) $this->request->getPost('pos_font_size_px');
         if ($posFontSize < 10 || $posFontSize > 24) {
@@ -60,6 +61,9 @@ class ShopSettings extends Controller
         }
 
         if (!in_array($saleMode, ShopSettingsModel::SALE_MODES, true)) {
+            $saleMode = 'sell_gas_only';
+        }
+        if (!in_array($transactionType, ShopSettingsModel::TRANSACTION_TYPES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default POS transaction type.');
         }
         if (!in_array($paymentMode, ShopSettingsModel::PAYMENT_MODES, true)) {
@@ -90,6 +94,7 @@ class ShopSettings extends Controller
             $data = [
                 'location_id' => $locationId,
                 'default_sale_mode' => $saleMode,
+                'default_transaction_type' => $transactionType,
                 'default_payment_mode' => $paymentMode,
                 'pos_font_size_px' => $posFontSize,
                 'theme_mode' => $themeMode,
