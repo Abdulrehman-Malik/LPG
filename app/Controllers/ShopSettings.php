@@ -40,6 +40,7 @@ class ShopSettings extends Controller
         $saleMode = trim((string) $this->request->getPost('default_sale_mode'));
         $transactionType = trim((string) $this->request->getPost('default_transaction_type'));
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
+        $individualCylinderTracking = $this->request->getPost('individual_cylinder_tracking') ? 1 : 0;
         $posFontSize = (float) $this->request->getPost('pos_font_size_px');
         if ($posFontSize < 10 || $posFontSize > 24) {
             return redirect()->back()->withInput()->with('error', 'Application font size must be between 10 and 24 pixels.');
@@ -95,6 +96,7 @@ class ShopSettings extends Controller
                 'location_id' => $locationId,
                 'default_sale_mode' => $saleMode,
                 'default_transaction_type' => $transactionType,
+                'individual_cylinder_tracking' => $individualCylinderTracking,
                 'default_payment_mode' => $paymentMode,
                 'pos_font_size_px' => $posFontSize,
                 'theme_mode' => $themeMode,
