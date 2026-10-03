@@ -29,6 +29,12 @@ This file is a concise continuation point for development.
 - Credit sales must enforce the customer's credit limit.
 - Controllers should not contain financial posting logic; use application services.
 
+## Permission-Aware Navigation Notes
+
+The shared sidebar now uses the authenticated user's granted permission codes. Reports requires REPORT_VIEW; POS Sales requires POS_SALE; Cash requires CASH_MANAGE; Purchases and Supplier Payments require PURCHASE_MANAGE; Inventory-related pages require INVENTORY_MANAGE; Customers/Suppliers/Rates/Users/Audit use their existing controller permission codes. Shop Settings follows the existing controller rule of USER_MANAGE or INVENTORY_MANAGE.
+
+Unauthorized menu entries are hidden, while controller guards continue to enforce server-side access.
+
 ## POS Sale Page Regression Notes
 
 After the latest Sales-page changes, verify:
