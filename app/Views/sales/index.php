@@ -216,15 +216,22 @@ function addCylinderSaleLine(){
  tr.querySelector('.cyl').onchange=refreshCylinderSaleLine;tr.querySelector('.cylStatus').onchange=refreshCylinderSaleLine;tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.cylRate').oninput=recalc;tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};tbody.appendChild(tr);refreshCylinderSaleLine.call(tr);
 }
 function refreshCylinderSaleLine(){
- const tr=this.tagName==='TR'?this:tbody.querySelector('tr:last-child'),typeId=tr.querySelector('.cyl').value,status=tr.querySelector('.cylStatus').value;
+ const tr=this.tagName==='TR'?this:tbody.querySelector('tr:last-child'),typeId=tr.querySelector('.cyl').value,status=tr.querySelector('.cylStatus').value,qty=tr.querySelector('.qty');
  tr.querySelector('.gasWrap').style.display=status==='filled'?'flex':'none';
  tr.querySelector('.gasRate').value=status==='filled'&&kgRate!==null?Number(kgRate).toFixed(2):'';
  tr.querySelector('.cylRate').value=typeId&&rates[typeId]!=null?Number(rates[typeId]).toFixed(2):'';
+ if(typeId){
+   const available=status==='filled'?(filledUnits[typeId]||[]).length:(emptyStock[typeId]||0);
+   qty.max=available;
+   if(Number(qty.value||0)>available)qty.value=available;
+ }else{
+   qty.removeAttribute('max');
+ }
  recalc();
 }
 function rebuildLines(){
  clearLines();const t=transactionType();lineHead.innerHTML='';
- if(t==='gas_sale'){lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('linesTitle').textContent='Gas / Refill Lines';document.getElementById('typeHint').textContent='Company gas stock is deducted; customer custody cylinder is optional.';document.getElementById('addLine').style.display='inline-block';}
+ if(t==='gas_sale'){lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('linesTitle').textContent='Gas / Refill Lines';document.getElementById('typeHint').textContent='Select the physical filled cylinder source; KG sold is deducted only from that cylinder.';document.getElementById('addLine').style.display='inline-block';}
  else if(t==='cylinder_sale'){lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('linesTitle').textContent='Cylinder Sale Lines';document.getElementById('typeHint').textContent='Physical cylinders are sold outright and leave company ownership.';document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
