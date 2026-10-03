@@ -436,13 +436,18 @@ class SalesService
                     if((float)$target['gas_weight_kg']+(float)$row['quantity']>(float)$target['capacity_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds the remaining capacity of the selected customer cylinder.');
                 }
 
-                $sourceRows=[];
-                if($individualTracking){
-                    $source=$sources[$row['source_id']];
-                    $sourceRows=[$source];
-                }else{
-                    $sourceRows=$this->cylinders->available($locationId,(int)$row['type_id'],'filled');
-                }
+                $saleItemNotes=($row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill').($individualTracking?' | Source selected by user':' | Physical cylinders allocated automatically by backend');
+                $this->db->table('sale_items')->insert([
+                    'sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>'refill_kg','cylinder_type_id'=>$row['type_id'],
+                    'customer_cylinder_unit_id'=>$row['target_id'],'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_weight_kg'],
+                    'applied_rate'=>$row['gas_rate'],'standard_rate'=>$row['standard_rate'],'custom_rate_flag'=>$row['custom_rate_flag'],
+                    'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>$saleItemNotes
+                ]);
+                $saleItemId=(int)$this->db->insertID();
+
+                $sourceRows=$individualTracking
+                    ? [$sources[$row['source_id']]]
+                    : $this->cylinders->available($locationId,(int)$row['type_id'],'filled');
 
                 $remaining=(float)$row['quantity'];
                 foreach($sourceRows as $source){
@@ -456,24 +461,6 @@ class SalesService
                     $this->db->table('cylinder_units')->where('id',(int)$source['id'])->update([
                         'gas_weight_kg'=>max(0,$after),'status'=>$newStatus
                     ]);
-
-                    $this->db->table('sale_items')->insert([
-                        'sale_id'=>$saleId,
-                        'line_no'=>$row['line_no'],
-                        'line_type'=>'refill_kg',
-                        'cylinder_type_id'=>$row['type_id'],
-                        'customer_cylinder_unit_id'=>$row['target_id'],
-                        'quantity'=>$used,
-                        'gas_weight_kg'=>$used,
-                        'applied_rate'=>$row['gas_rate'],
-                        'standard_rate'=>$row['standard_rate'],
-                        'custom_rate_flag'=>$row['custom_rate_flag'],
-                        'empty_cylinder_received'=>0,
-                        'line_discount'=>0,
-                        'line_total'=>$used*$row['gas_rate'],
-                        'notes'=>($row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill').($individualTracking?' | Source: '.$source['unit_code']:' | Backend cylinder allocation')
-                    ]);
-                    $saleItemId=(int)$this->db->insertID();
 
                     $movementRows=[
                         ['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Gas sold from filled cylinder']
@@ -504,7 +491,6 @@ class SalesService
 
                 if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
             }
-
             if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed.');
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
             $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
