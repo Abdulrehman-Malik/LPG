@@ -353,13 +353,14 @@ class SalesService
             $subtotal+=$qty*$gasRate;$totalKg+=$qty;
         }
         $discount=max(0,(float)($payload['discount_amount']??0));if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
-        $total=$subtotal-$discount;$this->validateHeaderPayments($payments,$customerId,$total);
+        $total=$subtotal-$discount;
         $this->db->transBegin();
         try{
             if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
+            $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
             $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>'filled_cylinder','cylinder_type_id'=>(int)$row['type_id']],$prepared));
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
-            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$this->paymentCredit($payments),'custom_rate_flag'=>$this->paymentCustom($prepared),'notes'=>$notes,'created_by'=>$userId]);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],'custom_rate_flag'=>$this->paymentCustom($prepared),'notes'=>$notes,'created_by'=>$userId]);
             $saleId=(int)$this->db->insertID();$inventory=[];
             foreach($prepared as $row){
                 $remaining=$row['gas_weight_kg'];$units=$this->cylinders->available($locationId,$row['type_id'],'filled');
@@ -380,8 +381,9 @@ class SalesService
             }
             $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
             foreach($inventory as $m)$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id']??null,'created_by'=>$userId,'notes'=>'Gas sale']);
-            $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);
-            $cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
+            $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
+            $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
+            $cash=$this->paymentCash($paymentPlan['sale_payments']);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
             if(!$this->db->transStatus())throw new RuntimeException('Gas sale posting failed.');
             $this->db->transCommit();$this->releaseInventoryLocks();
             return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
@@ -417,18 +419,20 @@ class SalesService
             $prepared[]=['line_no'=>$n,'type_id'=>$typeId,'status'=>$status,'quantity'=>$qty,'gas_kg'=>$gasKg,'gas_rate'=>$gasRate,'cyl_rate'=>$cylRate,'std_gas'=>$stdGas,'line_total'=>$lineTotal];
         }
         $discount=max(0,(float)($payload['discount_amount']??0));if($discount>$subtotal)throw new RuntimeException('Discount cannot exceed subtotal.');
-        $total=$subtotal-$discount;$this->validateHeaderPayments($payments,$customerId,$total);
+        $total=$subtotal-$discount;
         $this->db->transBegin();
         try{
+            if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
+            $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
-            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$this->paymentCredit($payments),'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId]);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId]);
             $saleId=(int)$this->db->insertID();$this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['type'],'cylinder_type_id'=>$row['cylinder_type_id']],$inventory));
             foreach($prepared as $row){
                 $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['gas_rate']+$row['cyl_rate']):$row['cyl_rate'],'standard_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['std_gas']+$row['cyl_rate']):$row['cyl_rate'],'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>'Cylinder sale']);
             }
             $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
             foreach($inventory as $m){$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>'Cylinder sale']);$this->cylinders->markSold((int)$m['unit_id']);}
-            $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);$cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
+            $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);$this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);$cash=$this->paymentCash($paymentPlan['sale_payments']);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
             if(!$this->db->transStatus())throw new RuntimeException('Cylinder sale posting failed.');
             $this->db->transCommit();$this->releaseInventoryLocks();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
         }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
@@ -491,6 +495,60 @@ class SalesService
             if(!$this->db->transStatus())throw new RuntimeException('Cylinder return failed.');
             $this->db->transCommit();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>0,'customer_id'=>$customerId,'credit_amount'=>0];
         }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+    }
+
+    protected function prepareSalePaymentPlan(array $payments,?int $customerId,float $saleTotal): array
+    {
+        if(!$payments)throw new RuntimeException('At least one payment is required.');
+        $paymentTotal=0;
+        foreach($payments as $p){
+            $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
+            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
+            if(!$customerId&&$mode!=='cash')throw new RuntimeException('Walk-in transactions are cash only.');
+            $paymentTotal+=$amount;
+        }
+        $previousOs=$customerId?max(0,$this->customerBalance($customerId)):0;
+        $maxReceivable=$saleTotal+$previousOs;
+        if($customerId===null && $paymentTotal>$saleTotal+0.01)throw new RuntimeException('Payment cannot exceed the walk-in sale amount.');
+        if($paymentTotal>$maxReceivable+0.01)throw new RuntimeException('Payment cannot exceed the customer net receivable of Rs. '.number_format($maxReceivable,2).'.');
+
+        $salePayments=[];$settlements=[];$remainingSale=$saleTotal;$remainingOs=$previousOs;
+        foreach($payments as $p){
+            $amount=(float)$p['amount'];$mode=(string)$p['payment_mode'];
+            $toSale=min($amount,$remainingSale);
+            if($toSale>0){
+                $salePayments[]=['payment_mode'=>$mode,'amount'=>$toSale,'reference_no'=>$p['reference_no']??null];
+                $remainingSale-=$toSale;$amount-=$toSale;
+            }
+            if($amount>0){
+                if($mode==='credit')throw new RuntimeException('Credit cannot be used to settle a previous customer OS balance.');
+                if($remainingOs+0.01<$amount)throw new RuntimeException('Previous customer OS balance cannot be exceeded.');
+                $settlements[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
+                $remainingOs-=$amount;
+            }
+        }
+        $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
+        return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>max(0,$remainingOs+$creditAmount)];
+    }
+
+    protected function postCustomerSettlement(array $settlements,int $locationId,int $saleId,int $customerId,string $at,int $userId): void
+    {
+        if(!$settlements)return;
+        foreach($settlements as $p){
+            $amount=(float)$p['amount'];$mode=(string)$p['payment_mode'];
+            $no='R'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('customer_receipts')->insert([
+                'receipt_no'=>$no,'location_id'=>$locationId,'customer_id'=>$customerId,'status'=>'posted',
+                'amount'=>$amount,'payment_mode'=>$mode,'receipt_at'=>$at,
+                'reference_no'=>trim((string)($p['reference_no']??''))?:null,
+                'notes'=>'OS settlement collected with sale '.$saleId,'created_by'=>$userId
+            ]);
+            if($mode==='cash'){
+                $s=$this->cash->openSessionForLocation($locationId);
+                if(!$s)throw new RuntimeException('Open the counter cash session before receiving an OS settlement.');
+                $this->cash->postGeneric((int)$s['id'],'customer_receipt','in',$amount,'customer_receipt',(int)$this->db->insertID(),$userId,'Customer OS settlement',$at);
+            }
+        }
     }
 
     protected function validateHeaderPayments(array $payments,?int $customerId,float $expected,bool $allowCredit=true): void
