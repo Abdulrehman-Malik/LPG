@@ -25,6 +25,28 @@ class InventoryOpening extends Controller
         if($r=$this->guard()) return $r;
         $locationId=(int)session()->get('location_id');
         $rows=$this->model->select('inventory_opening_balances.*, cylinder_types.code AS cylinder_code, cylinder_types.name AS cylinder_name')->join('cylinder_types','cylinder_types.id=inventory_opening_balances.cylinder_type_id','left')->where('location_id',$locationId)->orderBy('inventory_date','DESC')->orderBy('inventory_type')->findAll();
+
+        $gasByOpening=[];
+        if($rows){
+            $openingIds=array_map(static fn(array $row):(int)$row['id'], $rows);
+            $units=$this->cylinders->db->table('cylinder_units')
+                ->select('source_id, SUM(gas_weight_kg) AS gas_stock')
+                ->where('location_id',$locationId)
+                ->where('source_type','opening')
+                ->whereIn('source_id',$openingIds)
+                ->groupBy('source_id')
+                ->get()->getResultArray();
+            foreach($units as $unit){
+                $gasByOpening[(int)$unit['source_id']]=(float)$unit['gas_stock'];
+            }
+        }
+        foreach($rows as &$row){
+            $row['gas_stock']=$row['inventory_type']==='filled_cylinder'
+                ? ($gasByOpening[(int)$row['id']] ?? 0)
+                : ($row['inventory_type']==='gas_kg' ? (float)$row['quantity'] : 0);
+        }
+        unset($row);
+
         return view('inventory/opening',['title'=>'Opening Inventory','types'=>$this->types->where('is_active',1)->orderBy('sort_order')->findAll(),'rows'=>$rows]);
     }
     public function save()
@@ -34,10 +56,9 @@ class InventoryOpening extends Controller
         $date=(string)$this->request->getPost('inventory_date'); $kind=(string)$this->request->getPost('inventory_type');
         $typeId=$this->request->getPost('cylinder_type_id')===''?null:(int)$this->request->getPost('cylinder_type_id');
         $qty=(float)$this->request->getPost('quantity'); $actualRaw=$this->request->getPost('actual_gas_weight_kg'); $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0;
-        if(!$date||!in_array($kind,['gas_kg','filled_cylinder','empty_cylinder'],true)||$qty<0) return redirect()->back()->withInput()->with('error','Valid date, inventory type and non-negative quantity are required.');
-        if($kind==='gas_kg' && $typeId!==null) return redirect()->back()->withInput()->with('error','Gas opening balance does not use a cylinder type.');
-        if($kind!=='gas_kg' && !$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type.');
-        if($kind!=='gas_kg' && floor($qty)!==$qty) return redirect()->back()->withInput()->with('error','Cylinder quantity must be a whole number.');
+        if(!$date||!in_array($kind,['filled_cylinder','empty_cylinder'],true)||$qty<0) return redirect()->back()->withInput()->with('error','Valid date, inventory type and non-negative quantity are required.');
+        if(!$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type.');
+        if(floor($qty)!==$qty) return redirect()->back()->withInput()->with('error','Cylinder quantity must be a whole number.');
         if($kind==='filled_cylinder'){
             $ct=$this->types->find($typeId); if(!$ct) return redirect()->back()->withInput()->with('error','Cylinder type not found.');
             $actual=$actualRaw!==null && $actualRaw!==''?$actual:(float)$ct['capacity_kg'];
