@@ -517,17 +517,18 @@ class SalesService
         $salePayments=[];$settlements=[];$remainingSale=$saleTotal;$remainingOs=$previousOs;
         foreach($payments as $p){
             $amount=(float)$p['amount'];$mode=(string)$p['payment_mode'];
-            $toSale=min($amount,$remainingSale);
-            if($toSale>0){
+            if($remainingOs>0.00001 && $amount>0){
+                if($mode==='credit')throw new RuntimeException('Credit cannot be used to settle a previous customer OS balance.');
+                $toOs=min($amount,$remainingOs);
+                $settlements[]=['payment_mode'=>$mode,'amount'=>$toOs,'reference_no'=>$p['reference_no']??null];
+                $remainingOs-=$toOs;$amount-=$toOs;
+            }
+            if($amount>0){
+                $toSale=min($amount,$remainingSale);
                 $salePayments[]=['payment_mode'=>$mode,'amount'=>$toSale,'reference_no'=>$p['reference_no']??null];
                 $remainingSale-=$toSale;$amount-=$toSale;
             }
-            if($amount>0){
-                if($mode==='credit')throw new RuntimeException('Credit cannot be used to settle a previous customer OS balance.');
-                if($remainingOs+0.01<$amount)throw new RuntimeException('Previous customer OS balance cannot be exceeded.');
-                $settlements[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
-                $remainingOs-=$amount;
-            }
+            if($amount>0.00001)throw new RuntimeException('Payment exceeds the customer net receivable.');
         }
         $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
         $newOs=max(0,$remainingOs+$creditAmount);
