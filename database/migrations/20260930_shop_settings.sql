@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS shop_settings(
     accent_color CHAR(7) NOT NULL DEFAULT '#ff7a1a',
     stock_validation_enabled BOOLEAN NOT NULL DEFAULT 1,
     allow_stock_override BOOLEAN NOT NULL DEFAULT 1,
+    credit_limit_validation_mode ENUM('none','customer','shop') NOT NULL DEFAULT 'none',
+    shop_credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0,
     backup_enabled BOOLEAN NOT NULL DEFAULT 0,
     db_backup_url VARCHAR(500),
     backup_notes TEXT,
@@ -31,6 +33,8 @@ ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS theme_mode ENUM('light','dark
 ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS font_family VARCHAR(30) NOT NULL DEFAULT 'system' AFTER theme_mode;
 ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS primary_color CHAR(7) NOT NULL DEFAULT '#1b2a3a' AFTER font_family;
 ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS accent_color CHAR(7) NOT NULL DEFAULT '#ff7a1a' AFTER primary_color;
+ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS credit_limit_validation_mode ENUM('none','customer','shop') NOT NULL DEFAULT 'none' AFTER allow_stock_override;
+ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS shop_credit_limit DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER credit_limit_validation_mode;
 
 INSERT INTO shop_settings(location_id)
 SELECT l.id FROM locations l
