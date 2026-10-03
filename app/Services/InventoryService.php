@@ -82,6 +82,7 @@ class InventoryService{
    }
    if(!$this->db->transStatus()) throw new RuntimeException('Inventory adjustment failed.');
    $this->db->transCommit();
+   AuditService::log('CREATE','inventory_adjustment',0,null,['inventory_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>$direction,'actual_gas_weight_kg'=>$actualGasWeight,'notes'=>$notes],$userId,$locationId);
   }catch(\Throwable $e){$this->db->transRollback();throw $e;}
  }
 }
