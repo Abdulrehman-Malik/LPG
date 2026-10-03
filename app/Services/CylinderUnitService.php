@@ -89,7 +89,7 @@ class CylinderUnitService
         if((float)$custody['gas_weight_kg']>0.00001) throw new RuntimeException('Cylinder '.$custodyId.' must be empty before it can be returned.');
         $this->db->table('cylinder_units')->where('id',$custody['cylinder_unit_id'])->update(['status'=>'empty','custody_customer_id'=>null,'gas_weight_kg'=>0]);
         $this->db->table('cylinder_custody')->where('id',$custodyId)->update([
-            'status'=>'returned','return_sale_id'=>$returnSaleId,'returned_at'=>date('Y-m-d H:i:s'),'updated_by'=>$userId
+            'status'=>'returned','return_sale_id'=>$returnSaleId,'refund_amount'=>(float)$custody['deposit_amount'],'returned_at'=>date('Y-m-d H:i:s'),'updated_by'=>$userId
         ]);
         return $custody;
     }
