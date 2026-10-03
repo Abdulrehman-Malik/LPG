@@ -123,7 +123,7 @@
   <div class="form-text" id="depositHelp">Used only for Security Deposit / Issue Cylinder.</div>
 </div>
 <div class="mb-3">
-  <label class="form-label">Net Amount Payable</label>
+  <label class="form-label">Net Amount Receivable</label>
   <div class="form-control bg-light fw-bold">Rs. <span id="netPayable">0.00</span></div>
   <div class="small text-muted mt-1">Current Sale + Previous OS + Security Deposit</div>
 </div>
