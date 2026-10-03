@@ -5,8 +5,8 @@
 .pos-workspace > .pos-summary-panel { flex: 0 0 25%; max-width: 25%; }
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
-#lines th:nth-child(1){width:27%} #lines th:nth-child(2){width:13%} #lines th:nth-child(3){width:18%}
-#lines th:nth-child(4){width:20%} #lines th:nth-child(5){width:17%} #lines th:nth-child(6){width:5%}
+#lines th:nth-child(1){width:24%} #lines th:nth-child(2){width:12%} #lines th:nth-child(3){width:16%}
+#lines th:nth-child(4){width:16%} #lines th:nth-child(5){width:16%} #lines th:nth-child(6){width:11%} #lines th:nth-child(7){width:5%}
 #lines .form-select,#lines .form-control { min-height:42px; }
 #lines .lineTotal { font-size:1.05rem; white-space:nowrap; }
 #lines .remove { min-width:38px; min-height:38px; }
@@ -243,7 +243,7 @@ function refreshForm(){
  document.getElementById('standardTransaction').style.display=standard?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
@@ -277,7 +277,7 @@ document.getElementById('saleForm').onsubmit=()=>{
  const expected=t==='security_deposit'?deposit:saleTotal;
  if(t!=='cylinder_return'&&(!pays.length||Math.abs(paymentTotal()-expected)>0.01)){alert('Payment total must equal Net Amount Payable of Rs. '+expected.toFixed(2)+'.');return false;}
  if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
- const gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0);
+ let gasRequired=0; if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0); else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
  if((t==='gas_sale'||t==='cylinder_sale')&&gasRequired>Number(gasStock||0)+0.00001){
    if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(2)+' KG, but this transaction requires '+gasRequired.toFixed(2)+' KG. Continue?'))return false;
    document.getElementById('stock_override_confirmed').value='1';
