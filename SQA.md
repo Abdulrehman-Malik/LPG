@@ -36,6 +36,15 @@ For financial/inventory cases, capture enough evidence to reconcile:
 
 ---
 
+## Permission-Aware Navigation Regression
+
+| ID | Check | Expected result |
+|---|---|---|
+| NAV-01 | Permission-aware sidebar | A user sees only menu items for permissions granted by the user's role; unauthorized module links are absent. |
+| NAV-02 | Reports visibility | Users with REPORT_VIEW see Reports; users without REPORT_VIEW do not see Reports. Direct URL access is still protected by the controller permission check. |
+| NAV-03 | Permission mapping | Customers, Suppliers, Cylinder Types, Rates, Opening Inventory, POS Sales, Cash, Purchases, Inventory, Expenses, Receipts, Supplier Payments, Reports, Audit and Users/Shop Settings match their existing controller permission rules. |
+| NAV-04 | Role regression | Change a user's role/permissions, log in again, and verify the sidebar updates to the newly granted/removed rights. |
+
 ## POS Sale Page Regression — Latest UI Fixes
 
 | ID | Check | Expected result |
