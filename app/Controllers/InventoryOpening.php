@@ -139,6 +139,37 @@ class InventoryOpening extends Controller
         }
 
         $db = Database::connect();
+
+        if ($existing) {
+            $existingUnits = $db->table('cylinder_units')
+                ->select('id')
+                ->where([
+                    'location_id' => $locationId,
+                    'source_type' => 'opening',
+                    'source_id' => (int) $existing['id'],
+                ])
+                ->get()->getResultArray();
+
+            $existingUnitIds = array_values(array_map(
+                static fn(array $unit): int => (int) $unit['id'],
+                $existingUnits
+            ));
+
+            if ($existingUnitIds) {
+                $downstreamCount = (int) $db->table('inventory_movements')
+                    ->whereIn('cylinder_unit_id', $existingUnitIds)
+                    ->where('source_type !=', 'opening_cylinder')
+                    ->countAllResults();
+
+                if ($downstreamCount > 0) {
+                    return redirect()->back()->withInput()->with(
+                        'error',
+                        'This opening entry cannot be edited because one or more of its physical cylinders already have downstream inventory history. Use stock adjustment or reversal instead.'
+                    );
+                }
+            }
+        }
+
         $db->transBegin();
 
         try {
@@ -316,9 +347,22 @@ class InventoryOpening extends Controller
             ])
             ->get()->getResultArray();
 
-        foreach ($units as $unit) {
-            if ($unit['status'] === 'sold') {
-                return redirect()->back()->with('error', 'This opening entry cannot be deleted because one or more of its cylinders have already been sold. Use a reversal/adjustment instead.');
+        $unitIds = array_values(array_map(
+            static fn(array $unit): int => (int) $unit['id'],
+            $units
+        ));
+
+        if ($unitIds) {
+            $downstreamCount = (int) $db->table('inventory_movements')
+                ->whereIn('cylinder_unit_id', $unitIds)
+                ->where('source_type !=', 'opening_cylinder')
+                ->countAllResults();
+
+            if ($downstreamCount > 0) {
+                return redirect()->back()->with(
+                    'error',
+                    'This opening entry cannot be deleted because one or more of its physical cylinders already have downstream inventory history. Use stock adjustment or reversal instead.'
+                );
             }
         }
 
