@@ -519,6 +519,7 @@ class SalesService
         if(!$lines) throw new RuntimeException('At least one cylinder sale line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;$inventory=[];
+        $reservedFilledIds=[];$reservedEmptyIds=[];
         foreach($lines as $i=>$line){
             $n=$i+1;$typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;$status=(string)($line['cylinder_status']??'empty');$qty=(float)($line['quantity']??0);
             $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];$cylRateInput=trim((string)($line['cylinder_rate']??''))===''?null:(float)$line['cylinder_rate'];
@@ -530,13 +531,21 @@ class SalesService
             if($status==='filled'){
                 $stdGas=$this->rates->currentKgRate($transactionAt);if($stdGas===null)throw new RuntimeException('No effective gas/kg rate exists.');
                 $gasRate=$gasRateInput??$stdGas;
-                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'filled');if(count($units)<$qty)throw new RuntimeException('Insufficient filled cylinders of '.$type['name'].'.');
+                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'filled');
+                $units=array_values(array_filter($units,static fn(array $u): bool => !isset($reservedFilledIds[(int)$u['id']]) ));
+                if(count($units)<$qty)throw new RuntimeException('Insufficient filled cylinders of '.$type['name'].'.');
                 $selected=array_slice($units,0,(int)$qty);$gasKg=array_sum(array_map(static fn($u)=>(float)$u['gas_weight_kg'],$selected));if($gasKg<=0)throw new RuntimeException('Selected filled cylinders contain no gas.');
+                foreach($selected as $u)$reservedFilledIds[(int)$u['id']]=true;
                 foreach($selected as $u)$inventory[]=['line_no'=>$n,'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>(float)$u['gas_weight_kg'],'direction'=>'out','unit_id'=>(int)$u['id']];
                 foreach($selected as $u)$inventory[]=['line_no'=>$n,'type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$u['id']];
             }else{
-                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'empty');if(count($units)<$qty)throw new RuntimeException('Insufficient empty cylinders of '.$type['name'].'.');
-                foreach(array_slice($units,0,(int)$qty) as $u)$inventory[]=['line_no'=>$n,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$u['id']];
+                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'empty');
+                $units=array_values(array_filter($units,static fn(array $u): bool => !isset($reservedEmptyIds[(int)$u['id']]) ));
+                if(count($units)<$qty)throw new RuntimeException('Insufficient empty cylinders of '.$type['name'].'.');
+                foreach(array_slice($units,0,(int)$qty) as $u){
+                    $reservedEmptyIds[(int)$u['id']]=true;
+                    $inventory[]=['line_no'=>$n,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$u['id']];
+                }
             }
             $custom=(($gasRateInput!==null&&$stdGas!==null&&abs($gasRate-$stdGas)>0.00001)||($cylRateInput!==null&&abs($cylRate-((float)$this->rates->currentCylinderRate($typeId,$transactionAt)))>0.00001));$customRate=$customRate||$custom;
             $lineTotal=$gasKg*$gasRate+$qty*$cylRate;$subtotal+=$lineTotal;$totalKg+=$gasKg;
