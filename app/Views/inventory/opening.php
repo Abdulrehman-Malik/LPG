@@ -63,6 +63,8 @@
         <form method="post" action="<?= site_url('inventory/opening/save') ?>" class="modal-content">
             <?= csrf_field() ?>
             <input type="hidden" name="opening_id" id="openingId">
+            <input type="hidden" name="inventory_type" id="editInventoryType">
+            <input type="hidden" name="cylinder_type_id" id="editCylinderTypeId">
 
             <div class="modal-header">
                 <h5 id="formTitle">Add Opening Inventory</h5>
@@ -77,7 +79,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Inventory Type</label>
-                    <select name="inventory_type" id="invType" class="form-select" required>
+                    <select id="invType" class="form-select" required>
                         <option value="filled_cylinder">Filled Cylinder</option>
                         <option value="empty_cylinder">Empty Cylinder</option>
                     </select>
@@ -85,7 +87,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Cylinder Type</label>
-                    <select name="cylinder_type_id" id="cylinderTypeId" class="form-select" required>
+                    <select id="cylinderTypeId" class="form-select" required>
                         <option value="">Select</option>
                         <?php foreach ($types as $t): ?>
                             <option value="<?= $t['id'] ?>"><?= esc($t['code'] . ' — ' . $t['name']) ?></option>
@@ -135,6 +137,8 @@ function prepareAdd() {
     document.getElementById('comments').value = '';
     document.getElementById('invType').disabled = false;
     document.getElementById('cylinderTypeId').disabled = false;
+    document.getElementById('editInventoryType').value = '';
+    document.getElementById('editCylinderTypeId').value = '';
     toggleOpening();
 }
 
@@ -149,6 +153,8 @@ function prepareEdit(row) {
     document.getElementById('comments').value = row.comments || '';
     document.getElementById('invType').disabled = true;
     document.getElementById('cylinderTypeId').disabled = true;
+    document.getElementById('editInventoryType').value = row.type;
+    document.getElementById('editCylinderTypeId').value = row.cylinderTypeId;
     toggleOpening();
 }
 document.getElementById('invType')?.addEventListener('change', toggleOpening);
