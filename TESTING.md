@@ -63,7 +63,7 @@ A filled physical cylinder has:
 - a status: filled, empty or sold.
 
 POS transaction behavior is explicit:
-- **Sell Gas Only:** gas stock decreases by entered KG; the user selects the filled-cylinder type used as the source. Full consumption converts that physical source cylinder to empty; partial consumption leaves the source cylinder filled with its remaining actual gas.
+- **Sell Gas Only:** the user selects exactly one filled physical source cylinder; gas stock decreases only from that cylinder. The selected unit keeps its remaining actual gas when partially consumed and changes from filled to empty when its gas reaches zero.
 - **Same-Capacity Replacement:** customer returns an empty cylinder and receives a filled cylinder of the same type; gas is charged by actual gas weight and the returned empty is added to physical stock.
 - **Filled + Gas:** gas is charged by actual gas weight plus cylinder price; gas and filled-cylinder stock decrease.
 - **Different-Capacity Replacement:** same as Filled + Gas, but the returned empty cylinder is a different type/capacity.
