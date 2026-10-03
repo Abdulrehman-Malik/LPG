@@ -9,7 +9,10 @@
 #lines th:nth-child(4){width:16%} #lines th:nth-child(5){width:16%} #lines th:nth-child(6){width:11%} #lines th:nth-child(7){width:5%}
 #lines .form-select,#lines .form-control { min-height:42px; }
 #lines .lineTotal { font-size:1.05rem; white-space:nowrap; }
-#lines .remove { min-width:38px; min-height:38px; }
+#lines .line-actions { display:flex; justify-content:center; align-items:center; }
+#lines .remove-line, #payments .remove-payment { width:38px; height:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:.5rem; }
+#lines .remove-line:hover, #payments .remove-payment:hover { transform:translateY(-1px); }
+#lines th:last-child, #lines td:last-child { width:72px; text-align:center; }
 .custody-list { max-height:250px; overflow:auto; }
 .custody-list option { padding:4px; }
 @media (max-width:1199.98px){
@@ -62,9 +65,9 @@
 <div id="customerInfo" class="alert alert-light border py-2 small mb-3">Walk-in: cash sales are allowed. Security Deposit and Cylinder Return require a named customer.</div>
 
 <div id="standardTransaction">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h6 class="mb-0" id="linesTitle">Gas / Refill Lines</h6>
-    <span class="badge text-bg-light border" id="typeHint">Gas is deducted from company stock.</span>
+  <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+    <div class="d-flex align-items-center gap-2"><h6 class="mb-0" id="linesTitle">Gas / Refill Lines</h6><span class="badge text-bg-light border" id="typeHint">Gas is deducted from company stock.</span></div>
+    <button type="button" class="btn btn-primary btn-sm px-3" id="addLine"><i class="bi bi-plus-lg me-1"></i>Add Line</button>
   </div>
   <div class="table-responsive">
     <table class="table table-sm align-middle" id="lines">
@@ -72,7 +75,6 @@
       <tbody></tbody>
     </table>
   </div>
-  <button type="button" class="btn btn-outline-primary" id="addLine">Add Line</button>
 </div>
 
 <div id="securityTransaction" style="display:none">
@@ -115,7 +117,7 @@
 </div>
 <div class="mb-3">
   <label class="form-label fw-semibold">Security Deposit Amount</label>
-  <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
+  <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" inputmode="decimal" autocomplete="off" class="form-control form-control-lg">
   <div class="form-text" id="depositHelp">Used only for Security Deposit / Issue Cylinder.</div>
 </div>
 <div class="mb-3">
@@ -156,8 +158,11 @@ function refreshCustomer(){
   const available=Math.max(0,c.limit-c.balance);
   box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available Credit: Rs. '+available.toFixed(2);
 }
-function companyUnitsFor(status,typeId){
-  return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
+function companyUnitsFor(status,typeId){return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));}
+function stockGasForType(typeId){return (filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);}
+function stockCountForType(typeId,status){return Number((status==='empty'?emptyStock:filledStock)[typeId]||0);}
+function cylinderTypeOptions(status=''){
+ return '<option value="">Select</option>'+types.map(t=>{const filled=stockCountForType(t.id,'filled'),empty=stockCountForType(t.id,'empty'),gas=stockGasForType(t.id);let meta='Gas '+gas.toFixed(2)+' KG • '+filled.toFixed(0)+' filled';if(status==='filled')meta=filled.toFixed(0)+' filled • Gas '+gas.toFixed(2)+' KG';if(status==='empty')meta=empty.toFixed(0)+' empty';return '<option value="'+t.id+'">'+t.code+' — '+t.name+' | '+meta+'</option>';}).join('');
 }
 function custodyOptions(){
   return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit Rs. '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
@@ -165,22 +170,24 @@ function custodyOptions(){
 function refillLineOptions(typeId){
   return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())&&(!typeId||String(u.cylinder_type_id)===String(typeId))).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG</option>').join('');
 }
-function cylinderTypeOptions(){return '<option value="">Select</option>'+types.map(t=>'<option value="'+t.id+'">'+t.code+' — '+t.name+'</option>').join('');}
+function refreshCylinderTypeChoices(tr){const select=tr.querySelector('.cyl');if(!select)return;const current=select.value,status=tr.querySelector('.cylStatus')?.value||'filled';select.innerHTML=cylinderTypeOptions(status);if(current&&[...select.options].some(o=>o.value===current))select.value=current;}
 function clearLines(){tbody.innerHTML='';}
 function addGasLine(){
  const tr=document.createElement('tr');
- tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td><input class="form-control qty" type="number" min="0" step="any" value="1"></td><td><div class="input-group input-group-sm"><span class="input-group-text">Rs.</span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">Rs. 0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
+ tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td><input class="form-control qty" type="number" min="0" step="any" value="1"></td><td><div class="input-group input-group-sm"><span class="input-group-text">Rs.</span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">Rs. 0.00</td><td class="line-actions"><button type="button" class="btn btn-sm btn-light border text-danger remove-line" aria-label="Remove line" title="Remove line"><i class="bi bi-trash3"></i></button></td>';
  tr.querySelector('.cyl').onchange=()=>{const typeId=tr.querySelector('.cyl').value;tr.querySelector('.gasRate').value=kgRate!==null?Number(kgRate).toFixed(2):'';const t=tr.querySelector('.targetCyl');t.disabled=!selectedCustomerId();t.innerHTML=refillLineOptions(typeId);recalc();};
  tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').value=kgRate!==null?Number(kgRate).toFixed(2):'';
- tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.targetCyl').innerHTML=refillLineOptions('');tr.querySelector('.targetCyl').disabled=!selectedCustomerId();tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};tbody.appendChild(tr);
+ tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.targetCyl').innerHTML=refillLineOptions('');tr.querySelector('.targetCyl').disabled=!selectedCustomerId();tr.querySelector('.remove-line').onclick=()=>{tr.remove();recalc();};tbody.appendChild(tr);
 }
 function addCylinderSaleLine(){
  const tr=document.createElement('tr');
- tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td><select class="form-select cylStatus"><option value="filled">Filled</option><option value="empty">Empty</option></select></td><td><input class="form-control qty" type="number" min="0" step="1" value="1"></td><td><div class="input-group input-group-sm gasWrap"><span class="input-group-text">Rs/KG</span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><div class="input-group input-group-sm"><span class="input-group-text">Rs.</span><input class="form-control cylRate" type="number" min="0" step="any"></div></td><td class="lineTotal">Rs. 0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
- tr.querySelector('.cyl').onchange=refreshCylinderSaleLine;tr.querySelector('.cylStatus').onchange=refreshCylinderSaleLine;tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.cylRate').oninput=recalc;tr.querySelector('.remove').onclick=()=>{tr.remove();recalc();};tbody.appendChild(tr);refreshCylinderSaleLine.call(tr);
+ tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions('filled')+'</select></td><td><select class="form-select cylStatus"><option value="filled">Filled</option><option value="empty">Empty</option></select></td><td><input class="form-control qty" type="number" min="0" step="1" value="1"></td><td><div class="input-group input-group-sm gasWrap"><span class="input-group-text">Rs/KG</span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><div class="input-group input-group-sm"><span class="input-group-text">Rs.</span><input class="form-control cylRate" type="number" min="0" step="any"></div></td><td class="lineTotal">Rs. 0.00</td><td class="line-actions"><button type="button" class="btn btn-sm btn-light border text-danger remove-line" aria-label="Remove line" title="Remove line"><i class="bi bi-trash3"></i></button></td>';
+ tr.querySelector('.cyl').onchange=()=>refreshCylinderSaleLine(tr);tr.querySelector('.cylStatus').onchange=()=>refreshCylinderSaleLine(tr);tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.cylRate').oninput=recalc;tr.querySelector('.remove-line').onclick=()=>{tr.remove();recalc();};tbody.appendChild(tr);refreshCylinderSaleLine(tr);
 }
-function refreshCylinderSaleLine(){
- const tr=this.tagName==='TR'?this:tbody.querySelector('tr:last-child'),typeId=tr.querySelector('.cyl').value,status=tr.querySelector('.cylStatus').value;
+function refreshCylinderSaleLine(tr){
+ if(!tr)return;
+ refreshCylinderTypeChoices(tr);
+ const typeId=tr.querySelector('.cyl').value,status=tr.querySelector('.cylStatus').value;
  tr.querySelector('.gasWrap').style.display=status==='filled'?'flex':'none';
  tr.querySelector('.gasRate').value=status==='filled'&&kgRate!==null?Number(kgRate).toFixed(2):'';
  tr.querySelector('.cylRate').value=typeId&&rates[typeId]!=null?Number(rates[typeId]).toFixed(2):'';
@@ -193,11 +200,12 @@ function rebuildLines(){
  else {document.getElementById('addLine').style.display='none';}
 }
 function setCustodyLists(){
- const sel=document.getElementById('custodyUnits');
+ const sel=document.getElementById('custodyUnits'),ret=document.getElementById('returnUnits');
+ if(!sel||!ret)return;
  const current=[...sel.selectedOptions].map(o=>o.value);
  sel.innerHTML=availableCustodyUnits.map(u=>'<option value="'+u.id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+(u.status==='filled'?'Filled '+Number(u.gas_weight_kg||0).toFixed(2)+' KG':'Empty')+'</option>').join('');
  current.forEach(v=>{const o=[...sel.options].find(x=>x.value===v);if(o)o.selected=true;});
- const ret=document.getElementById('returnUnits'),old=[...ret.selectedOptions].map(o=>o.value);
+ const old=[...ret.selectedOptions].map(o=>o.value);
  ret.innerHTML=allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — Gas '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit Rs. '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
  old.forEach(v=>{const o=[...ret.options].find(x=>x.value===v);if(o)o.selected=true;});
  updateRefund();
@@ -210,8 +218,8 @@ function updateRefund(){
 function refreshPaymentModes(){const walkIn=!selectedCustomerId();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash');if(walkIn)m.value='cash';});}
 function addPayment(){
  const div=document.createElement('div');div.className='input-group mb-2 payment';
- div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="any" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';
- payments.appendChild(div);div.querySelector('.mode').value=defaultPaymentMode;div.querySelector('.mode').onchange=refreshPaymentModes;div.querySelector('.remove').onclick=()=>{div.remove();};refreshPaymentModes();
+ div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="any" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-light border text-danger remove-payment" aria-label="Remove payment" title="Remove payment"><i class="bi bi-trash3"></i></button>';
+ payments.appendChild(div);div.querySelector('.mode').value=defaultPaymentMode;div.querySelector('.mode').onchange=refreshPaymentModes;div.querySelector('.remove-payment').onclick=()=>{div.remove();};refreshPaymentModes();
 }
 function paymentTotal(){return [...payments.querySelectorAll('.payment')].reduce((s,p)=>s+Number(p.querySelector('.amount').value||0),0);}
 function gasForCylinderSale(tr){
@@ -243,7 +251,7 @@ function refreshForm(){
  document.getElementById('standardTransaction').style.display=standard?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDeposit').readOnly=t!=='security_deposit'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
@@ -255,7 +263,7 @@ function refreshForm(){
 document.getElementById('transactionType').onchange=refreshForm;
 document.getElementById('customer_id').onchange=()=>{refreshCustomer();setCustodyLists();tbody.querySelectorAll('.targetCyl').forEach(s=>{const typeId=s.closest('tr').querySelector('.cyl').value;s.disabled=!selectedCustomerId();s.innerHTML=refillLineOptions(typeId);});refreshPaymentModes();};
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
-document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
+document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('securityDeposit').onchange=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=()=>{
  const t=transactionType(),customerId=selectedCustomerId();
  let lines=[];
