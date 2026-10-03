@@ -32,6 +32,11 @@ class SalesService
     public function post(array $payload,int $userId,int $locationId): array
     {
         $customerId=!empty($payload['customer_id'])?(int)$payload['customer_id']:null;
+        $headerType=(string)($payload['transaction_type']??'');
+        if(in_array($headerType,['gas_sale','cylinder_sale','security_deposit','cylinder_return'],true)){
+            return $this->postHeaderTransaction($payload,$userId,$locationId,$headerType);
+        }
+
         $lines=is_array($payload['lines']??null)?$payload['lines']:[];
         $payments=is_array($payload['payments']??null)?$payload['payments']:[];
         if(!$lines) throw new RuntimeException('At least one sale line is required.');
@@ -297,6 +302,211 @@ class SalesService
             throw $e;
         }
     }
+
+    protected function postHeaderTransaction(array $payload,int $userId,int $locationId,string $headerType): array
+    {
+        $customerId=!empty($payload['customer_id'])?(int)$payload['customer_id']:null;
+        $transactionAt=str_replace('T',' ',trim((string)($payload['transaction_at']??date('Y-m-d H:i:s'))));
+        $notes=trim((string)($payload['notes']??''))?:null;
+        $lines=is_array($payload['lines']??null)?$payload['lines']:[];
+        $payments=is_array($payload['payments']??null)?$payload['payments']:[];
+        $deposit=max(0,(float)($payload['security_deposit_amount']??0));
+        $custodyUnitIds=array_values(array_unique(array_map('intval',is_array($payload['custody_unit_ids']??null)?$payload['custody_unit_ids']:[])));
+        $returnUnitIds=array_values(array_unique(array_map('intval',is_array($payload['return_unit_ids']??null)?$payload['return_unit_ids']:[])));
+
+        $customer=$customerId?$this->customers->find($customerId):null;
+        if($customerId && (!$customer || !(int)$customer['is_active'])) throw new RuntimeException('Customer is invalid or inactive.');
+        if($headerType==='security_deposit' || $headerType==='cylinder_return'){
+            if(!$customerId) throw new RuntimeException('A named customer is required for cylinder custody transactions.');
+        }
+        if($headerType!=='security_deposit' && $deposit>0) throw new RuntimeException('Security Deposit Amount is only allowed on a Security Deposit transaction.');
+
+        if($headerType==='gas_sale') return $this->postGasSaleHeader($payload,$userId,$locationId,$customerId,$transactionAt,$notes,$lines,$payments);
+        if($headerType==='cylinder_sale') return $this->postCylinderSaleHeader($payload,$userId,$locationId,$customerId,$transactionAt,$notes,$lines,$payments);
+        if($headerType==='security_deposit') return $this->postSecurityDepositHeader($payload,$userId,$locationId,$customerId,$transactionAt,$notes,$payments,$custodyUnitIds,$deposit);
+        return $this->postCylinderReturnHeader($payload,$userId,$locationId,$customerId,$transactionAt,$notes,$returnUnitIds);
+    }
+
+    protected function postGasSaleHeader(array $payload,int $userId,int $locationId,?int $customerId,string $transactionAt,?string $notes,array $lines,array $payments): array
+    {
+        if(!$lines) throw new RuntimeException('At least one gas line is required.');
+        if(!$payments) throw new RuntimeException('At least one payment is required.');
+        $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
+        foreach($lines as $i=>$line){
+            $n=$i+1;$typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
+            $qty=(float)($line['quantity']??0);$gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
+            $targetId=isset($line['customer_cylinder_unit_id'])&&$line['customer_cylinder_unit_id']!==''?(int)$line['customer_cylinder_unit_id']:null;
+            if(!$typeId) throw new RuntimeException('Cylinder type is required on gas line '.$n.'.');
+            $type=$this->types->find($typeId);if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on gas line '.$n.'.');
+            if($qty<=0) throw new RuntimeException('Gas quantity on line '.$n.' must be greater than zero.');
+            if($gasRateInput!==null&&$gasRateInput<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
+            $standardRate=$this->rates->currentKgRate($transactionAt);if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
+            $gasRate=$gasRateInput??$standardRate;$custom=$gasRateInput!==null&&abs($gasRate-$standardRate)>0.00001;$customRate=$customRate||$custom;
+            if($targetId){
+                if(!$customerId) throw new RuntimeException('Select a named customer before choosing a customer custody cylinder.');
+                $target=$this->db->query("SELECT cu.*,ct.capacity_kg,cc.id custody_id FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id JOIN cylinder_custody cc ON cc.cylinder_unit_id=cu.id AND cc.status='issued' AND cc.customer_id=? WHERE cu.id=? AND cu.location_id=? AND cu.status='custody' FOR UPDATE",[$customerId,$targetId,$locationId])->getRowArray();
+                if(!$target) throw new RuntimeException('Selected customer custody cylinder is not available.');
+                if((int)$target['cylinder_type_id']!==$typeId) throw new RuntimeException('Gas refill cylinder type must match the selected custody cylinder type.');
+                if((float)$target['gas_weight_kg']+$qty>(float)$target['capacity_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds the remaining capacity of the selected customer cylinder.');
+            }
+            $prepared[]=['line_no'=>$n,'type_id'=>$typeId,'quantity'=>$qty,'gas_weight_kg'=>$qty,'gas_rate'=>$gasRate,'standard_rate'=>$standardRate,'custom_rate_flag'=>$custom?1:0,'target_id'=>$targetId,'line_total'=>$qty*$gasRate];
+            $subtotal+=$qty*$gasRate;$totalKg+=$qty;
+        }
+        $discount=max(0,(float)($payload['discount_amount']??0));if($discount>$subtotal) throw new RuntimeException('Discount cannot exceed subtotal.');
+        $total=$subtotal-$discount;$this->validateHeaderPayments($payments,$customerId,$total);
+        $this->db->transBegin();
+        try{
+            if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
+            $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>'filled_cylinder','cylinder_type_id'=>(int)$row['type_id']],$prepared));
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$this->paymentCredit($payments),'custom_rate_flag'=>$this->paymentCustom($prepared),'notes'=>$notes,'created_by'=>$userId]);
+            $saleId=(int)$this->db->insertID();$inventory=[];
+            foreach($prepared as $row){
+                $remaining=$row['gas_weight_kg'];$units=$this->cylinders->available($locationId,$row['type_id'],'filled');
+                foreach($units as $unit){
+                    if($remaining<=0.00001)break;
+                    $before=(float)$unit['gas_weight_kg'];$used=min($before,$remaining);$after=$before-$used;
+                    $inventory[]=['line_no'=>$row['line_no'],'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$unit['id']];
+                    if($after<=0.00001){
+                        $this->db->table('cylinder_units')->where('id',(int)$unit['id'])->update(['status'=>'empty','gas_weight_kg'=>0]);
+                        $inventory[]=['line_no'=>$row['line_no'],'type'=>'filled_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id']];
+                        $inventory[]=['line_no'=>$row['line_no'],'type'=>'empty_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'in','unit_id'=>(int)$unit['id']];
+                    }else $this->db->table('cylinder_units')->where('id',(int)$unit['id'])->update(['gas_weight_kg'=>$after]);
+                    $remaining-=$used;
+                }
+                if($remaining>0.00001)throw new RuntimeException('Gas stock changed while posting. Please retry.');
+                $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>'refill_kg','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>$row['target_id'],'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_weight_kg'],'applied_rate'=>$row['gas_rate'],'standard_rate'=>$row['standard_rate'],'custom_rate_flag'=>$row['custom_rate_flag'],'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>$row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill']);
+                if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
+            }
+            $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
+            foreach($inventory as $m)$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id']??null,'created_by'=>$userId,'notes'=>'Gas sale']);
+            $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);
+            $cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
+            if(!$this->db->transStatus())throw new RuntimeException('Gas sale posting failed.');
+            $this->db->transCommit();$this->releaseInventoryLocks();
+            return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
+        }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
+    }
+
+    protected function postCylinderSaleHeader(array $payload,int $userId,int $locationId,?int $customerId,string $transactionAt,?string $notes,array $lines,array $payments): array
+    {
+        if(!$lines) throw new RuntimeException('At least one cylinder sale line is required.');
+        if(!$payments) throw new RuntimeException('At least one payment is required.');
+        $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;$inventory=[];
+        foreach($lines as $i=>$line){
+            $n=$i+1;$typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;$status=(string)($line['cylinder_status']??'empty');$qty=(float)($line['quantity']??0);
+            $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];$cylRateInput=trim((string)($line['cylinder_rate']??''))===''?null:(float)$line['cylinder_rate'];
+            if(!$typeId||!in_array($status,['filled','empty'],true))throw new RuntimeException('Cylinder type and status are required on line '.$n.'.');
+            if($qty<=0||floor($qty)!==$qty)throw new RuntimeException('Cylinder quantity on line '.$n.' must be a whole number.');
+            $type=$this->types->find($typeId);if(!$type||!(int)$type['is_active'])throw new RuntimeException('Invalid or inactive cylinder type on line '.$n.'.');
+            $cylRate=$this->rates->currentCylinderRate($typeId,$transactionAt);if($cylRate===null)throw new RuntimeException('No effective cylinder price exists for '.$type['name'].'.');$cylRate=$cylRateInput??$cylRate;
+            $stdGas=null;$gasKg=0;$gasRate=0;
+            if($status==='filled'){
+                $stdGas=$this->rates->currentKgRate($transactionAt);if($stdGas===null)throw new RuntimeException('No effective gas/kg rate exists.');
+                $gasRate=$gasRateInput??$stdGas;
+                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'filled');if(count($units)<$qty)throw new RuntimeException('Insufficient filled cylinders of '.$type['name'].'.');
+                $selected=array_slice($units,0,(int)$qty);$gasKg=array_sum(array_map(static fn($u)=>(float)$u['gas_weight_kg'],$selected));if($gasKg<=0)throw new RuntimeException('Selected filled cylinders contain no gas.');
+                foreach($selected as $u)$inventory[]=['line_no'=>$n,'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>(float)$u['gas_weight_kg'],'direction'=>'out','unit_id'=>(int)$u['id']];
+                foreach($selected as $u)$inventory[]=['line_no'=>$n,'type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$u['id']];
+            }else{
+                $units=$this->cylinders->availableForDisplay($locationId,$typeId,'empty');if(count($units)<$qty)throw new RuntimeException('Insufficient empty cylinders of '.$type['name'].'.');
+                foreach(array_slice($units,0,(int)$qty) as $u)$inventory[]=['line_no'=>$n,'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$u['id']];
+            }
+            $custom=(($gasRateInput!==null&&$stdGas!==null&&abs($gasRate-$stdGas)>0.00001)||($cylRateInput!==null&&abs($cylRate-((float)$this->rates->currentCylinderRate($typeId,$transactionAt)))>0.00001));$customRate=$customRate||$custom;
+            $lineTotal=$gasKg*$gasRate+$qty*$cylRate;$subtotal+=$lineTotal;$totalKg+=$gasKg;
+            $prepared[]=['line_no'=>$n,'type_id'=>$typeId,'status'=>$status,'quantity'=>$qty,'gas_kg'=>$gasKg,'gas_rate'=>$gasRate,'cyl_rate'=>$cylRate,'std_gas'=>$stdGas,'line_total'=>$lineTotal];
+        }
+        $discount=max(0,(float)($payload['discount_amount']??0));if($discount>$subtotal)throw new RuntimeException('Discount cannot exceed subtotal.');
+        $total=$subtotal-$discount;$this->validateHeaderPayments($payments,$customerId,$total);
+        $this->db->transBegin();
+        try{
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$this->paymentCredit($payments),'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId]);
+            $saleId=(int)$this->db->insertID();$this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['type'],'cylinder_type_id'=>$row['cylinder_type_id']],$inventory));
+            foreach($prepared as $row){
+                $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['gas_rate']+$row['cyl_rate']):$row['cyl_rate'],'standard_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['std_gas']+$row['cyl_rate']):$row['cyl_rate'],'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>'Cylinder sale']);
+            }
+            $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
+            foreach($inventory as $m){$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>'Cylinder sale']);$this->cylinders->markSold((int)$m['unit_id']);}
+            $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);$cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
+            if(!$this->db->transStatus())throw new RuntimeException('Cylinder sale posting failed.');
+            $this->db->transCommit();$this->releaseInventoryLocks();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
+        }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
+    }
+
+    protected function postSecurityDepositHeader(array $payload,int $userId,int $locationId,int $customerId,string $transactionAt,?string $notes,array $payments,array $unitIds,float $deposit): array
+    {
+        if(!$unitIds)throw new RuntimeException('Select at least one cylinder to place on customer custody.');
+        if($deposit<=0)throw new RuntimeException('Security Deposit Amount must be greater than zero.');
+        if(!$payments)throw new RuntimeException('Add a payment for the security deposit.');
+        $this->validateHeaderPayments($payments,$customerId,$deposit,false);
+        $rows=$this->db->table('cylinder_units cu')->select('cu.*,ct.name cylinder_name')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where('cu.location_id',$locationId)->whereIn('cu.id',$unitIds)->whereIn('cu.status',['filled','empty'])->get()->getResultArray();
+        if(count($rows)!==count($unitIds))throw new RuntimeException('One or more selected cylinders are no longer available for custody.');
+        $unitById=[];foreach($rows as $row)$unitById[(int)$row['id']=$row;
+        $this->db->transBegin();
+        try{
+            $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>(int)$row['cylinder_type_id']],$rows));
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'security_deposit','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>0,'subtotal'=>0,'discount_amount'=>0,'total_amount'=>0,'security_deposit_amount'=>$deposit,'security_deposit_refund_amount'=>0,'credit_amount'=>0,'custom_rate_flag'=>0,'notes'=>$notes,'created_by'=>$userId]);
+            $saleId=(int)$this->db->insertID();
+            $perUnit=round($deposit/count($rows),2);$assigned=0;$lineNo=0;
+            foreach($rows as $row){
+                $lineNo++;
+                $this->cylinders->moveToCustody((int)$row['id'],$customerId,$saleId,$userId);
+                $custody=$this->db->table('cylinder_custody')->where(['cylinder_unit_id'=>$row['id'],'status'=>'issued'])->orderBy('id','DESC')->get()->getRowArray();
+                if(!$custody)throw new RuntimeException('Custody record could not be created.');
+                $share=$lineNo===count($rows)?round($deposit-$assigned,2):$perUnit;$assigned+= $share;
+                $this->db->table('cylinder_custody')->where('id',$custody['id'])->update(['deposit_amount'=>$share]);
+                $this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'hold','amount'=>$share,'sale_id'=>$saleId,'custody_id'=>$custody['id'],'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit held for '.$row['unit_code']]);
+                $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$lineNo,'line_type'=>$row['gas_weight_kg']>0?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'customer_cylinder_unit_id'=>$row['id'],'quantity'=>1,'gas_weight_kg'=>$row['gas_weight_kg'],'applied_rate'=>0,'standard_rate'=>null,'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>0,'notes'=>'Custody issued: '.$row['unit_code']]);
+            }
+            $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);
+            $cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before receiving a security deposit.');$this->cash->postGeneric((int)$s['id'],'security_deposit','in',$cash,'sale',$saleId,$userId,'Security deposit received',$transactionAt);}
+            if(!$this->db->transStatus())throw new RuntimeException('Security deposit posting failed.');
+            $this->db->transCommit();$this->releaseInventoryLocks();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$deposit,'customer_id'=>$customerId,'credit_amount'=>0];
+        }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
+    }
+
+    protected function postCylinderReturnHeader(array $payload,int $userId,int $locationId,int $customerId,string $transactionAt,?string $notes,array $returnUnitIds): array
+    {
+        if(!$returnUnitIds)throw new RuntimeException('Select at least one customer custody cylinder to return.');
+        $rows=$this->db->table('cylinder_custody cc')->select('cc.*,cu.unit_code,cu.gas_weight_kg,cu.cylinder_type_id,ct.name cylinder_name')->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cc.location_id'=>$locationId,'cc.customer_id'=>$customerId,'cc.status'=>'issued'])->whereIn('cc.cylinder_unit_id',$returnUnitIds)->get()->getResultArray();
+        if(count($rows)!==count($returnUnitIds))throw new RuntimeException('One or more selected custody cylinders are no longer active for this customer.');
+        $refund=0;foreach($rows as $row){if((float)$row['gas_weight_kg']>0.00001)throw new RuntimeException('Cylinder '.$row['unit_code'].' must be empty before return/refund.');$refund+=(float)$row['deposit_amount'];}
+        if($refund<=0)throw new RuntimeException('No refundable security deposit is linked to the selected cylinders.');
+        $this->db->transBegin();
+        try{
+            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_return','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>0,'subtotal'=>0,'discount_amount'=>0,'total_amount'=>0,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>$refund,'credit_amount'=>0,'custom_rate_flag'=>0,'notes'=>$notes,'created_by'=>$userId]);
+            $saleId=(int)$this->db->insertID();$lineNo=0;
+            foreach($rows as $row){
+                $lineNo++;$this->cylinders->returnFromCustody((int)$row['id'],$customerId,$saleId,$userId);
+                $this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'refund','amount'=>$row['deposit_amount'],'sale_id'=>$saleId,'custody_id'=>$row['id'],'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit refund for '.$row['unit_code']]);
+                $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$lineNo,'line_type'=>'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'customer_cylinder_unit_id'=>$row['cylinder_unit_id'],'quantity'=>1,'gas_weight_kg'=>0,'applied_rate'=>0,'standard_rate'=>null,'custom_rate_flag'=>0,'empty_cylinder_received'=>1,'line_discount'=>0,'line_total'=>0,'notes'=>'Cylinder returned: '.$row['unit_code'].' | Deposit refund Rs. '.number_format((float)$row['deposit_amount'],2)]);
+            }
+            $s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before refunding a security deposit.');
+            $this->cash->postGeneric((int)$s['id'],'security_deposit_refund','out',$refund,'sale',$saleId,$userId,'Security deposit refund',$transactionAt);
+            if(!$this->db->transStatus())throw new RuntimeException('Cylinder return failed.');
+            $this->db->transCommit();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>0,'customer_id'=>$customerId,'credit_amount'=>0];
+        }catch(\Throwable $e){$this->db->transRollback();throw $e;}
+    }
+
+    protected function validateHeaderPayments(array $payments,?int $customerId,float $expected,bool $allowCredit=true): void
+    {
+        if(!$payments)throw new RuntimeException('At least one payment is required.');
+        $total=0;
+        foreach($payments as $p){$mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');if(!$customerId&&$mode!=='cash')throw new RuntimeException('Walk-in transactions are cash only.');if(!$allowCredit&&$mode==='credit')throw new RuntimeException('Credit payment is not allowed for this transaction.');$total+=$amount;}
+        if(abs($total-$expected)>0.01)throw new RuntimeException('Payment total must equal the net amount payable.');
+    }
+
+    protected function insertSalePayments(int $saleId,array $payments,string $at,int $userId): void
+    {
+        foreach($payments as $p)$this->db->table('sale_payments')->insert(['sale_id'=>$saleId,'payment_mode'=>$p['payment_mode'],'amount'=>(float)$p['amount'],'reference_no'=>trim((string)($p['reference_no']??''))?:null,'payment_at'=>$at,'received_by'=>$userId]);
+    }
+
+    protected function paymentCash(array $payments): float {return array_sum(array_map(static fn($p)=>(string)($p['payment_mode'])==='cash'?(float)$p['amount']:0,$payments));}
+    protected function paymentCredit(array $payments): float {return array_sum(array_map(static fn($p)=>(string)($p['payment_mode'])==='credit'?(float)$p['amount']:0,$payments));}
+    protected function paymentCustom(array $rows): int {return array_reduce($rows,static fn($c,$r)=>$c||(int)($r['custom_rate_flag']??0)?1:0,0);}
 
     public function void(int $saleId,int $userId,int $locationId,string $reason): string
     {
