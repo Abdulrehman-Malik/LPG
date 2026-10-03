@@ -29,7 +29,7 @@ class InventoryOpening extends Controller
         $gasByOpening=[];
         if($rows){
             $openingIds=array_map(static fn(array $row):(int)$row['id'], $rows);
-            $units=$this->cylinders->db->table('cylinder_units')
+            $units=Database::connect()->table('cylinder_units')
                 ->select('source_id, SUM(gas_weight_kg) AS gas_stock')
                 ->where('location_id',$locationId)
                 ->where('source_type','opening')
