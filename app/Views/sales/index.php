@@ -165,7 +165,14 @@ function custodyOptions(){
 function refillLineOptions(typeId){
   return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())&&(!typeId||String(u.cylinder_type_id)===String(typeId))).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG</option>').join('');
 }
-function cylinderTypeOptions(){return '<option value="">Select</option>'+types.map(t=>'<option value="'+t.id+'">'+t.code+' — '+t.name+'</option>').join('');}
+function cylinderTypeOptions(){
+  return '<option value="">Select</option>'+types.map(t=>{
+    const units=filledUnits[t.id]||[];
+    const gas=units.reduce((s,u)=>s+Number(u.gas_weight_kg||0),0);
+    const stock=units.length;
+    return '<option value="'+t.id+'">'+t.code+' — '+t.name+' — Available Stock: '+gas.toFixed(2)+' KG ('+stock+' cylinder'+(stock===1?'':'s')+')</option>';
+  }).join('');
+}
 function clearLines(){tbody.innerHTML='';}
 function addGasLine(){
  const tr=document.createElement('tr');
