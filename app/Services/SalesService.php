@@ -442,7 +442,6 @@ class SalesService
         $this->validateHeaderPayments($payments,$customerId,$deposit,false);
         $rows=$this->db->table('cylinder_units cu')->select('cu.*,ct.name cylinder_name')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where('cu.location_id',$locationId)->whereIn('cu.id',$unitIds)->whereIn('cu.status',['filled','empty'])->get()->getResultArray();
         if(count($rows)!==count($unitIds))throw new RuntimeException('One or more selected cylinders are no longer available for custody.');
-        $unitById=[];foreach($rows as $row)$unitById[(int)$row['id']=$row;
         $this->db->transBegin();
         try{
             $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>(int)$row['cylinder_type_id']],$rows));
@@ -459,6 +458,8 @@ class SalesService
                 $this->db->table('cylinder_custody')->where('id',$custody['id'])->update(['deposit_amount'=>$share]);
                 $this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'hold','amount'=>$share,'sale_id'=>$saleId,'custody_id'=>$custody['id'],'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit held for '.$row['unit_code']]);
                 $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$lineNo,'line_type'=>$row['gas_weight_kg']>0?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'customer_cylinder_unit_id'=>$row['id'],'quantity'=>1,'gas_weight_kg'=>$row['gas_weight_kg'],'applied_rate'=>0,'standard_rate'=>null,'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>0,'notes'=>'Custody issued: '.$row['unit_code']]);
+                $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'quantity'=>1,'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'security_deposit','source_id'=>$saleId,'source_line_id'=>null,'cylinder_unit_id'=>$row['id'],'created_by'=>$userId,'notes'=>'Cylinder placed on customer custody']);
+                if($row['status']==='filled' && (float)$row['gas_weight_kg']>0) $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$row['gas_weight_kg'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'security_deposit','source_id'=>$saleId,'source_line_id'=>null,'cylinder_unit_id'=>$row['id'],'created_by'=>$userId,'notes'=>'Gas carried out with custody cylinder']);
             }
             $this->insertSalePayments($saleId,$payments,$transactionAt,$userId);
             $cash=$this->paymentCash($payments);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before receiving a security deposit.');$this->cash->postGeneric((int)$s['id'],'security_deposit','in',$cash,'sale',$saleId,$userId,'Security deposit received',$transactionAt);}
@@ -483,6 +484,7 @@ class SalesService
                 $lineNo++;$this->cylinders->returnFromCustody((int)$row['id'],$customerId,$saleId,$userId);
                 $this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'refund','amount'=>$row['deposit_amount'],'sale_id'=>$saleId,'custody_id'=>$row['id'],'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit refund for '.$row['unit_code']]);
                 $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$lineNo,'line_type'=>'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'customer_cylinder_unit_id'=>$row['cylinder_unit_id'],'quantity'=>1,'gas_weight_kg'=>0,'applied_rate'=>0,'standard_rate'=>null,'custom_rate_flag'=>0,'empty_cylinder_received'=>1,'line_discount'=>0,'line_total'=>0,'notes'=>'Cylinder returned: '.$row['unit_code'].' | Deposit refund Rs. '.number_format((float)$row['deposit_amount'],2)]);
+                $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$row['cylinder_type_id'],'quantity'=>1,'direction'=>'in','movement_at'=>$transactionAt,'source_type'=>'cylinder_return','source_id'=>$saleId,'source_line_id'=>null,'cylinder_unit_id'=>$row['cylinder_unit_id'],'created_by'=>$userId,'notes'=>'Cylinder returned from customer custody']);
             }
             $s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before refunding a security deposit.');
             $this->cash->postGeneric((int)$s['id'],'security_deposit_refund','out',$refund,'sale',$saleId,$userId,'Security deposit refund',$transactionAt);
