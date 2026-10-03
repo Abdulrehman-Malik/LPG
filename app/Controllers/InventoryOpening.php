@@ -26,27 +26,11 @@ class InventoryOpening extends Controller
         $locationId=(int)session()->get('location_id');
         $rows=$this->model->select('inventory_opening_balances.*, cylinder_types.code AS cylinder_code, cylinder_types.name AS cylinder_name')->join('cylinder_types','cylinder_types.id=inventory_opening_balances.cylinder_type_id','left')->where('location_id',$locationId)->orderBy('inventory_date','DESC')->orderBy('inventory_type')->findAll();
 
-        $gasByOpening=[];
-        if($rows){
-            $openingIds=array_map(static fn(array $row): int => (int) $row['id'], $rows);
-            $units=Database::connect()->table('cylinder_units')
-                ->select('source_id, SUM(gas_weight_kg) AS gas_stock')
-                ->where('location_id',$locationId)
-                ->where('source_type','opening')
-                ->whereIn('source_id',$openingIds)
-                ->groupBy('source_id')
-                ->get()->getResultArray();
-            foreach($units as $unit){
-                $gasByOpening[(int)$unit['source_id']]=(float)$unit['gas_stock'];
-            }
-        }
+        $gasByOpening = $this->model->gasStockByOpeningIds($locationId, array_map(static fn(array $row): int => (int) $row['id'], $rows));
         foreach($rows as &$row){
-            $row['gas_stock']=$row['inventory_type']==='filled_cylinder'
-                ? ($gasByOpening[(int)$row['id']] ?? 0)
-                : ($row['inventory_type']==='gas_kg' ? (float)$row['quantity'] : 0);
+            $row['gas_stock'] = $gasByOpening[(int)$row['id']] ?? 0;
         }
         unset($row);
-
         return view('inventory/opening',['title'=>'Opening Inventory','types'=>$this->types->where('is_active',1)->orderBy('sort_order')->findAll(),'rows'=>$rows]);
     }
     public function save()
