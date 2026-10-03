@@ -29,9 +29,11 @@ class Customers extends Controller
         $customer=$this->model->withLedgerTotals($id);
         if(!$customer) return $this->response->setStatusCode(404)->setBody('Customer not found');
         $db=$this->model->db;
-        $sales=$db->table('sales')->select('transaction_at,sale_no,total_amount,credit_amount,status')->where('customer_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();
+        $sales=$db->table('sales')->select('transaction_at,sale_no,transaction_type,total_amount,credit_amount,security_deposit_amount,security_deposit_refund_amount,status')->where('customer_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();
         $receipts=$db->table('customer_receipts')->select('receipt_at,receipt_no,amount,payment_mode,status')->where('customer_id',$id)->orderBy('receipt_at','DESC')->get()->getResultArray();
-        return view('customers/ledger',['title'=>'Customer Ledger — '.$customer['name'],'customer'=>$customer,'sales'=>$sales,'receipts'=>$receipts]);
+        $deposits=$db->table('customer_security_deposits')->select('transaction_at,entry_type,amount,sale_id,custody_id,notes')->where('customer_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();
+        $custody=$db->table('cylinder_custody cc')->select('cc.*,cu.unit_code,cu.gas_weight_kg,ct.code cylinder_code,ct.name cylinder_name')->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cc.customer_id'=>$id,'cc.status'=>'issued'])->orderBy('cc.id')->get()->getResultArray();
+        return view('customers/ledger',['title'=>'Customer Ledger — '.$customer['name'],'customer'=>$customer,'sales'=>$sales,'receipts'=>$receipts,'deposits'=>$deposits,'custody'=>$custody]);
     }
 
     public function save()
