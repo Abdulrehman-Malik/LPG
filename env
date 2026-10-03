@@ -14,7 +14,8 @@
 # ENVIRONMENT
 #--------------------------------------------------------------------
 
-# CI_ENVIRONMENT = production
+# Run local development with full CodeIgniter/PHP error details.
+CI_ENVIRONMENT = development
 
 #--------------------------------------------------------------------
 # APP
