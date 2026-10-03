@@ -10,7 +10,7 @@ class InventoryOpeningBalanceModel extends Model
     protected $primaryKey='id';
     protected $returnType='array';
     protected $useTimestamps=false;
-    protected $allowedFields=['location_id','inventory_date','inventory_type','cylinder_type_id','quantity','created_by','created_at'];
+    protected $allowedFields=['location_id','inventory_date','inventory_type','cylinder_type_id','quantity','comments','created_by','created_at'];
 
     public function gasStockByOpeningIds(int $locationId, array $openingIds): array
     {
