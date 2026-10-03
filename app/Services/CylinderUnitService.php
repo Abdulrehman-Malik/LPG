@@ -121,6 +121,19 @@ class CylinderUnitService
         $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'sold','gas_weight_kg'=>0]);
     }
 
+    public function restoreGas(int $unitId,float $gasWeight): void
+    {
+        if($gasWeight<=0) throw new RuntimeException('Restored gas quantity must be greater than zero.');
+        $u=$this->db->query("SELECT cu.*,ct.capacity_kg FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id WHERE cu.id=? FOR UPDATE",[$unitId])->getRowArray();
+        if(!$u) throw new RuntimeException('Cylinder unit not found.');
+        $after=(float)$u['gas_weight_kg']+$gasWeight;
+        if($after>(float)$u['capacity_kg']+0.00001) throw new RuntimeException('Restored gas would exceed cylinder capacity.');
+        $this->db->table('cylinder_units')->where('id',$unitId)->update([
+            'status'=>'filled',
+            'gas_weight_kg'=>$after
+        ]);
+    }
+
     public function restoreFilled(int $unitId,float $gasWeight): void
     {
         $u=$this->db->query("SELECT * FROM cylinder_units WHERE id=? FOR UPDATE",[$unitId])->getRowArray();
