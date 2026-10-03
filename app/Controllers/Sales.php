@@ -30,8 +30,18 @@ class Sales extends Controller
         $cylinderRates=[];
         foreach($types as $type) $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']);
         $shopSettings=(new ShopSettingsModel())->forLocation((int)session()->get('location_id')); $defaultSaleMode=(string)($shopSettings['default_sale_mode']??'sell_gas_only');
-        $cashSession=(new \App\Services\CashService())->openSessionForLocation((int)session()->get('location_id')); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=0.0; foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock((int)session()->get('location_id'),'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay((int)session()->get('location_id'),$typeId,'filled'); foreach($filledUnits[$typeId] as $unit) $gasStock+=(float)$unit['gas_weight_kg']; $emptyStock[$typeId]=$inv->stock((int)session()->get('location_id'),'empty_cylinder',$typeId);}
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultSaleMode'=>$defaultSaleMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy((int)session()->get('location_id'))]);
+        $locationId=(int)session()->get('location_id'); $cashSession=(new \App\Services\CashService())->openSessionForLocation($locationId); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=0.0; foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock($locationId,'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay($locationId,$typeId,'filled'); foreach($filledUnits[$typeId] as $unit) $gasStock+=(float)$unit['gas_weight_kg']; $emptyStock[$typeId]=$inv->stock($locationId,'empty_cylinder',$typeId);} 
+        $custodyUnits=$db=\Config\Database::connect(); $custodyUnits=$db->table('cylinder_custody cc')->select('cc.id custody_id,cc.customer_id,cc.deposit_amount,cu.id unit_id,cu.unit_code,cu.cylinder_type_id,cu.gas_weight_kg,cu.status cylinder_status,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cc.location_id'=>$locationId,'cc.status'=>'issued'])->orderBy('cu.id')->get()->getResultArray(); 
+        $availableCustodyUnits=$cylinders->availableCompanyUnits($locationId);
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultSaleMode'=>$defaultSaleMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy($locationId),'custodyUnits'=>$custodyUnits,'availableCustodyUnits'=>$availableCustodyUnits]);
+    }
+
+    public function custody(int $customerId)
+    {
+        if($r=$this->guard()) return $r;
+        if($customerId<=0) return $this->response->setJSON([]);
+        $units=(new \App\Services\CylinderUnitService())->customerCustody((int)session()->get('location_id'),$customerId);
+        return $this->response->setJSON($units);
     }
 
     public function save()
