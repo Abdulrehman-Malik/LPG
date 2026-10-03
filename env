@@ -20,9 +20,9 @@
 # APP
 #--------------------------------------------------------------------
 
-# app.baseURL = ''
+ app.baseURL = 'http://localhost:180/LPG/public/'
 # If you have trouble with `.`, you could also use `_`.
-# app_baseURL = ''
+ app_baseURL = 'http://localhost:180/LPG/public/'
 # app.forceGlobalSecureRequests = false
 # app.CSPEnabled = false
 
