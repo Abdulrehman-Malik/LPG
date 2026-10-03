@@ -51,7 +51,7 @@ CREATE TABLE cylinder_custody (
   CONSTRAINT fk_custody_return_sale FOREIGN KEY(return_sale_id) REFERENCES sales(id) ON DELETE RESTRICT,
   CONSTRAINT fk_custody_created_by FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_custody_updated_by FOREIGN KEY(updated_by) REFERENCES users(id) ON DELETE SET NULL,
-  UNIQUE KEY uq_custody_unit_status(cylinder_unit_id,status),
+  KEY idx_custody_unit_status(cylinder_unit_id,status),
   KEY idx_custody_customer(location_id,customer_id,status),
   KEY idx_custody_issue_sale(issue_sale_id),
   KEY idx_custody_return_sale(return_sale_id),
@@ -78,3 +78,5 @@ CREATE TABLE customer_security_deposits (
   KEY idx_deposit_sale(sale_id),
   CHECK(amount>0)
 ) ENGINE=InnoDB;
+
+-- A cylinder may be issued, returned, and issued again in a later custody cycle.
