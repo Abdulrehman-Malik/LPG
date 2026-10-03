@@ -243,11 +243,12 @@ function recalc(){
  const discount=Math.max(0,Number(document.getElementById('discount').value||0));saleTotal=Math.max(0,saleTotal-discount);
  const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
+ const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:(saleTotal+previousOs));
  document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
  document.getElementById('previousOs').textContent=previousOs.toFixed(2);
- document.getElementById('netPayable').textContent=(saleTotal+previousOs+deposit).toFixed(2);
+ document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
  const paid=t==='cylinder_return'?0:paymentTotal();
- const balanceAfter=Math.max(0,saleTotal+previousOs+deposit-paid);
+ const balanceAfter=Math.max(0,netReceivable-paid);
  document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
  document.getElementById('typeHint').title='Balance after entered payment: Rs. '+balanceAfter.toFixed(2);
  const after=Number(gasStock||0)-gasRequired;
@@ -291,7 +292,7 @@ document.getElementById('saleForm').onsubmit=()=>{
  }
  const pays=t==='cylinder_return'?[]:[...payments.querySelectorAll('.payment')].map(p=>({payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),previousOs=customerId?Number(document.getElementById('previousOs').textContent||0):0,deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0;
- const expected=t==='security_deposit'?deposit:saleTotal+previousOs;
+ const expected=t==='security_deposit'?deposit:(t==='cylinder_return'?0:saleTotal+previousOs);
  if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
  if(t!=='cylinder_return'&&paymentTotal()>expected+0.01){alert('Payment cannot exceed the Net Amount Receivable of Rs. '+expected.toFixed(2)+'.');return false;}
  if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
