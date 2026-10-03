@@ -42,6 +42,78 @@ class CylinderUnitService
         return $this->db->table('cylinder_units')->where(['location_id'=>$locationId,'cylinder_type_id'=>$typeId,'status'=>$status])->orderBy('id')->get()->getResultArray();
     }
 
+    public function availableCompanyUnits(int $locationId, ?int $typeId=null, ?string $status=null): array
+    {
+        $q=$this->db->table('cylinder_units cu')
+            ->select('cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')
+            ->join('cylinder_types ct','ct.id=cu.cylinder_type_id')
+            ->where('cu.location_id',$locationId)
+            ->whereIn('cu.status',$status?[$status]:['filled','empty']);
+        if($typeId) $q->where('cu.cylinder_type_id',$typeId);
+        return $q->orderBy('cu.id')->get()->getResultArray();
+    }
+
+    public function customerCustody(int $locationId,int $customerId): array
+    {
+        return $this->db->table('cylinder_custody cc')
+            ->select('cc.*,cu.unit_code,cu.status cylinder_status,cu.gas_weight_kg,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')
+            ->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')
+            ->join('cylinder_types ct','ct.id=cu.cylinder_type_id')
+            ->where(['cc.location_id'=>$locationId,'cc.customer_id'=>$customerId,'cc.status'=>'issued'])
+            ->orderBy('cc.id')->get()->getResultArray();
+    }
+
+    public function moveToCustody(int $unitId,int $customerId,int $issueSaleId,int $userId): void
+    {
+        $unit=$this->db->query('SELECT * FROM cylinder_units WHERE id=? FOR UPDATE',[$unitId])->getRowArray();
+        if(!$unit || !in_array($unit['status'],['filled','empty'],true)) throw new RuntimeException('Cylinder is no longer available for custody.');
+        $existing=$this->db->table('cylinder_custody')->where(['cylinder_unit_id'=>$unitId,'status'=>'issued'])->get()->getRowArray();
+        if($existing) throw new RuntimeException('Cylinder is already on customer custody.');
+        $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'custody','custody_customer_id'=>$customerId]);
+        $this->db->table('cylinder_custody')->insert([
+            'location_id'=>$unit['location_id'],'customer_id'=>$customerId,'cylinder_unit_id'=>$unitId,
+            'status'=>'issued','issue_sale_id'=>$issueSaleId,'deposit_amount'=>0,'refund_amount'=>0,
+            'issued_at'=>date('Y-m-d H:i:s'),'created_by'=>$userId
+        ]);
+    }
+
+    public function returnFromCustody(int $custodyId,int $customerId,int $returnSaleId,int $userId): array
+    {
+        $custody=$this->db->query(
+            'SELECT cc.*,cu.status cylinder_status,cu.gas_weight_kg,cu.cylinder_type_id
+             FROM cylinder_custody cc JOIN cylinder_units cu ON cu.id=cc.cylinder_unit_id
+             WHERE cc.id=? AND cc.customer_id=? AND cc.status=\'issued\' FOR UPDATE',
+            [$custodyId,$customerId]
+        )->getRowArray();
+        if(!$custody) throw new RuntimeException('Cylinder custody record not found or already returned.');
+        if((float)$custody['gas_weight_kg']>0.00001) throw new RuntimeException('Cylinder '.$custodyId.' must be empty before it can be returned.');
+        $this->db->table('cylinder_units')->where('id',$custody['cylinder_unit_id'])->update(['status'=>'empty','custody_customer_id'=>null,'gas_weight_kg'=>0]);
+        $this->db->table('cylinder_custody')->where('id',$custodyId)->update([
+            'status'=>'returned','return_sale_id'=>$returnSaleId,'returned_at'=>date('Y-m-d H:i:s'),'updated_by'=>$userId
+        ]);
+        return $custody;
+    }
+
+    public function addGasToCustody(int $unitId,int $customerId,float $gasKg): float
+    {
+        if($gasKg<=0) throw new RuntimeException('Gas quantity must be greater than zero.');
+        $unit=$this->db->query('SELECT cu.*,ct.capacity_kg FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id WHERE cu.id=? AND cu.custody_customer_id=? AND cu.status=\'custody\' FOR UPDATE',[$unitId,$customerId])->getRowArray();
+        if(!$unit) throw new RuntimeException('Selected customer custody cylinder is not available.');
+        $current=(float)$unit['gas_weight_kg']; $capacity=(float)$unit['capacity_kg'];
+        if($current+$gasKg>$capacity+0.00001) throw new RuntimeException('Gas quantity exceeds the selected customer cylinder capacity. Available capacity: '.number_format(max(0,$capacity-$current),2).' KG.');
+        $after=$current+$gasKg;
+        $this->db->table('cylinder_units')->where('id',$unitId)->update(['gas_weight_kg'=>$after]);
+        return $after;
+    }
+
+    public function setGasWeightOnCustody(int $unitId,float $gasKg): void
+    {
+        $unit=$this->db->query('SELECT cu.*,ct.capacity_kg FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id WHERE cu.id=? AND cu.status=\'custody\' FOR UPDATE',[$unitId])->getRowArray();
+        if(!$unit) throw new RuntimeException('Customer custody cylinder not found.');
+        if($gasKg<0 || $gasKg>(float)$unit['capacity_kg']) throw new RuntimeException('Invalid gas weight for customer custody cylinder.');
+        $this->db->table('cylinder_units')->where('id',$unitId)->update(['gas_weight_kg'=>$gasKg]);
+    }
+
     public function markSold(int $unitId): void
     {
         $u=$this->db->query("SELECT * FROM cylinder_units WHERE id=? FOR UPDATE",[$unitId])->getRowArray();
