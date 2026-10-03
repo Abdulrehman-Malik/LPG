@@ -486,11 +486,6 @@ class SalesService
                 $sources[(int)$source['id']]['gas_weight_kg']=max(0,$after);
                 $sources[(int)$source['id']]['status']=$newStatus;
 
-                $remaining=0;
-                if($remaining>0.00001){
-                    if($remaining<=0.00001) break;
-
-
                 if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
             }
             if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed.');
