@@ -286,3 +286,102 @@ For financial/inventory cases, capture enough evidence to reconcile:
 
 **SQA Comments:**  
 > Record final observations, known limitations, and recommended follow-up here.
+
+
+---
+
+## Current Build / SQA Baseline — October 2026
+
+### Automated pre-SQA gate
+
+The latest GitHub Actions build has passed:
+
+- **LPG CI #20**
+- Commit: `f19b68e730d49ba5b40be9ed98d4c0b9b407f7ae`
+- PHP syntax: PASS
+- Composer installation: PASS
+- MySQL 8 schema bootstrap: PASS
+- Current migrations: PASS
+- CodeIgniter `php spark`: PASS
+- PHPUnit: **5/5 tests, 6 assertions**
+- CI PHPUnit coverage is disabled because no coverage driver is installed.
+
+This is a prerequisite quality gate only. It does not replace execution of this SQA matrix in a browser against a disposable test database.
+
+### Current POS model — use this for new SQA cases
+
+The current POS model is **header-level, one transaction type per invoice**:
+
+| Code | Current transaction |
+|---|---|
+| `gas_sale` | Gas Sale / Refill |
+| `cylinder_sale` | Cylinder Sale |
+| `security_deposit` | Security Deposit / Issue Cylinder |
+| `cylinder_return` | Cylinder Return / Refund Deposit |
+
+Older five-mode test cases already present in this document are retained as historical/regression coverage. **For new testing and defect analysis, use the four current transaction types above.**
+
+### Current gas-sale rules
+
+- Gas quantity is measured in KG.
+- Selling 1 KG consumes only 1 KG of gas; it does not consume a complete cylinder.
+- With **Individual Cylinder Tracking OFF** (default), normal POS shows aggregate available gas for the selected cylinder type rather than asking the cashier to choose a physical source cylinder.
+- Backend automatically allocates the requested gas across available filled physical cylinders of that cylinder type.
+- The backend continues to maintain physical cylinder records and actual gas weight.
+- When a physical cylinder reaches 0 KG, it becomes empty and corresponding filled-out/empty-in inventory movements are recorded.
+- Customer custody cylinders remain physical-unit based for security-deposit, return and custody-refill workflows.
+
+### Current inventory rules
+
+- Filled cylinder records contain cylinder type, physical unit code, status and actual gas weight.
+- Actual gas weight cannot exceed cylinder capacity.
+- Opening inventory supports filled and empty physical cylinders.
+- Manual stock +/- movements are handled through the dedicated Stock Adjustment & History screen.
+- Inventory Detail Report identifies partially used company cylinders based on remaining gas between 0 and capacity.
+
+### Current customer/payment rules
+
+- Previous customer OS is included in the current receivable.
+- Payments are applied to previous OS first, then the current sale.
+- Remaining balance carries forward as customer OS.
+- Credit validation supports branch modes: none, customer, or shop.
+- Security deposit amounts are tracked separately from ordinary revenue/customer OS.
+
+### Current permissions/SQA expectation
+
+The sidebar is permission-aware. A user should only see menu items for permissions they actually have, and direct unauthorized route access must still be denied by the controller/service guard.
+
+### Browser testing environment
+
+For remote browser/E2E testing, do not use a production environment.
+
+Recommended:
+`Windows PC + XAMPP + MySQL -> Cloudflare Tunnel -> HTTPS staging URL`
+
+Use:
+- separate disposable SQA database;
+- dedicated SQA users;
+- test customers/suppliers/cylinders prefixed `SQA-`;
+- no production credentials;
+- no production data.
+
+A localhost URL is suitable for local SQA execution but is not itself a remote staging URL.
+
+### New current-model SQA focus
+
+Before considering the application release-ready, explicitly execute and record:
+1. Default POS transaction type from Shop Settings.
+2. Gas Sale / Refill using KG quantities.
+3. Aggregate gas availability by cylinder type with individual tracking OFF.
+4. Automatic allocation across multiple physical filled cylinders.
+5. Exact transition from filled to empty at 0 KG.
+6. Cylinder Sale quantity against physical cylinder availability.
+7. Security Deposit / Issue Cylinder custody and deposit ledger.
+8. Cylinder Return / Refund Deposit against the customer's custody cylinder.
+9. Customer OS + partial payment allocation.
+10. Credit-limit validation.
+11. Stock Adjustment +/− and history.
+12. Inventory Detail Report and partially used-cylinder visibility.
+13. Permission-aware sidebar and unauthorized route protection.
+14. Thermal receipt and browser/JavaScript regression.
+15. End-to-end reconciliation of POS, inventory, cash, customer ledger, security deposits and audit logs.
