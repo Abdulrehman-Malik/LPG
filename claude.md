@@ -8,6 +8,7 @@ This file is a concise continuation point for development.
 - The old schema_v2.sql is no longer the authoritative schema.
 - TESTING.md is the mandatory user/developer test gate.
 - Phase 1 foundation changes are pushed and ready for local testing.
+- The POS Sales page has been hardened for transaction-type switching, stock-aware cylinder selectors, line management controls, and security-deposit entry.
 
 ## Phase 1 Ready for User Testing
 1. Execute database/schema.sql on a fresh MySQL server.
