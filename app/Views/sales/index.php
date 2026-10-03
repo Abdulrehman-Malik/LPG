@@ -274,7 +274,29 @@ function refreshForm(){
  setCustodyLists();refreshPaymentModes();recalc();
 }
 document.getElementById('transactionType').onchange=refreshForm;
-document.getElementById('customer_id').onchange=()=>{refreshCustomer();setCustodyLists();tbody.querySelectorAll('.targetCyl').forEach(s=>{const typeId=s.closest('tr').querySelector('.cyl').value;s.disabled=!selectedCustomerId();s.innerHTML=refillLineOptions(typeId);});refreshPaymentModes();};
+document.getElementById('customer_id').onchange=()=>{
+  const selected=selectedCustomerId();
+  // A customer change starts a clean transaction context so no values from the
+  // previous customer can remain accidentally selected.
+  clearLines();
+  lineHead.innerHTML='';
+  document.getElementById('discount').value='0';
+  document.getElementById('securityDeposit').value='0';
+  payments.innerHTML='';
+  addPayment();
+  document.getElementById('custodyUnits').selectedIndex=-1;
+  document.getElementById('returnUnits').selectedIndex=-1;
+  refreshCustomer();
+  setCustodyLists();
+  refreshForm();
+  if(selected){
+    const c=selectedCustomer();
+    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
+  }else{
+    document.getElementById('previousOs').textContent='0.00';
+  }
+  recalc();
+};
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=()=>{
