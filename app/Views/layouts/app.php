@@ -22,7 +22,7 @@ $current=uri_string(); $isActive=static fn(string $n):string=>str_starts_with($c
 :root{--lpg-dark:<?= esc($appSettings['primary_color'] ?? '#1b2a3a') ?>;--lpg-accent:<?= esc($appSettings['accent_color'] ?? '#ff7a1a') ?>;--sidebar-w:250px;--sidebar-collapsed-w:72px;--app-font-size:<?= esc((float)($appSettings['pos_font_size_px'] ?? 14)) ?>px;--app-font-family:<?= esc($fontStack ?? 'system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif') ?>}
 html,body{font-family:var(--app-font-family);font-size:var(--app-font-size)}
 body{background:<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#12171d' : '#f4f6f9' ?>;color:<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#e8edf2' : '#212529' ?>}
-.sidebar{position:fixed;top:0;bottom:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--lpg-dark);color:#cfd8e3;overflow:hidden;z-index:1030;display:flex;flex-direction:column;transition:width .2s ease}.sidebar > .nav{flex:1 1 auto;overflow-y:scroll;overflow-x:hidden;min-height:0;height:0;margin:0;padding:.35rem 0 1rem;align-content:flex-start;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.8) rgba(255,255,255,.12);overscroll-behavior:contain}.sidebar > .nav::-webkit-scrollbar{width:10px}.sidebar > .nav::-webkit-scrollbar-track{background:rgba(255,255,255,.12)}.sidebar > .nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.8);border-radius:8px;border:2px solid rgba(255,255,255,.12)}.sidebar > .nav::-webkit-scrollbar-thumb:hover{background:#fff}.sidebar > .p-3{flex:0 0 auto;background:var(--lpg-dark)}.sidebar .brand{flex:0 0 auto;min-height:76px;padding:1rem;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar .brand .bi{color:var(--lpg-accent);font-size:1.5rem}.sidebar .brand-text{min-width:0;overflow:hidden}.sidebar .nav-item{width:100%}.sidebar .nav-link{color:#cfd8e3;padding:.68rem 1.1rem;font-size:.925em;border-left:3px solid transparent;display:flex;align-items:center;gap:.5rem;white-space:nowrap;line-height:1.25;min-height:40px}.sidebar .nav-link i{width:1.25rem;min-width:1.25rem;text-align:center;margin-right:0}.sidebar .nav-link:hover{background:rgba(255,255,255,.05);color:#fff}.sidebar .nav-link.active{background:color-mix(in srgb,var(--lpg-accent) 12%,transparent);border-left-color:var(--lpg-accent);color:#fff;font-weight:600}.sidebar .nav-section{margin:.5rem .75rem .25rem;border-top:1px solid rgba(255,255,255,.1)}.main-content{margin-left:var(--sidebar-w);min-height:100vh;transition:margin-left .2s ease}.topbar{background:<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#1b222b' : '#fff' ?>;border-bottom:1px solid <?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#303944' : '#e6e9ee' ?>;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between}.content-wrap{padding:1.5rem}<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '.card,.modal-content,.dropdown-menu,.list-group-item,.table{background-color:#1b222b;color:#e8edf2;border-color:#303944}.bg-white{background-color:#1b222b!important;color:#e8edf2}.text-muted{color:#aeb8c3!important}.form-control,.form-select{background-color:#151b22;color:#e8edf2;border-color:#3a4653}.form-control:focus,.form-select:focus{background-color:#151b22;color:#e8edf2}.table{--bs-table-bg:#1b222b;--bs-table-color:#e8edf2}.nav-tabs .nav-link{color:#aeb8c3}.nav-tabs .nav-link.active{background:#1b222b;color:#e8edf2}' : '' ?>@media(min-width:992px){body.sidebar-collapsed .sidebar{width:var(--sidebar-collapsed-w)}body.sidebar-collapsed .main-content{margin-left:var(--sidebar-collapsed-w)}body.sidebar-collapsed .sidebar .brand{justify-content:center;padding-left:.5rem;padding-right:.5rem}body.sidebar-collapsed .sidebar .brand-text,body.sidebar-collapsed .sidebar .nav-link span,body.sidebar-collapsed .sidebar .nav-link .menu-label{display:none}body.sidebar-collapsed .sidebar .nav-link{justify-content:center;padding-left:.5rem;padding-right:.5rem;border-left-width:0}body.sidebar-collapsed .sidebar .nav-link i{margin:0}body.sidebar-collapsed .sidebar .nav-section{margin-left:.5rem;margin-right:.5rem}.sidebar-toggle .bi{transition:transform .2s ease}body.sidebar-collapsed .sidebar-toggle .bi{transform:rotate(180deg)}}@media(max-width:991.98px){.sidebar{transform:translateX(-100%)}.sidebar.show{transform:translateX(0)}.main-content{margin-left:0}.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1020}.sidebar-backdrop.show{display:block}}</style><?= $this->renderSection('styles') ?></head>
+.sidebar{position:fixed;top:0;bottom:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--lpg-dark);color:#cfd8e3;overflow:hidden;z-index:1030;display:flex;flex-direction:column;transition:width .2s ease}.sidebar > .nav{flex:1 1 auto;overflow-y:scroll;overflow-x:hidden;min-height:0;height:0;margin:0;padding:.35rem 0 1rem;align-content:flex-start;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.8) rgba(255,255,255,.12);overscroll-behavior:contain}.sidebar > .nav::-webkit-scrollbar{width:10px}.sidebar > .nav::-webkit-scrollbar-track{background:rgba(255,255,255,.12)}.sidebar > .nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.8);border-radius:8px;border:2px solid rgba(255,255,255,.12)}.sidebar > .nav::-webkit-scrollbar-thumb:hover{background:#fff}.sidebar > .p-3{flex:0 0 auto;background:var(--lpg-dark)}.sidebar .brand{flex:0 0 auto;min-height:76px;padding:1rem;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar .brand .bi{color:var(--lpg-accent);font-size:1.5rem}.sidebar .brand-text{min-width:0;overflow:hidden}.sidebar .nav-item{width:100%}.sidebar .nav-link{color:#cfd8e3;padding:.68rem 1.1rem;font-size:.925em;border-left:3px solid transparent;display:flex;align-items:center;gap:.5rem;white-space:nowrap;line-height:1.25;min-height:40px}.sidebar .nav-link i{width:1.25rem;min-width:1.25rem;text-align:center;margin-right:0}.sidebar .nav-link:hover{background:rgba(255,255,255,.05);color:#fff}.sidebar .nav-link.active{background:color-mix(in srgb,var(--lpg-accent) 12%,transparent);border-left-color:var(--lpg-accent);color:#fff;font-weight:600}.sidebar .nav-section{margin:.5rem .75rem .25rem;border-top:1px solid rgba(255,255,255,.1)}.sidebar .sidebar-group{margin-bottom:.15rem}.sidebar .sidebar-group-toggle{width:100%;background:transparent;border:0;border-left:3px solid transparent}.sidebar .sidebar-group-toggle .group-chevron{width:auto;min-width:auto;margin-left:auto;transition:transform .2s ease}.sidebar .sidebar-group-toggle.group-open .group-chevron{transform:rotate(180deg)}.sidebar .sidebar-submenu{padding:.1rem 0 .25rem 1rem}.sidebar .sidebar-submenu .nav-link{padding-top:.52rem;padding-bottom:.52rem;font-size:.88em;border-left:2px solid rgba(255,255,255,.08);margin-left:.65rem}.sidebar .sidebar-submenu .nav-link.active{border-left-color:var(--lpg-accent)}.sidebar .sidebar-group-toggle + .collapse{background:rgba(0,0,0,.06)}.main-content{margin-left:var(--sidebar-w);min-height:100vh;transition:margin-left .2s ease}.topbar{background:<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#1b222b' : '#fff' ?>;border-bottom:1px solid <?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '#303944' : '#e6e9ee' ?>;padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between}.content-wrap{padding:1.5rem}<?= ($appSettings['theme_mode'] ?? 'light') === 'dark' ? '.card,.modal-content,.dropdown-menu,.list-group-item,.table{background-color:#1b222b;color:#e8edf2;border-color:#303944}.bg-white{background-color:#1b222b!important;color:#e8edf2}.text-muted{color:#aeb8c3!important}.form-control,.form-select{background-color:#151b22;color:#e8edf2;border-color:#3a4653}.form-control:focus,.form-select:focus{background-color:#151b22;color:#e8edf2}.table{--bs-table-bg:#1b222b;--bs-table-color:#e8edf2}.nav-tabs .nav-link{color:#aeb8c3}.nav-tabs .nav-link.active{background:#1b222b;color:#e8edf2}' : '' ?>@media(min-width:992px){body.sidebar-collapsed .sidebar{width:var(--sidebar-collapsed-w)}body.sidebar-collapsed .main-content{margin-left:var(--sidebar-collapsed-w)}body.sidebar-collapsed .sidebar .brand{justify-content:center;padding-left:.5rem;padding-right:.5rem}body.sidebar-collapsed .sidebar .brand-text,body.sidebar-collapsed .sidebar .nav-link span,body.sidebar-collapsed .sidebar .nav-link .menu-label{display:none}body.sidebar-collapsed .sidebar .nav-link{justify-content:center;padding-left:.5rem;padding-right:.5rem;border-left-width:0}body.sidebar-collapsed .sidebar .nav-link i{margin:0}body.sidebar-collapsed .sidebar .nav-section{margin-left:.5rem;margin-right:.5rem}.sidebar-toggle .bi{transition:transform .2s ease}body.sidebar-collapsed .sidebar-toggle .bi{transform:rotate(180deg)}}@media(max-width:991.98px){.sidebar{transform:translateX(-100%)}.sidebar.show{transform:translateX(0)}.main-content{margin-left:0}.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1020}.sidebar-backdrop.show{display:block}}</style><?= $this->renderSection('styles') ?></head>
 <body>
 <nav class="sidebar d-flex flex-column" id="sidebar"><div class="brand d-flex align-items-center"><i class="bi bi-fire me-2 flex-shrink-0"></i><div class="brand-text"><div class="fw-bold text-white"><?= esc($branchName) ?></div><div class="text-white-50" style="font-size:.7rem;">LPG POS & ERP</div></div></div>
 <?php
@@ -31,39 +31,118 @@ $can=static fn(string $permission): bool => isset($permissions[$permission]);
 $showManagement=$can('DASHBOARD_VIEW') || $can('CUSTOMER_MANAGE') || $can('SUPPLIER_MANAGE') || $can('INVENTORY_MANAGE') || $can('RATE_MANAGE') || $can('USER_MANAGE');
 $showOperations=$can('POS_SALE') || $can('CASH_MANAGE') || $can('PURCHASE_MANAGE') || $can('INVENTORY_MANAGE') || $can('EXPENSE_MANAGE') || $can('REPORT_VIEW') || $can('AUDIT_VIEW');
 ?>
-<ul class="nav nav-pills flex-column mt-2 mb-auto">
+<ul class="nav nav-pills flex-column mt-2 mb-auto sidebar-menu">
+<?php
+$permissions=\App\Services\PermissionService::current();
+$can=static fn(string $permission): bool => isset($permissions[$permission]);
 
-<?php if($can('DASHBOARD_VIEW')): ?><li class="nav-item"><a href="<?= site_url('dashboard') ?>" class="nav-link <?= $isActive('dashboard') ?>" title="Dashboard"><i class="bi bi-speedometer2"></i><span class="menu-label">Dashboard</span></a></li><?php endif; ?>
+$groups=[
+    'sales'=>[
+        'label'=>'Sales & Receipts',
+        'icon'=>'bi-cart-check',
+        'items'=>[
+            ['permission'=>'POS_SALE','url'=>'sales','label'=>'POS Sales','icon'=>'bi-cart-plus'],
+            ['permission'=>'POS_SALE','url'=>'receipts','label'=>'Customer Receipts','icon'=>'bi-wallet2'],
+        ],
+    ],
+    'purchases'=>[
+        'label'=>'Purchasing',
+        'icon'=>'bi-bag-check',
+        'items'=>[
+            ['permission'=>'PURCHASE_MANAGE','url'=>'purchases','label'=>'Purchases','icon'=>'bi-bag-plus'],
+            ['permission'=>'PURCHASE_MANAGE','url'=>'supplier-payments','label'=>'Supplier Payments','icon'=>'bi-credit-card'],
+        ],
+    ],
+    'inventory'=>[
+        'label'=>'Inventory',
+        'icon'=>'bi-boxes',
+        'items'=>[
+            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory','label'=>'Inventory','icon'=>'bi-boxes'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/opening','label'=>'Opening Inventory','icon'=>'bi-archive'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'cylinder-types','label'=>'Cylinder Types','icon'=>'bi-box'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/adjustments','label'=>'Stock Adjustment & History','icon'=>'bi-sliders2-vertical'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/controls','label'=>'Inventory Controls','icon'=>'bi-sliders'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/wastage','label'=>'Gas Wastage','icon'=>'bi-droplet-half'],
+        ],
+    ],
+    'parties'=>[
+        'label'=>'Parties & Ledgers',
+        'icon'=>'bi-people',
+        'items'=>[
+            ['permission'=>'CUSTOMER_MANAGE','url'=>'customers','label'=>'Customers / Parties','icon'=>'bi-people'],
+            ['permission'=>'SUPPLIER_MANAGE','url'=>'suppliers','label'=>'Suppliers','icon'=>'bi-truck'],
+        ],
+    ],
+    'cash'=>[
+        'label'=>'Cash & Expenses',
+        'icon'=>'bi-cash-coin',
+        'items'=>[
+            ['permission'=>'CASH_MANAGE','url'=>'cash','label'=>'Counter Cash','icon'=>'bi-cash-stack'],
+            ['permission'=>'EXPENSE_MANAGE','url'=>'expenses','label'=>'Expenses','icon'=>'bi-receipt'],
+        ],
+    ],
+    'reporting'=>[
+        'label'=>'Reporting & Audit',
+        'icon'=>'bi-bar-chart',
+        'items'=>[
+            ['permission'=>'REPORT_VIEW','url'=>'reports','label'=>'Reports','icon'=>'bi-bar-chart'],
+            ['permission'=>'REPORT_VIEW','url'=>'reports/inventory-detail','label'=>'Inventory Detail Report','icon'=>'bi-clipboard-data'],
+            ['permission'=>'AUDIT_VIEW','url'=>'audit','label'=>'Audit Log','icon'=>'bi-shield-check'],
+        ],
+    ],
+    'configuration'=>[
+        'label'=>'Configuration',
+        'icon'=>'bi-gear',
+        'items'=>[
+            ['permission'=>'RATE_MANAGE','url'=>'rates','label'=>'LPG Rates','icon'=>'bi-tags'],
+            ['permission'=>'USER_MANAGE','url'=>'users','label'=>'Users / Roles','icon'=>'bi-person-gear'],
+            ['permission'=>'USER_MANAGE','url'=>'shop-settings','label'=>'Shop Settings','icon'=>'bi-gear-wide-connected'],
+            ['permission'=>'INVENTORY_MANAGE','url'=>'shop-settings','label'=>'Shop Settings','icon'=>'bi-gear-wide-connected'],
+        ],
+    ],
+];
 
-<?php if($can('CUSTOMER_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('customers') ?>" class="nav-link <?= $isActive('customers') ?>" title="Customers / Parties"><i class="bi bi-people"></i><span class="menu-label">Customers / Parties</span></a></li><?php endif; ?>
-<?php if($can('SUPPLIER_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('suppliers') ?>" class="nav-link <?= $isActive('suppliers') ?>" title="Suppliers"><i class="bi bi-truck"></i><span class="menu-label">Suppliers</span></a></li><?php endif; ?>
-<?php if($can('INVENTORY_MANAGE')): ?>
-<li class="nav-item"><a href="<?= site_url('cylinder-types') ?>" class="nav-link <?= $isActive('cylinder-types') ?>" title="Cylinder Types"><i class="bi bi-box"></i><span class="menu-label">Cylinder Types</span></a></li>
+foreach($groups as $groupKey=>&$group){
+    $group['items']=array_values(array_filter($group['items'],static fn(array $item): bool => $can($item['permission'])));
+    $group['visible']=count($group['items'])>0;
+    $group['open']=false;
+    foreach($group['items'] as $item){
+        if(str_starts_with($current,$item['url'])){
+            $group['open']=true;
+            break;
+        }
+    }
+}
+unset($group);
+?>
+<?php if($can('DASHBOARD_VIEW')): ?>
+<li class="nav-item mb-1">
+    <a href="<?= site_url('dashboard') ?>" class="nav-link <?= $isActive('dashboard') ?>" title="Dashboard">
+        <i class="bi bi-speedometer2"></i><span class="menu-label">Dashboard</span>
+    </a>
+</li>
 <?php endif; ?>
-<?php if($can('RATE_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('rates') ?>" class="nav-link <?= $isActive('rates') ?>" title="LPG Rates"><i class="bi bi-tags"></i><span class="menu-label">LPG Rates</span></a></li><?php endif; ?>
-<?php if($can('INVENTORY_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('inventory/opening') ?>" class="nav-link <?= $isActive('inventory/opening') ?>" title="Opening Inventory"><i class="bi bi-archive"></i><span class="menu-label">Opening Inventory</span></a></li><?php endif; ?>
-<?php if($can('USER_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('users') ?>" class="nav-link <?= $isActive('users') ?>" title="Users / Roles"><i class="bi bi-person-gear"></i><span class="menu-label">Users / Roles</span></a></li><?php endif; ?>
-<?php if($can('USER_MANAGE') || $can('INVENTORY_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('shop-settings') ?>" class="nav-link <?= $isActive('shop-settings') ?>" title="Shop Settings"><i class="bi bi-gear-wide-connected"></i><span class="menu-label">Shop Settings</span></a></li><?php endif; ?>
 
-<?php if($showOperations): ?><li class="nav-section"></li><?php endif; ?>
-
-<?php if($can('POS_SALE')): ?><li class="nav-item"><a href="<?= site_url('sales') ?>" class="nav-link <?= $isActive('sales') ?>" title="POS Sales"><i class="bi bi-cart-plus"></i><span class="menu-label">POS Sales</span></a></li><?php endif; ?>
-<?php if($can('CASH_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('cash') ?>" class="nav-link <?= $isActive('cash') ?>" title="Counter Cash"><i class="bi bi-cash-stack"></i><span class="menu-label">Counter Cash</span></a></li><?php endif; ?>
-<?php if($can('PURCHASE_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('purchases') ?>" class="nav-link <?= $isActive('purchases') ?>" title="Purchases"><i class="bi bi-bag-plus"></i><span class="menu-label">Purchases</span></a></li><?php endif; ?>
-<?php if($showOperations && $can('INVENTORY_MANAGE')): ?>
-<li class="nav-item"><a href="<?= site_url('inventory') ?>" class="nav-link <?= $isActive('inventory') ?>" title="Inventory"><i class="bi bi-boxes"></i><span class="menu-label">Inventory</span></a></li>
-<li class="nav-item"><a href="<?= site_url('inventory/adjustments') ?>" class="nav-link <?= $isActive('inventory/adjustments') ?>" title="Stock Adjustment & History"><i class="bi bi-sliders2-vertical"></i><span class="menu-label">Stock Adjustment & History</span></a></li>
-<li class="nav-item"><a href="<?= site_url('inventory/controls') ?>" class="nav-link <?= $isActive('inventory/controls') ?>" title="Inventory Controls"><i class="bi bi-sliders"></i><span class="menu-label">Inventory Controls</span></a></li>
-<li class="nav-item"><a href="<?= site_url('inventory/wastage') ?>" class="nav-link <?= $isActive('inventory/wastage') ?>" title="Gas Wastage"><i class="bi bi-droplet-half"></i><span class="menu-label">Gas Wastage</span></a></li>
-<?php endif; ?>
-<?php if($can('EXPENSE_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('expenses') ?>" class="nav-link <?= $isActive('expenses') ?>" title="Expenses"><i class="bi bi-receipt"></i><span class="menu-label">Expenses</span></a></li><?php endif; ?>
-<?php if($can('POS_SALE')): ?><li class="nav-item"><a href="<?= site_url('receipts') ?>" class="nav-link <?= $isActive('receipts') ?>" title="Customer Receipts"><i class="bi bi-wallet2"></i><span class="menu-label">Customer Receipts</span></a></li><?php endif; ?>
-<?php if($can('PURCHASE_MANAGE')): ?><li class="nav-item"><a href="<?= site_url('supplier-payments') ?>" class="nav-link <?= $isActive('supplier-payments') ?>" title="Supplier Payments"><i class="bi bi-credit-card"></i><span class="menu-label">Supplier Payments</span></a></li><?php endif; ?>
-<?php if($showOperations && $can('REPORT_VIEW')): ?>
-<li class="nav-item"><a href="<?= site_url('reports') ?>" class="nav-link <?= $isActive('reports') ?>" title="Reports"><i class="bi bi-bar-chart"></i><span class="menu-label">Reports</span></a></li>
-<li class="nav-item"><a href="<?= site_url('reports/inventory-detail') ?>" class="nav-link <?= $isActive('reports/inventory-detail') ?>" title="Inventory Detail Report"><i class="bi bi-clipboard-data"></i><span class="menu-label">Inventory Detail Report</span></a></li>
-<?php endif; ?>
-<?php if($can('AUDIT_VIEW')): ?><li class="nav-item"><a href="<?= site_url('audit') ?>" class="nav-link <?= $isActive('audit') ?>" title="Audit Log"><i class="bi bi-shield-check"></i><span class="menu-label">Audit Log</span></a></li><?php endif; ?>
+<?php foreach($groups as $groupKey=>$group): if(!$group['visible']) continue; ?>
+<li class="nav-item sidebar-group">
+    <button class="nav-link sidebar-group-toggle <?= $group['open']?'group-open':'' ?>" type="button"
+            data-bs-toggle="collapse" data-bs-target="#sidebarGroup-<?= esc($groupKey) ?>"
+            aria-expanded="<?= $group['open']?'true':'false' ?>" aria-controls="sidebarGroup-<?= esc($groupKey) ?>">
+        <i class="bi <?= esc($group['icon']) ?>"></i>
+        <span class="menu-label flex-grow-1 text-start"><?= esc($group['label']) ?></span>
+        <i class="bi bi-chevron-down group-chevron"></i>
+    </button>
+    <div class="collapse <?= $group['open']?'show':'' ?>" id="sidebarGroup-<?= esc($groupKey) ?>" data-bs-parent="#sidebarGroups">
+        <div class="sidebar-submenu">
+        <?php foreach($group['items'] as $item): ?>
+            <a href="<?= site_url($item['url']) ?>" class="nav-link <?= $isActive($item['url']) ?>" title="<?= esc($item['label']) ?>">
+                <i class="bi <?= esc($item['icon']) ?>"></i><span class="menu-label"><?= esc($item['label']) ?></span>
+            </a>
+        <?php endforeach; ?>
+        </div>
+    </div>
+</li>
+<?php endforeach; ?>
 </ul><div class="p-3 border-top border-white border-opacity-10"><a href="<?= site_url('logout') ?>" class="nav-link text-white-50" title="Logout"><i class="bi bi-box-arrow-right"></i><span class="menu-label">Logout</span></a></div></nav><div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <div class="main-content"><div class="topbar"><button class="btn btn-sm btn-outline-secondary sidebar-toggle" id="sidebarToggle" type="button" aria-label="Hide or show sidebar" title="Hide / Show menu"><i class="bi bi-layout-sidebar-inset"></i></button><h5 class="mb-0"><?= esc($title ?? 'Dashboard') ?></h5><div class="d-flex align-items-center gap-2"><span class="small"><?= esc($branchName) ?></span><span class="text-muted small"><?= esc(session()->get('full_name')??'User') ?> <span class="badge bg-secondary"><?= esc(session()->get('role')??'') ?></span></span></div></div>
 <div class="content-wrap"><?php if(session()->getFlashdata('success')): ?><div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?><?php if(session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?><?= $this->renderSection('content') ?></div></div>
