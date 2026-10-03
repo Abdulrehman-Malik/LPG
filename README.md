@@ -18,7 +18,7 @@ A branch-aware LPG retail POS/ERP built with CodeIgniter 4, PHP 8.2+ and MySQL 8
 
 ## POS Transaction Modes
 
-1. **Sell Gas Only** — customer brings their own cylinder; gas stock is reduced by entered KG and the selected physical source cylinder is tracked.
+1. **Sell Gas Only** — customer brings their own cylinder; the cashier selects exactly one filled physical source cylinder, gas stock is reduced only from that unit, and the same unit becomes empty when its gas reaches zero.
 2. **Sell Gas by Replacing Same-Capacity Cylinder** — customer returns an empty cylinder and receives the same capacity filled cylinder.
 3. **Sell Filled Cylinder with Gas + Cylinder Price** — gas is charged by actual gas weight plus the cylinder price.
 4. **Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder** — same as mode 3, with a different empty cylinder type received.
