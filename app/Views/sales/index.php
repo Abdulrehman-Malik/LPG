@@ -1,9 +1,9 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('styles') ?>
 <style>
-/* POS workspace: prioritize transaction line entry over the payment summary. */
-.pos-workspace > .pos-lines-panel { flex: 0 0 74%; max-width: 74%; }
-.pos-workspace > .pos-summary-panel { flex: 0 0 26%; max-width: 26%; }
+/* POS workspace: prioritize transaction entry while keeping the summary panel compact. */
+.pos-workspace > .pos-lines-panel { flex: 0 0 75%; max-width: 75%; }
+.pos-workspace > .pos-summary-panel { flex: 0 0 25%; max-width: 25%; }
 #lines { width: 100%; table-layout: fixed; }
 #lines th, #lines td { padding: .7rem .55rem; vertical-align: middle; }
 #lines th:nth-child(1) { width: 27%; }
@@ -29,8 +29,8 @@
 <?php if(session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 <form method="post" action="<?= site_url('sales/save') ?>" id="saleForm"><?= csrf_field() ?>
 <input type="hidden" name="lines_json" id="lines_json"><input type="hidden" name="payments_json" id="payments_json"><input type="hidden" name="stock_override_confirmed" id="stock_override_confirmed" value="0">
-<div class="row g-3">
-<div class="col-lg-8"><div class="card"><div class="card-body">
+<div class="row g-3 pos-workspace">
+<div class="col-lg-9 pos-lines-panel"><div class="card"><div class="card-body">
 <div class="row g-2 mb-3">
 <div class="col-md-6"><label class="form-label">Customer</label><select name="customer_id" id="customer_id" class="form-select"><option value="">Walk-in / Cash</option><?php foreach($customers as $c): ?><option value="<?= $c['id'] ?>"><?= esc(($c['code']?$c['code'].' — ':'').$c['name']) ?></option><?php endforeach; ?></select></div>
 <div class="col-md-6"><label class="form-label">Transaction Time</label><input name="transaction_at" type="datetime-local" class="form-control" value="<?= date('Y-m-d\TH:i') ?>"></div>
@@ -42,7 +42,7 @@
 <button type="button" class="btn btn-outline-primary" id="addLine">Add Line</button>
 </div></div></div>
 
-<div class="col-lg-4 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
+<div class="col-lg-3 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
 <div class="row g-2 mb-3">
 <div class="col-6"><label class="form-label">Total Gas Stock</label><div class="form-control bg-light fw-semibold"><span id="gasStockCurrent"><?= number_format((float)$gasStock, 3) ?></span> KG</div><div class="small text-muted mt-1">After This Sale: <strong id="gasStockAfter"><?= number_format((float)$gasStock, 3) ?> KG</strong></div></div>
 <div class="col-6"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="0.01" value="0" class="form-control"></div>
