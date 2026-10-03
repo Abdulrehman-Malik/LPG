@@ -29,5 +29,14 @@ This file is a concise continuation point for development.
 - Credit sales must enforce the customer's credit limit.
 - Controllers should not contain financial posting logic; use application services.
 
+## POS Sale Page Regression Notes
+
+After the latest Sales-page changes, verify:
+1. Gas Sale / Refill selector shows filled count and gas KG.
+2. Cylinder Sale selector updates between Filled and Empty stock counts.
+3. Switching among Gas Sale, Cylinder Sale, Security Deposit, and Cylinder Return produces no JavaScript errors and clears incompatible line state.
+4. Add Line creates independent rows and each row's remove button removes only that row.
+5. Security Deposit Amount becomes editable only for Security Deposit / Issue Cylinder and participates in the payment total.
+
 ## Next Development Gate
 After Phase 1 PASS, implement Phase 2 master data. If Phase 1 has FAIL entries, fix those first and update TESTING.md before continuing.
