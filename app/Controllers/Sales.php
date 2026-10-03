@@ -52,7 +52,9 @@ class Sales extends Controller
             $payments=json_decode((string)$this->request->getPost('payments_json'),true);
             if(!is_array($lines)||!is_array($payments)) throw new \RuntimeException('Invalid POS line or payment data.');
             $result=(new SalesService())->post(['transaction_type'=>$this->request->getPost('transaction_type'),'customer_id'=>$this->request->getPost('customer_id'),'transaction_at'=>$this->request->getPost('transaction_at'),'discount_amount'=>$this->request->getPost('discount_amount'),'security_deposit_amount'=>$this->request->getPost('security_deposit_amount'),'custody_unit_ids'=>$this->request->getPost('custody_unit_ids')?:[],'return_unit_ids'=>$this->request->getPost('return_unit_ids')?:[],'lines'=>$lines,'payments'=>$payments,'notes'=>$this->request->getPost('notes'),'stock_override_confirmed'=>$this->request->getPost('stock_override_confirmed')],(int)session()->get('user_id'),(int)session()->get('location_id'));
-            return redirect()->to('/sales')->with('success','Transaction '.$result['sale_no'].' posted successfully. <a href="'.site_url('sales/receipt/'.$result['id']).'" onclick="event.preventDefault();const w=window.open(this.href,\'receiptPrint\',\'width=420,height=720,resizable=yes,scrollbars=yes\');if(w)w.focus();return false;">Print receipt</a>');
+            return redirect()->to('/sales')
+                ->with('success','Transaction '.$result['sale_no'].' posted successfully.')
+                ->with('receipt_url',site_url('sales/receipt/'.$result['id']));
         }catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}
     }
 
