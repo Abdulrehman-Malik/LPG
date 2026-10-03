@@ -18,7 +18,7 @@ class Auth extends Controller
 
     public function showLogin()
     {
-        if(session()->get('isLoggedIn')) return redirect()->to('/dashboard');
+        if(session()->get('isLoggedIn')) return redirect()->to(site_url('dashboard'));
         return view('auth/login',['title'=>'Login — Perfect LPG (Pvt.) LTD']);
     }
 
@@ -51,12 +51,12 @@ class Auth extends Controller
             'isLoggedIn'=>true,
         ]);
         $this->userModel->touchLastLogin((int)$user['id']);
-        return redirect()->to('/dashboard')->with('success','Welcome back, '.$user['full_name'].'.');
+        return redirect()->to(site_url('dashboard'))->with('success','Welcome back, '.$user['full_name'].'.');
     }
 
     public function logout(): RedirectResponse
     {
         session()->destroy();
-        return redirect()->to('/login')->with('success','You have been logged out.');
+        return redirect()->to(site_url('login'))->with('success','You have been logged out.');
     }
 }
