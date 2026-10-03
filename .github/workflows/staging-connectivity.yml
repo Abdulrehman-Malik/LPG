@@ -13,17 +13,22 @@ jobs:
         shell: bash
         run: |
           set -e
-          url="https://refine-marketplace-pen-frozen.trycloudflare.com/lpg/public/"
-          echo "Checking $url"
-          curl --fail --silent --show-error --location             --connect-timeout 15 --max-time 30             --output /tmp/lpg.html             --write-out "HTTP_STATUS=%{http_code}\nCONTENT_LENGTH=%{size_download}\n"             "$url"
+          base="https://refine-marketplace-pen-frozen.trycloudflare.com/lpg/public/"
+          echo "Checking $base"
+          curl --fail --silent --show-error --location             --connect-timeout 15 --max-time 30             --output /tmp/lpg.html             --write-out "HTTP_STATUS=%{http_code}\nCONTENT_LENGTH=%{size_download}\n"             "$base"
           test -s /tmp/lpg.html
-          echo "Staging URL is reachable and returned a non-empty response."
-          echo "Checking login form action..."
-          grep -oE '<form action="[^"]+"' /tmp/lpg.html | head -5
-          if grep -q "$url" /tmp/lpg.html; then
-            echo "BASE_URL_CHECK=PASS"
-          else
-            echo "BASE_URL_CHECK=FAIL"
-            echo "The public staging URL was reachable, but the HTML did not contain the staging base URL."
-            exit 1
-          fi
+
+          echo "Checking login form..."
+          form_action=$(grep -oE '<form action="[^"]+"' /tmp/lpg.html | head -1 | sed 's/.*action="//;s/"$//')
+          echo "LOGIN_FORM_ACTION=$form_action"
+          test "$form_action" = "$base"login
+
+          echo "Checking login page fields..."
+          grep -q '<title>Login' /tmp/lpg.html
+          grep -q 'name="login"' /tmp/lpg.html
+          grep -q 'name="password"' /tmp/lpg.html
+          grep -q 'name="csrf' /tmp/lpg.html
+
+          echo "STAGING_HTTP=PASS"
+          echo "BASE_URL_CHECK=PASS"
+          echo "LOGIN_PAGE_CHECK=PASS"
