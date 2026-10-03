@@ -5,7 +5,7 @@
 <?php
 $money = static fn(float $v): string => 'Rs. ' . number_format($v, 2);
 $qty = static fn(float $v): string => number_format($v, 2);
-$stockTab = trim((string)($this->request->getGet('stock_tab') ?? ''));
+$stockTab = trim((string)(service('request')->getGet('stock_tab') ?? ''));
 if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
     $stockTab = 'filled';
 }
@@ -43,19 +43,19 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
 
 <ul class="nav nav-tabs dashboard-tabs mb-4" id="dashboardTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active fw-semibold" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-pane" type="button" role="tab">
+        <button class="nav-link <?= $stockTab === '' ? 'active' : '' ?> fw-semibold" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-pane" type="button" role="tab">
             <i class="bi bi-grid-1x2 me-1"></i>Summary
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link fw-semibold" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab">
+        <button class="nav-link <?= $stockTab !== '' ? 'active' : '' ?> fw-semibold" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock-pane" type="button" role="tab">
             <i class="bi bi-boxes me-1"></i>Current Stock
         </button>
     </li>
 </ul>
 
 <div class="tab-content" id="dashboardTabContent">
-    <div class="tab-pane fade show active" id="summary-pane" role="tabpanel" aria-labelledby="summary-tab">
+    <div class="tab-pane fade <?= $stockTab === '' ? 'show active' : '' ?>" id="summary-pane" role="tabpanel" aria-labelledby="summary-tab">
         <div class="row g-3">
             <div class="col-12 col-md-6 col-xl">
                 <div class="card h-100 shadow-sm border-0">
@@ -118,7 +118,7 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
         </div>
     </div>
 
-    <div class="tab-pane fade" id="stock-pane" role="tabpanel" aria-labelledby="stock-tab">
+    <div class="tab-pane fade <?= $stockTab !== '' ? 'show active' : '' ?>" id="stock-pane" role="tabpanel" aria-labelledby="stock-tab">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <div>
                 <h5 class="mb-1">Current Stock Details</h5>
