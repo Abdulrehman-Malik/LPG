@@ -19,11 +19,12 @@ class Suppliers extends Controller
     public function ledger(int $id)
     {
         if($r=$this->guard()) return $r;
+        $locationId=(int)session()->get('location_id');
         $supplier=$this->model->find($id);
         if(!$supplier) return $this->response->setStatusCode(404)->setBody('Supplier not found');
         $db=$this->model->db;
-        $purchases=$db->table('purchases')->select('transaction_at,purchase_no,total_amount,credit_amount,status')->where('supplier_id',$id)->orderBy('transaction_at','DESC')->get()->getResultArray();
-        $payments=$db->table('supplier_payments')->select('payment_at,payment_no,amount,payment_mode,status')->where('supplier_id',$id)->orderBy('payment_at','DESC')->get()->getResultArray();
+        $purchases=$db->table('purchases')->select('transaction_at,purchase_no,total_amount,credit_amount,status')->where('supplier_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
+        $payments=$db->table('supplier_payments')->select('payment_at,payment_no,amount,payment_mode,status')->where('supplier_id',$id)->where('location_id',$locationId)->orderBy('payment_at','DESC')->get()->getResultArray();
         $credit=(float)$supplier['opening_balance']; foreach($purchases as $row) if($row['status']==='posted') $credit+=(float)$row['credit_amount']; foreach($payments as $row) if($row['status']==='posted') $credit-=(float)$row['amount'];
         $supplier['credit_due']=$credit;
         return view('suppliers/ledger',['title'=>'Supplier Ledger — '.$supplier['name'],'supplier'=>$supplier,'purchases'=>$purchases,'payments'=>$payments]);
