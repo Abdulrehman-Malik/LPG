@@ -277,6 +277,11 @@ class Boot
         if (! defined('TESTPATH')) {
             define('TESTPATH', realpath(rtrim($paths->testsDirectory, '\\/ ')) . DIRECTORY_SEPARATOR);
         }
+
+        // The path to the test support directory
+        if (is_dir($paths->testsDirectory . '/_support/') && ! defined('SUPPORTPATH')) {
+            define('SUPPORTPATH', realpath($paths->testsDirectory . '/_support/') . DIRECTORY_SEPARATOR);
+        }
     }
 
     protected static function loadConstants(): void
