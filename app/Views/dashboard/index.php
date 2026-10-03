@@ -73,8 +73,8 @@ $monthUrl = site_url('dashboard?from=' . $monthFrom . '&to=' . date('Y-m-d'));
         <div class="card h-100 shadow-sm border-0">
             <div class="card-body">
                 <div class="d-flex justify-content-between"><span class="text-muted small">Customer Collections</span><i class="bi bi-wallet2 text-success"></i></div>
-                <div class="fs-4 fw-bold mt-1"><?= $money($salesTotal + $receiptsTotal) ?></div>
-                <div class="small text-muted">Sales receipts + OS receipts</div>
+                <div class="fs-4 fw-bold mt-1"><?= $money((float)($summary['customer_collected'] ?? 0)) ?></div>
+                <div class="small text-muted">Non-credit sale payments + OS receipts</div>
             </div>
         </div>
     </div>
