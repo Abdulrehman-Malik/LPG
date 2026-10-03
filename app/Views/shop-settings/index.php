@@ -54,7 +54,7 @@
                             <input class="form-check-input" type="checkbox" name="individual_cylinder_tracking" id="individualCylinderTracking" <?= !empty($settings['individual_cylinder_tracking']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="individualCylinderTracking">Track individual physical cylinders in normal POS sales</label>
                         </div>
-                        <div class="form-text">OFF: POS shows aggregate stock by cylinder type and the backend selects physical cylinders automatically. ON: POS can show/select an individual filled cylinder when required.</div>
+                        <div class="form-text">Gas Sale always requires the cashier to select one filled physical source cylinder. Gas is deducted only from that selected unit and that same unit becomes empty when its gas reaches zero. This setting is retained for compatibility with existing installations.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Credit Limit Validation</label>
