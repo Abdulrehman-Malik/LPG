@@ -1,0 +1,20 @@
+name: Staging Connectivity Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public staging URL
+        shell: bash
+        run: |
+          set -e
+          url="https://refine-marketplace-pen-frozen.trycloudflare.com/lpg/public/"
+          echo "Checking $url"
+          curl --fail --silent --show-error --location             --connect-timeout 15 --max-time 30             --output /tmp/lpg.html             --write-out "HTTP_STATUS=%{http_code}\nCONTENT_LENGTH=%{size_download}\n"             "$url"
+          test -s /tmp/lpg.html
+          echo "Staging URL is reachable and returned a non-empty response."
