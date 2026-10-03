@@ -18,9 +18,11 @@ class SalesService
     protected $cash;
     protected $cylinders;
     protected array $inventoryLocks = [];
+    protected ?int $currentLocationId = null;
 
     public function __construct()
     {
+        $this->currentLocationId=(int)session()->get('location_id');
         $this->db=Database::connect();
         $this->types=new CylinderTypeModel();
         $this->customers=new CustomerModel();
@@ -529,10 +531,15 @@ class SalesService
         }
         $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
         $newOs=max(0,$remainingOs+$creditAmount);
-        if($customerId!==null){
-            $customerRow=$this->customers->find($customerId);
-            $creditLimit=(float)($customerRow['credit_limit']??0);
-            if($newOs>$creditLimit+0.01)throw new RuntimeException('Customer credit limit exceeded. Available credit is Rs. '.number_format(max(0,$creditLimit-$previousOs),2).'.');
+        $settings=(new ShopSettingsModel())->forLocation($this->currentLocationId ?? 0);
+        $validationMode=(string)($settings['credit_limit_validation_mode']??'none');
+        if($customerId!==null && $validationMode!=='none'){
+            $creditLimit=$validationMode==='shop'?(float)($settings['shop_credit_limit']??0):(float)($customer['credit_limit']??0);
+            if($newOs>$creditLimit+0.01){
+                $available=max(0,$creditLimit-$previousOs);
+                $label=$validationMode==='shop'?'shop':'customer';
+                throw new RuntimeException(ucfirst($label).' credit limit exceeded. Available additional credit is Rs. '.number_format($available,2).'.');
+            }
         }
         return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>$newOs];
     }
