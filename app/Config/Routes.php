@@ -5,14 +5,14 @@ $routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $r
 $routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
     $routes->get('dashboard','Dashboard::index');
     $routes->get('shop-settings','ShopSettings::index'); $routes->post('shop-settings/save','ShopSettings::save');
-    $routes->get('sales','Sales::index'); $routes->post('sales/save','Sales::save'); $routes->get('sales/receipt/(:num)','Sales::receipt/$1'); $routes->post('sales/void/(:num)','Sales::void/$1');
+    $routes->get('sales','Sales::index'); $routes->post('sales/save','Sales::save'); $routes->get('sales/custody/(:num)','Sales::custody/$1'); $routes->get('sales/receipt/(:num)','Sales::receipt/$1'); $routes->post('sales/void/(:num)','Sales::void/$1');
     $routes->get('cash','Cash::index'); $routes->get('cash/history','Cash::history'); $routes->post('cash/open','Cash::open'); $routes->post('cash/close','Cash::close'); $routes->post('cash/move','Cash::move');
     $routes->get('purchases','Purchases::index'); $routes->post('purchases/save','Purchases::save');
     $routes->get('inventory','Inventory::index'); $routes->post('inventory/adjust','Inventory::adjust'); $routes->get('inventory/controls','InventoryControls::index'); $routes->post('inventory/controls/save','InventoryControls::save'); $routes->get('inventory/wastage','InventoryControls::wastage'); $routes->post('inventory/wastage/record','InventoryControls::recordWastage');
     $routes->get('expenses','Expenses::index'); $routes->post('expenses/save','Expenses::save');
     $routes->get('receipts','Receipts::index'); $routes->post('receipts/save','Receipts::save');
     $routes->get('supplier-payments','SupplierPayments::index'); $routes->post('supplier-payments/save','SupplierPayments::save');
-    $routes->get('reports','Reports::index'); $routes->get('reports/ledger/(:num)','Reports::ledger/$1');
+    $routes->get('reports','Reports::index'); $routes->get('reports/custody','Reports::custody'); $routes->get('reports/ledger/(:num)','Reports::ledger/$1');
     $routes->get('audit','Audit::index');
     $routes->get('customers','Customers::index'); $routes->get('customers/ledger/(:num)','Customers::ledger/$1'); $routes->post('customers/save','Customers::save');
     $routes->get('suppliers','Suppliers::index'); $routes->get('suppliers/ledger/(:num)','Suppliers::ledger/$1'); $routes->post('suppliers/save','Suppliers::save');
