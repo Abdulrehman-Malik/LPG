@@ -344,6 +344,7 @@ class Dashboard extends Controller
         $recent = array_slice($recent, 0, 15);
 
         $salesTotal = (float) ($sales['total'] ?? 0);
+        $saleCollected = (float) ($salePayments['cash'] ?? 0) + (float) ($salePayments['cheque'] ?? 0) + (float) ($salePayments['online'] ?? 0);
         $purchasesTotal = (float) ($purchases['total'] ?? 0);
         $receiptsTotal = (float) ($customerReceipts['amount'] ?? 0);
         $supplierPaymentTotal = (float) ($supplierPayments['amount'] ?? 0);
@@ -358,6 +359,8 @@ class Dashboard extends Controller
             'discount' => (float) ($sales['discount'] ?? 0),
             'credit_sales' => (float) ($sales['credit'] ?? 0),
             'receipts' => $receiptsTotal,
+            'sale_collected' => $saleCollected,
+            'customer_collected' => $saleCollected + $receiptsTotal,
             'purchases' => $purchasesTotal,
             'purchase_credit' => (float) ($purchases['credit'] ?? 0),
             'supplier_payments' => $supplierPaymentTotal,
