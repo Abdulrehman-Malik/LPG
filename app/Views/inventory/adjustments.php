@@ -91,7 +91,7 @@
       <div class="tab-pane fade" id="history">
         <div class="table-responsive">
           <table class="table table-sm table-striped align-middle datatable">
-            <thead><tr><th>Date/Time</th><th>Source</th><th>Item</th><th>Cylinder</th><th>Direction</th><th>Qty</th><th>Notes</th><th>User</th></tr></thead>
+            <thead><tr><th>Date/Time</th><th>Source</th><th>Item</th><th>Cylinder Type</th><th>Physical Unit</th><th>Direction</th><th>Qty</th><th>Notes</th><th>User</th></tr></thead>
             <tbody>
             <?php foreach($history as $h):
               $sourceType=(string)$h['source_type'];
@@ -103,6 +103,7 @@
                 <td><?=esc($source)?></td>
                 <td><?=esc($item)?></td>
                 <td><?=esc(($h['cylinder_code']??'').($h['cylinder_name']?' — '.$h['cylinder_name']:''))?></td>
+                <td><?=esc($h['source_unit_code']??'—')?></td>
                 <td><span class="badge <?=$h['direction']==='out'?'text-bg-danger':'text-bg-success'?>"><?=esc(strtoupper($h['direction']))?></span></td>
                 <td><?=number_format((float)$h['quantity'],3)?></td>
                 <td><?=esc($h['notes']??'')?></td>
