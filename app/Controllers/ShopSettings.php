@@ -65,6 +65,14 @@ class ShopSettings extends Controller
         if (!in_array($paymentMode, ShopSettingsModel::PAYMENT_MODES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default payment mode.');
         }
+        $creditMode = trim((string) $this->request->getPost('credit_limit_validation_mode'));
+        $shopCreditLimit = (float) $this->request->getPost('shop_credit_limit');
+        if (!in_array($creditMode, ['none','customer','shop'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid credit limit validation mode.');
+        }
+        if ($shopCreditLimit < 0) {
+            return redirect()->back()->withInput()->with('error', 'Shop credit limit cannot be negative.');
+        }
 
         $db = Database::connect();
         $db->transBegin();
@@ -90,6 +98,8 @@ class ShopSettings extends Controller
                 'accent_color' => $accentColor,
                 'stock_validation_enabled' => $this->request->getPost('stock_validation_enabled') ? 1 : 0,
                 'allow_stock_override' => $this->request->getPost('allow_stock_override') ? 1 : 0,
+                'credit_limit_validation_mode' => $creditMode,
+                'shop_credit_limit' => $shopCreditLimit,
                 'backup_enabled' => $this->request->getPost('backup_enabled') ? 1 : 0,
                 'db_backup_url' => trim((string) $this->request->getPost('db_backup_url')) ?: null,
                 'backup_notes' => trim((string) $this->request->getPost('backup_notes')) ?: null,
