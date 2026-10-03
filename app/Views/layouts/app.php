@@ -31,7 +31,7 @@ $can=static fn(string $permission): bool => isset($permissions[$permission]);
 $showManagement=$can('DASHBOARD_VIEW') || $can('CUSTOMER_MANAGE') || $can('SUPPLIER_MANAGE') || $can('INVENTORY_MANAGE') || $can('RATE_MANAGE') || $can('USER_MANAGE');
 $showOperations=$can('POS_SALE') || $can('CASH_MANAGE') || $can('PURCHASE_MANAGE') || $can('INVENTORY_MANAGE') || $can('EXPENSE_MANAGE') || $can('REPORT_VIEW') || $can('AUDIT_VIEW');
 ?>
-<ul class="nav nav-pills flex-column mt-2 mb-auto sidebar-menu">
+<ul class="nav nav-pills flex-column mt-2 mb-auto sidebar-menu" id="sidebarGroups">
 <?php
 $permissions=\App\Services\PermissionService::current();
 $can=static fn(string $permission): bool => isset($permissions[$permission]);
