@@ -66,7 +66,7 @@ jobs:
           CI_ENVIRONMENT: testing
         run: |
           if [ -d tests ] && find tests -type f \( -name '*Test.php' -o -name '*TestCase.php' \) | grep -q .; then
-            vendor/bin/phpunit
+            php vendor/bin/phpunit
           else
             echo "No PHPUnit test files are currently defined; PHP and database smoke checks completed."
           fi
