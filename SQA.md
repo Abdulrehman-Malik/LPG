@@ -36,6 +36,16 @@ For financial/inventory cases, capture enough evidence to reconcile:
 
 ---
 
+## POS Sale Page Regression — Latest UI Fixes
+
+| ID | Check | Expected result |
+|---|---|---|
+| POS-UI-01 | Cylinder type stock context | Gas Sale and Cylinder Sale selectors show available filled/empty counts; filled selections also show actual gas KG. |
+| POS-UI-02 | Transaction switching | Switching among Gas Sale, Cylinder Sale, Security Deposit and Cylinder Return clears incompatible UI state and produces no JavaScript error. |
+| POS-UI-03 | Line management | Add Line is visible for standard sales; each line's trash icon removes only its own row. |
+| POS-UI-04 | Payment-row controls | Payment rows use compact trash controls and can be removed without affecting other rows. |
+| POS-UI-05 | Security deposit | Security Deposit Amount is editable only for Security Deposit / Issue Cylinder; entered amount updates Net Amount Payable and must equal payment total. |
+
 ## A. Installation, Security and Authentication
 
 | ID | Use case | Input / Steps | Expected output / result | Actual result | Comments | Status |

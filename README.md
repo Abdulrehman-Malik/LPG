@@ -39,6 +39,8 @@ The branch-level settings are organized into tabs:
 
 The POS no longer contains a separate default-transaction preference control. It reads the branch default from Shop Settings.
 
+On the Sales page, cylinder-type selectors show available filled/empty stock context and the physical gas KG represented by filled units. Line actions use compact icon buttons, Add Line is available from the line-grid header, and Security Deposit Amount is editable only for the Security Deposit / Issue Cylinder workflow. Switching transaction types rebuilds the applicable UI and clears incompatible line state.
+
 ## Installation
 
 1. Create/configure a MySQL 8+ database.

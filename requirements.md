@@ -120,7 +120,9 @@ A requirement is marked Done only after implementation, validation, transaction 
 
 
 ## SQA-Confirmed POS / Inventory Requirements
-- Filled-cylinder POS selection must show the currently available filled-cylinder quantity for the selected cylinder type and a clear gas-stock figure without misleading the user about whether gas is allocated to individual cylinders.
+- Filled-cylinder POS selection must show the currently available filled-cylinder quantity for each cylinder type directly in the selector, plus the actual gas KG represented by currently available filled units.
+- Empty-cylinder selections must show the currently available empty-cylinder quantity when the sale status is Empty.
+- Changing POS transaction type must not retain incompatible line state; the UI rebuilds the relevant standard-line, security-deposit, or return-custody section safely.
 - The current inventory model maintains a location-level gas KG balance plus physical cylinder units. Each filled cylinder unit stores its actual gas weight and status, allowing partial fills and actual-weight deductions.
 - The system must support partially filled cylinders: a cylinder type defines maximum capacity, while each filled cylinder may contain an actual gas weight from 0 up to that capacity. Inventory must prevent actual gas weight above cylinder capacity and account for actual weight when selling, refilling and exchanging cylinders.
 - POS transaction types must use user-friendly names and display a short operational hint explaining what the selected transaction will do.
@@ -132,6 +134,9 @@ A requirement is marked Done only after implementation, validation, transaction 
 ## SQA-Confirmed POS Display Requirements
 - The POS transaction hint/help box is not required and should not occupy space on the Sales page.
 - POS font size must be configurable from Shop Settings at branch level.
+- Line removal controls should use compact professional icon buttons rather than text-only × controls.
+- Add Line should be available in the line-entry header for standard sale transactions.
+- Security Deposit Amount must be editable for Security Deposit / Issue Cylinder and non-editable for other transaction types.
 - POS font size must apply only to the POS/Sales page; other application pages must retain their normal font sizing.
 - POS font size must be validated to a safe configurable range and persist across POS page reloads.
 

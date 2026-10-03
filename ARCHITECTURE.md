@@ -107,6 +107,10 @@ Desktop:
 - Line-entry grid
 - Totals/payment panel
 - Large Save/Print action
+- Cylinder-type selectors expose current filled/empty stock and filled-cylinder gas KG
+- Transaction-type changes rebuild only the applicable line/custody UI and clear incompatible line state
+- Add Line is available from the line-grid header; destructive line/payment actions use compact icon buttons
+- Security Deposit amount is editable only for Security Deposit / Issue Cylinder transactions
 
 Mobile:
 - Stacked cards

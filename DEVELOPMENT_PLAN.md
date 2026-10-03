@@ -33,6 +33,10 @@ Legend:
 
 ## Phase 3 — POS Sales
 - [x] POS screen
+- [x] POS cylinder-type stock visibility in line selectors
+- [x] Safe transaction-type switching and incompatible-state reset
+- [x] Professional line/payment remove controls and Add Line action
+- [x] Security Deposit amount input enabled only for Security Deposit / Issue Cylinder
 - [x] Filled cylinder sale
 - [x] KG refill
 - [x] Cylinder exchange
