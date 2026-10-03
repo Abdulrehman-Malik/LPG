@@ -114,3 +114,12 @@ Phase 3 transaction-integrity hardening tests are explicitly postponed by user r
 - [x] TESTING.md updated to the final functional SQA gate.
 
 SQA execution remains a verification activity, not an unfinished development feature.
+
+
+## Permission-Aware Navigation Update
+
+- [x] Sidebar menu visibility tied to authenticated role permissions.
+- [x] Shared permission lookup cached once per request for menu rendering.
+- [x] Sidebar mappings aligned with existing controller guards, including REPORT_VIEW for Reports.
+
+Only authorized module links are shown in the sidebar; controller-level permission checks remain authoritative for direct URL access.
