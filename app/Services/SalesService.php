@@ -386,7 +386,7 @@ class SalesService
             $cash=$this->paymentCash($paymentPlan['sale_payments']);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
             if(!$this->db->transStatus())throw new RuntimeException('Gas sale posting failed.');
             $this->db->transCommit();$this->releaseInventoryLocks();
-            return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
+            return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$paymentPlan['credit_amount']];
         }catch(\Throwable $e){$this->releaseInventoryLocks();$this->db->transRollback();throw $e;}
     }
 
