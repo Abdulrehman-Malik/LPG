@@ -134,6 +134,9 @@ A requirement is marked Done only after implementation, validation, transaction 
 ## SQA-Confirmed POS Display Requirements
 - The POS transaction hint/help box is not required and should not occupy space on the Sales page.
 - POS font size must be configurable from Shop Settings at branch level.
+- Line removal controls should use compact professional icon buttons rather than text-only × controls.
+- Add Line should be available in the line-entry header for standard sale transactions.
+- Security Deposit Amount must be editable for Security Deposit / Issue Cylinder and non-editable for other transaction types.
 - POS font size must apply only to the POS/Sales page; other application pages must retain their normal font sizing.
 - POS font size must be validated to a safe configurable range and persist across POS page reloads.
 
