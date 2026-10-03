@@ -18,3 +18,12 @@ jobs:
           curl --fail --silent --show-error --location             --connect-timeout 15 --max-time 30             --output /tmp/lpg.html             --write-out "HTTP_STATUS=%{http_code}\nCONTENT_LENGTH=%{size_download}\n"             "$url"
           test -s /tmp/lpg.html
           echo "Staging URL is reachable and returned a non-empty response."
+          echo "Checking login form action..."
+          grep -oE '<form action="[^"]+"' /tmp/lpg.html | head -5
+          if grep -q "$url" /tmp/lpg.html; then
+            echo "BASE_URL_CHECK=PASS"
+          else
+            echo "BASE_URL_CHECK=FAIL"
+            echo "The public staging URL was reachable, but the HTML did not contain the staging base URL."
+            exit 1
+          fi
