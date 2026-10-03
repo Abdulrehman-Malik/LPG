@@ -528,7 +528,13 @@ class SalesService
             }
         }
         $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
-        return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>max(0,$remainingOs+$creditAmount)];
+        $newOs=max(0,$remainingOs+$creditAmount);
+        if($customerId!==null){
+            $customerRow=$this->customers->find($customerId);
+            $creditLimit=(float)($customerRow['credit_limit']??0);
+            if($newOs>$creditLimit+0.01)throw new RuntimeException('Customer credit limit exceeded. Available credit is Rs. '.number_format(max(0,$creditLimit-$previousOs),2).'.');
+        }
+        return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>$newOs];
     }
 
     protected function postCustomerSettlement(array $settlements,int $locationId,int $saleId,int $customerId,string $at,int $userId): void
