@@ -198,6 +198,8 @@ class SalesService
             }
 
             $inventory=[];
+            $reservedFilledIds=[];
+            $reservedEmptyIds=[];
             foreach($prepared as $idx=>&$row){
                 $mode=$row['sale_mode'];$typeId=(int)$row['cylinder_type_id'];$qty=(float)$row['quantity'];
                 if($mode==='sell_gas_only'){
@@ -223,9 +225,11 @@ class SalesService
                     }
                 }elseif(in_array($mode,['replace_same','sell_filled','replace_different'],true)){
                     $units=$this->cylinders->available($locationId,$typeId,'filled');
+                    $units=array_values(array_filter($units,static fn(array $unit): bool => !isset($reservedFilledIds[(int)$unit['id']])));
                     if(count($units)<(int)$qty) throw new RuntimeException('Filled-cylinder stock changed while posting. Please retry the sale.');
                     $selected=array_slice($units,0,(int)$qty);$actualGas=0;
                     foreach($selected as $unit){
+                        $reservedFilledIds[(int)$unit['id']]=true;
                         $actualGas+=(float)$unit['gas_weight_kg'];
                         $inventory[]=['line_no'=>$row['line_no'],'type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>(float)$unit['gas_weight_kg'],'direction'=>'out','unit_id'=>(int)$unit['id']];
                         $inventory[]=['line_no'=>$row['line_no'],'type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id'],'transition'=>'sold'];
@@ -236,8 +240,12 @@ class SalesService
                     }
                 }elseif($mode==='sell_empty'){
                     $units=$this->cylinders->available($locationId,$typeId,'empty');
+                    $units=array_values(array_filter($units,static fn(array $unit): bool => !isset($reservedEmptyIds[(int)$unit['id']])));
                     if(count($units)<(int)$qty) throw new RuntimeException('Empty-cylinder stock changed while posting. Please retry the sale.');
-                    foreach(array_slice($units,0,(int)$qty) as $unit) $inventory[]=['line_no'=>$row['line_no'],'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id'],'transition'=>'sold'];
+                    foreach(array_slice($units,0,(int)$qty) as $unit){
+                        $reservedEmptyIds[(int)$unit['id']]=true;
+                        $inventory[]=['line_no'=>$row['line_no'],'type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out','unit_id'=>(int)$unit['id'],'transition'=>'sold'];
+                    }
                 }
             }
             unset($row);
@@ -738,6 +746,49 @@ class SalesService
                     'reference_id'=>$saleId,'created_by'=>$userId,'notes'=>'Cash reversal of sale '.$sale['sale_no']
                 ]);
             }
+
+            $settlementReceipts=$this->db->table('customer_receipts')
+                ->where(['location_id'=>$locationId,'status'=>'posted'])
+                ->where('customer_id', $sale['customer_id'])
+                ->where('notes','OS settlement collected with sale '.$saleId)
+                ->get()->getResultArray();
+            foreach($settlementReceipts as $receipt){
+                $receiptId=(int)$receipt['id'];
+                $this->db->table('customer_receipts')->where('id',$receiptId)->update(['status'=>'voided']);
+
+                $receiptCashRows=$this->db->table('cash_transactions')
+                    ->where([
+                        'reference_type'=>'customer_receipt',
+                        'reference_id'=>$receiptId,
+                        'transaction_type'=>'customer_receipt',
+                        'direction'=>'in'
+                    ])->get()->getResultArray();
+
+                foreach($receiptCashRows as $receiptCash){
+                    $alreadyReversed=(int)$this->db->table('cash_transactions')
+                        ->where([
+                            'reference_type'=>'sale_void',
+                            'reference_id'=>$saleId,
+                            'transaction_type'=>'customer_receipt',
+                            'direction'=>'out',
+                            'cash_session_id'=>$receiptCash['cash_session_id']
+                        ])->where('notes','Reversal of customer receipt '.$receipt['receipt_no'])->countAllResults();
+                    if($alreadyReversed===0){
+                        $this->db->table('cash_transactions')->insert([
+                            'cash_session_id'=>$receiptCash['cash_session_id'],
+                            'transaction_type'=>'customer_receipt',
+                            'direction'=>'out',
+                            'amount'=>$receiptCash['amount'],
+                            'transaction_at'=>date('Y-m-d H:i:s'),
+                            'reference_type'=>'sale_void',
+                            'reference_id'=>$saleId,
+                            'created_by'=>$userId,
+                            'notes'=>'Reversal of customer receipt '.$receipt['receipt_no'].' from voided sale '.$sale['sale_no']
+                        ]);
+                    }
+                }
+            }
+
             $this->db->table('sales')->where('id',$saleId)->update(['status'=>'voided','voided_by'=>$userId,'voided_at'=>date('Y-m-d H:i:s'),'void_reason'=>$reason]);
             if(!$this->db->transStatus()) throw new RuntimeException('Sale void failed.');
             $this->db->transCommit();
