@@ -48,6 +48,14 @@
                         </select>
                         <div class="form-text">This value is selected automatically when the POS opens. The cashier can still change the transaction type for the current invoice.</div>
                     </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Individual Cylinder Tracking</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="individual_cylinder_tracking" id="individualCylinderTracking" <?= !empty($settings['individual_cylinder_tracking']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="individualCylinderTracking">Track individual physical cylinders in normal POS sales</label>
+                        </div>
+                        <div class="form-text">OFF: POS shows aggregate stock by cylinder type and the backend selects physical cylinders automatically. ON: POS can show/select an individual filled cylinder when required.</div>
+                    </div>
                     <div class="col-md-6">
                         <label class="form-label">Credit Limit Validation</label>
                         <select name="credit_limit_validation_mode" id="creditLimitMode" class="form-select">
