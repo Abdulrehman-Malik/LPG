@@ -88,7 +88,7 @@ class InventoryService{
     if(!$this->db->transStatus()) throw new RuntimeException('Inventory adjustment failed.');
     $this->db->transCommit();
     AuditService::log('CREATE','inventory_adjustment',0,null,['inventory_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>$direction,'actual_gas_weight_kg'=>$actualGasWeight,'notes'=>$notes,'adjustment_scope'=>'bulk'],$userId,$locationId);
-   }catch(\\Throwable $e){$this->db->transRollback();throw $e;}
+   }catch(\Throwable $e){$this->db->transRollback();throw $e;}
    return;
   }
 
@@ -204,5 +204,5 @@ class InventoryService{
    if(!$this->db->transStatus()) throw new RuntimeException('Specific inventory adjustment failed.');
    $this->db->transCommit();
    AuditService::log('CREATE','inventory_adjustment',0,null,['inventory_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>$qty,'direction'=>$direction,'actual_gas_weight_kg'=>$actualGasWeight,'source_cylinder_unit_id'=>$sourceCylinderUnitId,'adjustment_scope'=>'specific','notes'=>$notes],$userId,$locationId);
-  }catch(\\Throwable $e){$this->db->transRollback();throw $e;}
+  }catch(\Throwable $e){$this->db->transRollback();throw $e;}
  }
