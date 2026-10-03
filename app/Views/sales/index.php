@@ -299,6 +299,11 @@ document.getElementById('saleForm').onsubmit=()=>{
  if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
  if(t!=='cylinder_return'&&paymentTotal()>expected+0.01){alert('Payment cannot exceed the Net Amount Receivable of Rs. '+expected.toFixed(2)+'.');return false;}
  if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
+ if(['gas_sale','cylinder_sale'].includes(t)&&customerId&&creditLimitMode!=='none'){
+   const limit=creditLimitMode==='shop'?shopCreditLimit:Number(creditLimits[customerId]||0);
+   const newOs=Math.max(0,expected-paymentTotal());
+   if(newOs>limit+0.01){alert('Credit limit exceeded. Current OS is Rs. '+previousOs.toFixed(2)+', resulting OS would be Rs. '+newOs.toFixed(2)+', and the allowed limit is Rs. '+limit.toFixed(2)+'.');return false;}
+ }
  let gasRequired=0; if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0); else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
  if((t==='gas_sale'||t==='cylinder_sale')&&gasRequired>Number(gasStock||0)+0.00001){
    if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(2)+' KG, but this transaction requires '+gasRequired.toFixed(2)+' KG. Continue?'))return false;
