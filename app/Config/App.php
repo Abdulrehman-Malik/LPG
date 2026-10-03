@@ -7,6 +7,43 @@ use CodeIgniter\Config\BaseConfig;
 class App extends BaseConfig
 {
     /**
+     * Use the public Cloudflare Tunnel host for generated URLs when the
+     * application is accessed through a temporary trycloudflare.com tunnel.
+     *
+     * Local .env app.baseURL remains unchanged for normal local/production use.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        $host = strtolower(trim((string) ($_SERVER['HTTP_HOST'] ?? '')));
+
+        if ($host !== '' && (str_ends_with($host, '.trycloudflare.com') || $host === 'trycloudflare.com')) {
+            $scheme = strtolower(trim((string) (
+                $_SERVER['HTTP_X_FORWARDED_PROTO']
+                ?? $_SERVER['REQUEST_SCHEME']
+                ?? ((! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http')
+            )));
+
+            if (! in_array($scheme, ['http', 'https'], true)) {
+                $scheme = 'https';
+            }
+
+            $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+            $basePath = '';
+
+            if ($scriptName !== '') {
+                $scriptDir = dirname($scriptName);
+                if ($scriptDir !== '.' && $scriptDir !== DIRECTORY_SEPARATOR) {
+                    $basePath = '/' . trim(str_replace('\\', '/', $scriptDir), '/');
+                }
+            }
+
+            $this->baseURL = $scheme . '://' . $host . ($basePath !== '' ? $basePath . '/' : '/');
+        }
+    }
+
+    /**
      * --------------------------------------------------------------------------
      * Base Site URL
      * --------------------------------------------------------------------------
