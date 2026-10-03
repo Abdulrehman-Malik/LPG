@@ -54,6 +54,21 @@
                         </select>
                         <div class="form-text">This default is applied to the first POS line. Cashiers can still change the transaction type for a specific line.</div>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Credit Limit Validation</label>
+                        <select name="credit_limit_validation_mode" id="creditLimitMode" class="form-select">
+                            <option value="none" <?= ($settings['credit_limit_validation_mode'] ?? 'none') === 'none' ? 'selected' : '' ?>>None — no credit limit validation</option>
+                            <option value="customer" <?= ($settings['credit_limit_validation_mode'] ?? 'none') === 'customer' ? 'selected' : '' ?>>Customer Level — use each customer's Credit Limit</option>
+                            <option value="shop" <?= ($settings['credit_limit_validation_mode'] ?? 'none') === 'shop' ? 'selected' : '' ?>>Shop Level — use one branch-wide Credit Limit</option>
+                        </select>
+                        <div class="form-text">A limit of Rs. 0.00 means the customer must fully settle the current sale and any previous OS.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Shop Credit Limit</label>
+                        <input name="shop_credit_limit" id="shopCreditLimit" type="number" min="0" step="any" class="form-control" value="<?= esc($settings['shop_credit_limit'] ?? 0) ?>">
+                        <div class="form-text">Used only when Credit Limit Validation is set to Shop Level.</div>
+                    </div>
+                    <div class="col-12"><div class="alert alert-light border mb-0">Partial payment is allowed. Any unpaid amount becomes Customer OS and is carried into the next sale. Credit-limit validation applies to the resulting outstanding balance.</div></div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div>
                 </div>
             </div>
