@@ -534,7 +534,7 @@ class SalesService
         $settings=(new ShopSettingsModel())->forLocation($this->currentLocationId ?? 0);
         $validationMode=(string)($settings['credit_limit_validation_mode']??'none');
         if($customerId!==null && $validationMode!=='none'){
-            $creditLimit=$validationMode==='shop'?(float)($settings['shop_credit_limit']??0):(float)($customer['credit_limit']??0);
+            $creditLimit=$validationMode==='shop'?(float)($settings['shop_credit_limit']??0):(float)(($this->customers->find($customerId)['credit_limit']??0));
             if($newOs>$creditLimit+0.01){
                 $available=max(0,$creditLimit-$previousOs);
                 $label=$validationMode==='shop'?'shop':'customer';
