@@ -11,7 +11,7 @@ class ShopSettingsModel extends Model
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'location_id','default_sale_mode','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
+        'location_id','default_sale_mode','default_transaction_type','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
         'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit',
         'backup_enabled','db_backup_url','backup_notes',
         'receipt_title','receipt_footer','show_address_on_receipt',
@@ -26,6 +26,15 @@ class ShopSettingsModel extends Model
         'sell_empty',
     ];
 
+    public const TRANSACTION_TYPES = ['gas_sale','cylinder_sale','security_deposit','cylinder_return'];
+
+    public const TRANSACTION_TYPE_LABELS = [
+        'gas_sale' => 'Gas Sale / Refill',
+        'cylinder_sale' => 'Cylinder Sale',
+        'security_deposit' => 'Security Deposit / Issue Cylinder',
+        'cylinder_return' => 'Cylinder Return / Refund Deposit',
+    ];
+
     public const PAYMENT_MODES = ['cash','cheque','online','credit'];
 
     public function forLocation(int $locationId): array
@@ -34,6 +43,7 @@ class ShopSettingsModel extends Model
             'id' => 0,
             'location_id' => $locationId,
             'default_sale_mode' => 'sell_gas_only',
+            'default_transaction_type' => 'gas_sale',
             'default_payment_mode' => 'cash',
             'pos_font_size_px' => 14,
             'theme_mode' => 'light',
