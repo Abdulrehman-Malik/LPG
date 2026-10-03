@@ -9,6 +9,74 @@ class PermissionService
     protected static ?array $permissionCache = null;
     protected static ?int $permissionCacheUserId = null;
 
+    /**
+     * Keep standard role permissions usable on older installations.
+     * Custom roles are not changed.
+     */
+    protected static function syncStandardRolePermissions(): void
+    {
+        static $synced = false;
+        if ($synced) {
+            return;
+        }
+        $synced = true;
+
+        $db = Database::connect();
+
+        $permissions = [
+            'DASHBOARD_VIEW' => 'View dashboard',
+            'POS_SALE' => 'Create POS sales',
+            'POS_VOID' => 'Void posted sales',
+            'CUSTOMER_MANAGE' => 'Manage customers',
+            'SUPPLIER_MANAGE' => 'Manage suppliers',
+            'RATE_MANAGE' => 'Manage LPG rates',
+            'INVENTORY_MANAGE' => 'Manage inventory',
+            'PURCHASE_MANAGE' => 'Manage purchases',
+            'CASH_MANAGE' => 'Manage counter cash',
+            'EXPENSE_MANAGE' => 'Manage expenses',
+            'REPORT_VIEW' => 'View reports',
+            'USER_MANAGE' => 'Manage users',
+            'AUDIT_VIEW' => 'View audit log',
+        ];
+
+        foreach ($permissions as $code => $name) {
+            $db->table('permissions')->ignore(true)->insert([
+                'code' => $code,
+                'name' => $name,
+            ]);
+        }
+
+        $roleDefaults = [
+            'ADMIN' => array_keys($permissions),
+            'MANAGER' => array_values(array_diff(array_keys($permissions), ['USER_MANAGE'])),
+            'CASHIER' => ['DASHBOARD_VIEW', 'POS_SALE', 'CUSTOMER_MANAGE', 'REPORT_VIEW'],
+        ];
+
+        foreach ($roleDefaults as $roleCode => $permissionCodes) {
+            $role = $db->table('roles')->select('id')->where('code', $roleCode)->get()->getRowArray();
+            if (!$role) {
+                continue;
+            }
+
+            foreach ($permissionCodes as $permissionCode) {
+                $permission = $db->table('permissions')
+                    ->select('id')
+                    ->where('code', $permissionCode)
+                    ->get()
+                    ->getRowArray();
+
+                if (!$permission) {
+                    continue;
+                }
+
+                $db->table('role_permissions')->ignore(true)->insert([
+                    'role_id' => (int) $role['id'],
+                    'permission_id' => (int) $permission['id'],
+                ]);
+            }
+        }
+    }
+
     public static function all(): array
     {
         $userId=(int)(session()->get('user_id') ?? 0);
@@ -21,6 +89,8 @@ class PermissionService
         if($userId<=0) {
             return self::$permissionCache=[];
         }
+
+        self::syncStandardRolePermissions();
 
         self::$permissionCache = array_values(array_unique(array_map(
             'strval',
