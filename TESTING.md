@@ -245,3 +245,86 @@ Development is considered functionally complete for the defined scope when:
 **SQA Comments / Improvement Notes:**
 
 **Evidence / Test Data:**
+
+
+---
+
+## Current Automated CI Baseline — October 2026
+
+The repository now has GitHub Actions CI at `.github/workflows/ci.yml`.
+
+### Latest verified result
+
+- **Workflow:** LPG CI #20
+- **Commit:** `f19b68e730d49ba5b40be9ed98d4c0b9b407f7ae`
+- **Overall:** PASS
+- PHP syntax validation: PASS
+- Composer dependencies: PASS
+- MySQL 8 schema bootstrap: PASS
+- Current POS/settings migrations: PASS
+- CodeIgniter startup via `php spark`: PASS
+- PHPUnit: **5 / 5 tests passed, 6 assertions**
+- PHPUnit coverage reporting is disabled in CI with `--no-coverage`; the CI runner does not have a coverage driver.
+
+This automated result proves that the repository can install dependencies, initialize the configured MySQL schema/migrations, boot CodeIgniter and execute the current PHPUnit suite. It does **not** constitute browser or business-process SQA sign-off.
+
+### CI troubleshooting history already resolved
+
+The CI setup required these fixes:
+1. Synced `composer.lock` with `composer.json`.
+2. Updated locked `kint-php/kint` to 6.1.x and `predis/predis` to 3.x, including `psr/http-message`.
+3. Reworked the two 20261003 migrations to avoid unsupported `ADD COLUMN IF NOT EXISTS` syntax.
+4. Aligned CI database bootstrapping with the self-contained `database/schema.sql` database name `perfect_lpg`.
+5. Defined `SUPPORTPATH` during CodeIgniter bootstrap so `CI_ENVIRONMENT=testing` starts correctly.
+6. Run PHPUnit through PHP CLI to avoid executable-bit problems.
+7. Disabled coverage reporting in the CI PHPUnit invocation.
+
+These changes are part of the current repository baseline and should not be removed casually.
+
+---
+
+## Current Application Architecture Test Notes
+
+### POS transaction types
+
+The current POS architecture is **four header-level transaction types**, one per invoice:
+- `gas_sale`
+- `cylinder_sale`
+- `security_deposit`
+- `cylinder_return`
+
+Older documentation and test cases refer to a historical five-mode line-level POS. Treat those older sections as historical/regression references unless explicitly updated to the current four-type architecture.
+
+### Gas stock and cylinder tracking
+
+For normal gas sales:
+- Quantity is in KG.
+- 1 KG means exactly 1 KG gas consumption.
+- With **Individual Cylinder Tracking OFF** (the default), POS displays aggregate available gas by cylinder type.
+- The backend automatically allocates gas across available filled physical cylinders of the selected type.
+- Physical cylinder units are still maintained internally.
+- When a unit reaches zero KG, it becomes empty and the related inventory movements are recorded.
+
+### Inventory detail
+
+The Inventory Detail Report is intended to show:
+- total company gas stock;
+- filled and empty cylinder counts;
+- stock by cylinder type;
+- partially used filled physical cylinders with remaining KG and used percentage.
+
+### Security deposits / custody
+
+Security deposit is a liability/hold, not normal sales revenue.
+Physical company cylinders move into customer custody.
+Cylinder return operates against the customer's custody cylinder and refunds the deposit.
+Security-deposit and cylinder-return transactions have special restrictions and should not be treated as ordinary voidable POS sales.
+
+### Browser/E2E staging requirement
+
+A local URL such as `http://localhost/.../public/` is accessible only from the local machine/network. It is not directly reachable for remote browser testing.
+
+Recommended staging path:
+`Windows PC + XAMPP -> Cloudflare Tunnel -> public HTTPS test URL`.
+
+Use a disposable test database and dedicated test credentials. Never expose production credentials or use production data for browser SQA.
