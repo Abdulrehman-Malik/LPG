@@ -519,6 +519,11 @@ class SalesService
             $sale=$this->db->query("SELECT * FROM sales WHERE id=? AND location_id=? FOR UPDATE",[$saleId,$locationId])->getRowArray();
             if(!$sale) throw new RuntimeException('Sale not found.');
             if($sale['status']!=='posted') throw new RuntimeException('Only posted sales can be voided.');
+            if(in_array($sale['transaction_type'],['security_deposit','cylinder_return'],true)) throw new RuntimeException('Security Deposit and Cylinder Return transactions cannot be voided. Use the custody workflow so the liability and physical cylinder remain consistent.');
+            if($sale['transaction_type']==='gas_sale'){
+                $custodyLine=(int)$this->db->table('sale_items')->where('sale_id',$saleId)->where('customer_cylinder_unit_id IS NOT NULL',null,false)->countAllResults();
+                if($custodyLine>0) throw new RuntimeException('Gas sales that refill a customer custody cylinder cannot be voided after posting.');
+            }
 
             $movements=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->get()->getResultArray();
             $this->acquireInventoryLocks($locationId,$movements);
