@@ -752,8 +752,8 @@ class SalesService
 
     public function customerBalance(int $customerId): float
     {
-        $s=$this->db->table('sales')->selectSum('credit_amount','credit')->where('customer_id',$customerId)->where('status','posted')->get()->getRowArray();
-        $r=$this->db->table('customer_receipts')->selectSum('amount','paid')->where('customer_id',$customerId)->where('status','posted')->get()->getRowArray();
+        $s=$this->db->table('sales')->selectSum('credit_amount','credit')->where('customer_id',$customerId)->where('status','posted')->where('location_id',$this->currentLocationId)->get()->getRowArray();
+        $r=$this->db->table('customer_receipts')->selectSum('amount','paid')->where('customer_id',$customerId)->where('status','posted')->where('location_id',$this->currentLocationId)->get()->getRowArray();
         $c=$this->customers->find($customerId);
         return (float)($c['opening_balance']??0)+(float)($s['credit']??0)-(float)($r['paid']??0);
     }
