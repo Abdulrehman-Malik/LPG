@@ -147,6 +147,7 @@ const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_
 const rates=<?=json_encode($cylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
 const balances=<?=json_encode($balances)?>,creditLimits=<?=json_encode($creditLimits)?>;
+const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit=<?=json_encode((float)($shopCreditLimit??0))?>;
 const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomerCustody=<?=json_encode($custodyUnits)?>;
 const defaultTransactionType='gas_sale',defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
 const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementById('lineHead'),payments=document.getElementById('payments');
@@ -157,8 +158,10 @@ function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Num
 function refreshCustomer(){
   const c=selectedCustomer(),box=document.getElementById('customerInfo');
   if(!c){box.textContent='Walk-in: cash sales are allowed. Security Deposit and Cylinder Return require a named customer.';return;}
-  const available=Math.max(0,c.limit-c.balance);
-  box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available Credit: Rs. '+available.toFixed(2);
+  if(creditLimitMode==='none'){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit limit validation: OFF';return;}
+  const limit=creditLimitMode==='shop'?shopCreditLimit:c.limit;
+  const available=Math.max(0,limit-c.balance);
+  box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+limit.toFixed(2)+' | Available Additional Credit: Rs. '+available.toFixed(2)+(limit<=0?' | Full settlement required':'');
 }
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
