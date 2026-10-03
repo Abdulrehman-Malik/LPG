@@ -45,6 +45,7 @@ The POS no longer contains a separate default-transaction preference control. It
 2. Configure the local environment from `.env.example`.
 3. Run `database/schema.sql` on the database.
 4. Run `database/migrations/20260930_shop_settings.sql` once after the schema (fresh or existing database).
+5. On an existing database, run `database/migrations/20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
 5. Run Composer dependencies: `composer install`.
 6. Point Apache/Nginx to the project's `public` directory.
 7. Open the application and log in with the configured user.
@@ -58,6 +59,10 @@ Do not commit a local `.env` file. Use `.env.example` as the template for local 
 The branch settings table is intentionally delivered as a non-destructive migration so existing installations are not rebuilt.
 
 Migration: `database/migrations/20260930_shop_settings.sql`
+
+Permissions migration: `database/migrations/20261003_permissions_sync.sql`
+
+It adds missing standard permissions and backfills the default role mappings so Reports (`REPORT_VIEW`) and Shop Settings access are available to the standard roles according to the application's permission model. Custom role permissions are not removed.
 
 It creates one settings record per branch and synchronizes the branch-wide stock-validation flag with the existing inventory policy.
 

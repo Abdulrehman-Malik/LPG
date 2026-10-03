@@ -207,6 +207,7 @@ Do not manually correct database balances during testing. If a result is wrong, 
 - For an existing database, preserve the current physical-cylinder tables and data; the five POS modes do not require a schema migration because they use the existing sales, sale_items and inventory movement structures.
 - Local configuration should be created from `.env.example`.
 - Existing databases must run `database/migrations/20260930_shop_settings.sql` before using the Shop Settings page.
+- Existing databases must also run `database/migrations/20261003_permissions_sync.sql` when upgrading from an older permission dataset; this restores missing standard permission rows and default role mappings.
 - The repository intentionally does not contain a local `.env`.
 
 ## Automated Tests

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Services\PermissionService;
 use CodeIgniter\Controller;
 use Config\Database;
 
@@ -9,6 +10,10 @@ class Dashboard extends Controller
 {
     public function index()
     {
+        if(!PermissionService::allows('DASHBOARD_VIEW')) {
+            return $this->response->setStatusCode(403)->setBody('Forbidden');
+        }
+
         $db=Database::connect();
         $today=date('Y-m-d');
         $tomorrow=date('Y-m-d',strtotime($today.' +1 day'));
