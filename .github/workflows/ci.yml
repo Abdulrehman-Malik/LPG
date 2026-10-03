@@ -15,7 +15,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: lpg_ci
+          MYSQL_DATABASE: perfect_lpg
         ports:
           - 3306:3306
         options: >-
@@ -52,9 +52,9 @@ jobs:
         env:
           MYSQL_PWD: root
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root lpg_ci < database/schema.sql
-          mysql -h 127.0.0.1 -P 3306 -u root lpg_ci < database/migrations/20261003_pos_transaction_type.sql
-          mysql -h 127.0.0.1 -P 3306 -u root lpg_ci < database/migrations/20261003_individual_cylinder_tracking.sql
+          mysql -h 127.0.0.1 -P 3306 -u root < database/schema.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/20261003_pos_transaction_type.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/20261003_individual_cylinder_tracking.sql
 
       - name: CodeIgniter smoke check
         env:
