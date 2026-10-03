@@ -41,18 +41,12 @@
                 <div class="row g-3">
                     <div class="col-md-7">
                         <label class="form-label">Default POS Transaction Type</label>
-                        <select name="default_sale_mode" class="form-select">
-                            <?php $modes = [
-                                'sell_gas_only' => '1 — Sell Gas Only',
-                                'replace_same' => '2 — Sell Gas by Replacing Same-Capacity Cylinder',
-                                'sell_filled' => '3 — Sell Filled Cylinder with Gas + Cylinder Price',
-                                'replace_different' => '4 — Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder',
-                                'sell_empty' => '5 — Sell Empty Cylinder Only',
-                            ]; foreach($modes as $value=>$label): ?>
-                                <option value="<?= esc($value) ?>" <?= ($settings['default_sale_mode'] ?? '') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
+                        <select name="default_transaction_type" class="form-select">
+                            <?php foreach(AppModelsShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
+                                <option value="<?= esc($value) ?>" <?= ($settings['default_transaction_type'] ?? 'gas_sale') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">This default is applied to the first POS line. Cashiers can still change the transaction type for a specific line.</div>
+                        <div class="form-text">This value is selected automatically when the POS opens. The cashier can still change the transaction type for the current invoice.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Credit Limit Validation</label>
@@ -69,7 +63,7 @@
                         <div class="form-text">Used only when Credit Limit Validation is set to Shop Level.</div>
                     </div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Partial payment is allowed. Any unpaid amount becomes Customer OS and is carried into the next sale. Credit-limit validation applies to the resulting outstanding balance.</div></div>
-                    <div class="col-12"><div class="alert alert-light border mb-0">Default transaction is a branch setting. It is no longer configured on the POS screen.</div></div>
+                    <div class="col-12"><div class="alert alert-info border mb-0"><strong>POS transaction types:</strong> Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return / Refund Deposit. The selected default is used when opening a new POS invoice.</div></div>
                 </div>
             </div>
 
