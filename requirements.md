@@ -49,6 +49,9 @@ Shop Settings is branch-level and provides tabs for:
 
 Cylinder-type inventory policy overrides remain available under Inventory Controls.
 
+- The authenticated sidebar must hide every module for which the current user has no permission.
+- Sidebar visibility must use the same permission codes enforced by the corresponding controller; hiding a menu is a UX control, not a replacement for server-side authorization.
+
 ## Critical Rules
 - Rate history stores effective rate, timestamp, old/new values and user.
 - Every sale line stores the actual applied rate.
