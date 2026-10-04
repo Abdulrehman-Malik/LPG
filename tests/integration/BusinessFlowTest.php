@@ -11,7 +11,7 @@ use Config\Database;
 
 final class BusinessFlowTest extends CIUnitTestCase
 {
-    private $db;
+    protected $db;
     private int $locationId = 1;
     private int $userId = 1;
 
