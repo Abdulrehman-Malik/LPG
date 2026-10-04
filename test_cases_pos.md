@@ -213,6 +213,16 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 | POS-108 | Unauthorized server bypass | POST directly to sales/void without POS_VOID permission. | Server returns Forbidden; sale and ledgers remain unchanged. | | |
 | POS-109 | Cross-branch protection | Request another branch's sale id from history/details/void. | Sale is not exposed or modified. | | |
 
+## O. POS OS / Discount / Receipt Snapshot
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-110 | Previous OS shown | Select a customer with existing OS. | Previous OS Balance shows the outstanding amount before the new sale. | | |
+| POS-111 | Discount included in current sale | Enter sale lines and a discount. | Current Sale equals subtotal minus discount; Discount is shown separately. | | |
+| POS-112 | Dynamic receipt and OS | Change payment/receipt amount. | Receipt Amount updates immediately; OS Balance = Previous OS + Current Sale - Receipt Amount. | | |
+| POS-113 | Fully received | Enter receipt equal to Net Receivable Amount. | OS Balance becomes Rs. 0.00 without refresh. | | |
+| POS-114 | Historical snapshot | Post a sale with Previous OS, Discount, Receipt and resulting OS. Reopen Sale History and receipt. | The same recorded Previous OS, Current Sale, Discount, Net Receivable, Receipt Amount and OS Balance are displayed. | | |
+
 ## Final POS Acceptance Summary
 
 | Area | Passed | Failed | Not Executed | Notes |
