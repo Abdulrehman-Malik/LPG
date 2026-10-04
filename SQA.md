@@ -398,3 +398,23 @@ Before considering the application release-ready, explicitly execute and record:
 - For production, set `app.baseURL` in the production machine's local `.env` to the production URL.
 - Do not commit tunnel URLs, environment-specific hostnames, production URLs, or environment secrets to the repository.
 - Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
+
+
+## Current POS Credit Business Rule Addendum — October 2026
+
+| ID | Use case | Input / Steps | Expected result | Status |
+|---|---|---|---|---|
+| J08 | Walk-in credit blocked | Select Walk-in / Cash and enter a payment less than the sale total | POS rejects posting; walk-in must be fully paid and received amount must equal sale total | NOT EXECUTED |
+| J09 | Walk-in non-cash blocked | Select Walk-in / Cash and choose cheque, online or credit | POS rejects posting; walk-in is cash-only | NOT EXECUTED |
+| J10 | Customer credit not configured | Select an actual customer whose Allow Credit Sale is OFF and attempt a partial/credit sale | POS and server reject the sale with a clear credit-not-allowed message | NOT EXECUTED |
+| J11 | Customer credit within limit | Enable Allow Credit Sale; configure a positive credit limit; make a sale whose resulting outstanding is within the limit | Sale posts and customer outstanding increases only by the credit amount | NOT EXECUTED |
+| J12 | Customer credit limit exceeded | Enable Allow Credit Sale; attempt credit that makes resulting outstanding exceed Credit Limit | POS and server reject the sale; no partial inventory/cash/ledger posting remains | NOT EXECUTED |
+| J13 | Zero customer credit limit | Enable Allow Credit Sale but set Credit Limit to zero; attempt unpaid balance | Credit sale is rejected because resulting outstanding cannot exceed zero | NOT EXECUTED |
+| J14 | Direct POST bypass attempt | Bypass browser controls and submit a credit sale for a customer with Allow Credit Sale OFF or over limit | SalesService rejects the request; UI-only restrictions are not the security boundary | NOT EXECUTED |
+
+### Mandatory business rule
+
+- Walk-in customer = cash-only and **sale total must equal received amount**.
+- Actual customer = credit only when **Allow Credit Sale** is enabled on the customer record.
+- Customer credit = resulting outstanding must not exceed the customer's configured **Credit Limit**.
+- These rules are enforced server-side and must not be disabled by the branch-level credit-limit validation mode setting.
