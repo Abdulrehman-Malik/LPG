@@ -87,7 +87,7 @@ final class MasterDataFlowTest extends CIUnitTestCase
         $rate = $this->db->table('rate_cards')
             ->where(['location_id' => $this->locationId, 'rate_type' => 'gas_per_kg'])
             ->orderBy('id', 'DESC')->get()->getRowArray();
-        $log = $this->db->table('rate_change_logs')
+        $log = $this->db->table('rate_change_log')
             ->where('rate_card_id', $rate['id'])->orderBy('id', 'DESC')->get()->getRowArray();
 
         $this->assertEqualsWithDelta(123.45, (float) $rate['rate_value'], 0.001);
