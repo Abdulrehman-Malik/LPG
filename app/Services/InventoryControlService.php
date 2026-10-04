@@ -50,7 +50,7 @@ class InventoryControlService
             }else{
                 $this->db->table('cylinder_units')->where('id',$unitId)->update(['gas_weight_kg'=>$remaining]);
             }
-            if(!$this->db->transStatus()) throw new RuntimeException('Wastage posting failed.');
+            if(!$this->db->transStatus()) throw new RuntimeException('Wastage posting failed. DB=' . json_encode($this->db->error()));
             $this->db->transCommit();
         }catch(\Throwable $e){$this->db->transRollback();throw $e;}
     }
