@@ -128,7 +128,7 @@ final class BusinessFlowTest extends CIUnitTestCase
             ]],
             'payments' => [['payment_mode' => 'cash', 'amount' => 500]],
             ], $this->userId, $this->locationId);
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->fail($e->getMessage() . ' | DB: ' . json_encode($this->db->error()));
         }
 
@@ -163,7 +163,7 @@ final class BusinessFlowTest extends CIUnitTestCase
             ]],
             'payments' => [['payment_mode' => 'credit', 'amount' => 500]],
             ], $this->userId, $this->locationId);
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->fail($e->getMessage() . ' | DB: ' . json_encode($this->db->error()));
         }
 
