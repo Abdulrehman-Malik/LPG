@@ -55,8 +55,8 @@
                 <div class="fw-semibold">Supplier &amp; Purchase Details</div>
             </div>
             <div class="card-body">
-                <div class="row g-3 align-items-end">
-                    <div class="col-lg-8">
+                <div class="row g-2 align-items-end">
+                    <div class="col-lg-6">
                         <label class="form-label fw-semibold">Supplier</label>
                         <select name="supplier_id" id="supplier_id" class="form-select" required>
                             <option value="">Select supplier</option>
@@ -64,13 +64,12 @@
                                 <option value="<?= $s['id'] ?>"><?= esc($s['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">Previous outstanding balance is shown below and carried into this transaction.</div>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-lg-3">
                         <label class="form-label fw-semibold">Previous Payable</label>
                         <div class="form-control bg-light fw-semibold text-end" id="previousPayable">Rs. 0.00</div>
                     </div>
-                    <div class="col-lg-2">
+                    <div class="col-lg-3">
                         <label class="form-label fw-semibold">Discount</label>
                         <input name="discount_amount" id="discount" class="form-control text-end" type="number" step=".01" min="0" value="0">
                     </div>
