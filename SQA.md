@@ -471,7 +471,7 @@ Before considering the application release-ready, explicitly execute and record:
 | R31 | Transaction atomicity | Failed POS posting rolls back inventory/financial changes | NOT EXECUTED |
 | R32 | Security deposit UI | Deposit field shown only for Security Deposit transaction | NOT EXECUTED |
 | R33 | Compact POS summary | Current Sale, Previous Balance and Discount share one row on desktop | NOT EXECUTED |
-| R34 | Amount-entry gas sale | Cashier can enter amount and system calculates KG using current gas/kg rate | NOT EXECUTED |
-| R35 | Amount-entry stock validation | Calculated KG is still subject to source/type stock validation and physical-cylinder locking | NOT EXECUTED |
-| R36 | Amount-entry server authority | Server recalculates KG from entered amount and current rate; client cannot bypass stock validation | NOT EXECUTED |
+| R34 | Screen-level gas entry mode | Gas Sale has one screen-level KG/Rs selector applied to all gas lines; no per-line selector exists | NOT EXECUTED |
+| R35 | Rs. mode stock validation | Entered amount is converted to KG and remains subject to source/type stock validation and physical-cylinder locking | NOT EXECUTED |
+| R36 | Gas entry server authority | Server recalculates KG from Rs. amount and current effective rate; KG mode remains quantity-based and client cannot bypass stock validation | NOT EXECUTED |
 
