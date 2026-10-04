@@ -36,17 +36,16 @@ class PurchaseService{
    $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
    foreach($prepared as $row){$row['purchase_id']=$id;$this->db->table('purchase_items')->insert($row);}
    foreach($inventory as $m){
-    if($m['inventory_type']==='filled_cylinder' || $m['inventory_type']==='empty_cylinder'){
-        $unitGas=$m['inventory_type']==='filled_cylinder'?(float)$m['actual_gas_weight_kg']:0;
-        $unitIds=$this->cylinders->createUnits($locationId,(int)$m['cylinder_type_id'],(int)$m['quantity'],$m['inventory_type']==='filled_cylinder'?'filled':'empty',$unitGas,$userId,'purchase',$id);
-        foreach($unitIds as $unitId){
-            $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>1,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'cylinder_unit_id'=>$unitId,'created_by'=>$userId]);
-            if($m['inventory_type']==='filled_cylinder') $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$unitGas,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'cylinder_unit_id'=>$unitId,'created_by'=>$userId]);
-        }
-    } else {
-        $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'created_by'=>$userId]);
-    }
-}
+    $this->inv->receivePurchase(
+      $locationId,
+      $m['inventory_type'],
+      $m['cylinder_type_id'],
+      (float)$m['quantity'],
+      (float)$m['actual_gas_weight_kg'],
+      $id,
+      $userId
+    );
+   }
    $remainingCurrent=$currentPayable;$cashPurchase=0;
    foreach($normalizedPayments as $pay){$applyCurrent=min((float)$pay['amount'],$remainingCurrent);$applyPrior=max(0,(float)$pay['amount']-$applyCurrent);
     if($applyCurrent>0){$this->db->table('purchase_payments')->insert(['purchase_id'=>$id,'payment_mode'=>$pay['payment_mode'],'amount'=>$applyCurrent,'reference_no'=>$pay['reference_no'],'payment_at'=>date('Y-m-d H:i:s'),'paid_by'=>$userId]);if($pay['payment_mode']==='cash')$cashPurchase+=$applyCurrent;}
