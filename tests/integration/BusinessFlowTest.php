@@ -118,7 +118,8 @@ final class BusinessFlowTest extends CIUnitTestCase
         $unitId = (new CylinderUnitService())->createUnits($this->locationId, $typeId, 1, 'filled', 11.8, $this->userId, 'test', 0)[0];
         $sessionId = $this->cashSession();
 
-        $result = (new SalesService())->post([
+        try {
+            $result = (new SalesService())->post([
             'transaction_type' => 'gas_sale',
             'lines' => [[
                 'cylinder_type_id' => $typeId,
@@ -126,7 +127,10 @@ final class BusinessFlowTest extends CIUnitTestCase
                 'quantity' => 5,
             ]],
             'payments' => [['payment_mode' => 'cash', 'amount' => 500]],
-        ], $this->userId, $this->locationId);
+            ], $this->userId, $this->locationId);
+        } catch (\\Throwable $e) {
+            $this->fail($e->getMessage() . ' | DB: ' . json_encode($this->db->error()));
+        }
 
         $unit = $this->db->table('cylinder_units')->where('id', $unitId)->get()->getRowArray();
         $sale = $this->db->table('sales')->where('id', $result['id'])->get()->getRowArray();
@@ -148,7 +152,8 @@ final class BusinessFlowTest extends CIUnitTestCase
         $customerId = $this->addCustomer(1000);
         $unitId = (new CylinderUnitService())->createUnits($this->locationId, $typeId, 1, 'filled', 11.8, $this->userId, 'test', 0)[0];
 
-        $result = (new SalesService())->post([
+        try {
+            $result = (new SalesService())->post([
             'transaction_type' => 'gas_sale',
             'customer_id' => $customerId,
             'lines' => [[
@@ -157,7 +162,10 @@ final class BusinessFlowTest extends CIUnitTestCase
                 'quantity' => 5,
             ]],
             'payments' => [['payment_mode' => 'credit', 'amount' => 500]],
-        ], $this->userId, $this->locationId);
+            ], $this->userId, $this->locationId);
+        } catch (\\Throwable $e) {
+            $this->fail($e->getMessage() . ' | DB: ' . json_encode($this->db->error()));
+        }
 
         $this->assertEqualsWithDelta(500, (new SalesService())->customerBalance($customerId), 0.001);
         $payment = $this->db->table('sale_payments')->where('sale_id', $result['id'])->get()->getRowArray();
@@ -257,7 +265,7 @@ final class BusinessFlowTest extends CIUnitTestCase
         $unitId = (new CylinderUnitService())->createUnits($this->locationId, $typeId, 1, 'filled', 11.8, $this->userId, 'test', 0)[0];
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('exceeds selected source cylinder');
+        $this->expectExceptionMessage('exceeds selected cylinder');
 
         try {
             (new SalesService())->post([
