@@ -16,7 +16,7 @@ class InventoryService{
   return (float)($q['q']??0)+(float)($in['q']??0)-(float)($out['q']??0);
  }
 
- public function receivePurchase(int $locationId,string $type,?int $typeId,float $qty,float $actualGasWeight,int $purchaseId,int $userId): void
+ public function receivePurchase(int $locationId,string $type,?int $typeId,float $qty,float $actualGasWeight,int $purchaseId,int $userId,?int $purchaseLineId=null): void
  {
   if($qty<=0) throw new RuntimeException('Purchase quantity must be greater than zero.');
   if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase inventory type.');
@@ -26,7 +26,7 @@ class InventoryService{
    $this->db->table('inventory_movements')->insert([
     'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,
     'quantity'=>$qty,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
-    'source_type'=>'purchase','source_id'=>$purchaseId,'created_by'=>$userId,
+    'source_type'=>'purchase','source_id'=>$purchaseId,'source_line_id'=>$purchaseLineId,'created_by'=>$userId,
     'notes'=>'Stock received through purchase'
    ]);
    if(!$this->db->transStatus()) throw new RuntimeException('Gas inventory posting failed.');
@@ -55,7 +55,7 @@ class InventoryService{
    $this->db->table('inventory_movements')->insert([
     'location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,
     'quantity'=>1,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
-    'source_type'=>'purchase','source_id'=>$purchaseId,'cylinder_unit_id'=>$unitId,
+    'source_type'=>'purchase','source_id'=>$purchaseId,'source_line_id'=>$purchaseLineId,'cylinder_unit_id'=>$unitId,
     'created_by'=>$userId,'notes'=>'Physical cylinder received through purchase'
    ]);
 
