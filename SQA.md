@@ -432,3 +432,43 @@ Before considering the application release-ready, explicitly execute and record:
 - **J22** — Same cylinder type on multiple gas-sale lines is rejected in both ON and OFF modes.
 - **J23** — Cylinder Type dropdown displays available gas grouped by cylinder type.
 - **J24** — Concurrent gas sales cannot oversell the same physical-cylinder quantity because source rows are locked inside the posting transaction.
+
+
+## Recent Business Rule Regression Matrix — October 2026
+
+| ID | Business rule | Expected result | Status |
+|---|---|---|---|
+| R01 | Walk-in credit | Credit payment rejected; walk-in is cash-only | NOT EXECUTED |
+| R02 | Walk-in payment equality | Received amount must equal sale total | NOT EXECUTED |
+| R03 | Customer credit permission | Credit rejected when Allow Credit Sale is OFF | NOT EXECUTED |
+| R04 | Customer credit limit | Resulting outstanding cannot exceed Credit Limit | NOT EXECUTED |
+| R05 | Zero credit limit | No credit outstanding is permitted | NOT EXECUTED |
+| R06 | Server bypass | Invalid credit rejected server-side | NOT EXECUTED |
+| R07 | Source selection ON | Source cylinder selector is visible | NOT EXECUTED |
+| R08 | Source uniqueness | Same physical source cannot be selected twice | NOT EXECUTED |
+| R09 | Source quantity | KG cannot exceed selected source actual stock | NOT EXECUTED |
+| R10 | Manual deduction | Only selected source cylinder is consumed | NOT EXECUTED |
+| R11 | Automatic allocation | Source selector hidden; allocation follows ascending physical ID | NOT EXECUTED |
+| R12 | Sequential consumption | One physical cylinder is consumed before the next | NOT EXECUTED |
+| R13 | Type stock limit | KG above total type stock is rejected | NOT EXECUTED |
+| R14 | Duplicate type | Same cylinder type cannot be repeated across gas lines | NOT EXECUTED |
+| R15 | Concurrent sales | Locks prevent physical-cylinder overselling | NOT EXECUTED |
+| R16 | Physical code | Code follows type code + global sequence | NOT EXECUTED |
+| R17 | Cylinder capacity | Actual gas cannot exceed capacity | NOT EXECUTED |
+| R18 | Filled-to-empty | Unit becomes empty at zero KG | NOT EXECUTED |
+| R19 | Gas source of truth | Available gas equals actual KG on filled physical cylinders | NOT EXECUTED |
+| R20 | Filled-cylinder pricing | Uses actual gas KG plus cylinder price where applicable | NOT EXECUTED |
+| R21 | Replacement customer | Named customer required for cylinder-return/replacement flows | NOT EXECUTED |
+| R22 | Different replacement | Received type must differ from sold type | NOT EXECUTED |
+| R23 | Empty-cylinder sale | Only empty physical inventory is consumed; gas unchanged | NOT EXECUTED |
+| R24 | Security deposit customer | Named customer required | NOT EXECUTED |
+| R25 | Custody uniqueness | Already-custody cylinder cannot be issued again | NOT EXECUTED |
+| R26 | Custody return | Cylinder must be empty before return/refund | NOT EXECUTED |
+| R27 | Custody ownership | Only custody customer can return the cylinder | NOT EXECUTED |
+| R28 | Custody refill capacity | Refill cannot exceed cylinder capacity | NOT EXECUTED |
+| R29 | Purchase actual gas | Filled purchase retains actual gas KG per line | NOT EXECUTED |
+| R30 | Purchase atomicity | Failed purchase leaves no partial posting | NOT EXECUTED |
+| R31 | Transaction atomicity | Failed POS posting rolls back inventory/financial changes | NOT EXECUTED |
+| R32 | Security deposit UI | Deposit field shown only for Security Deposit transaction | NOT EXECUTED |
+| R33 | Compact POS summary | Current Sale, Previous Balance and Discount share one row on desktop | NOT EXECUTED |
+
