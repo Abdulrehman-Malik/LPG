@@ -84,7 +84,7 @@ jobs:
           npm init -y >/dev/null 2>&1
           npm install --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
-          cat > /tmp/lpg-ui-qa.mjs <<'EOF'
+          cat > /tmp/lpg-ui/lpg-ui-qa.mjs <<'EOF'
           import { chromium } from 'playwright';
 
           const browser = await chromium.launch({ headless: true });
@@ -137,7 +137,7 @@ jobs:
             await browser.close();
           }
           EOF
-          NODE_PATH=/tmp/lpg-ui/node_modules node /tmp/lpg-ui-qa.mjs
+          node /tmp/lpg-ui/lpg-ui-qa.mjs
 
       - name: Run PHPUnit
         env:
