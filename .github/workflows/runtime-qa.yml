@@ -82,7 +82,7 @@ jobs:
           npx playwright install --with-deps chromium
           cat > /tmp/lpg-ui/lpg-ui-qa.mjs <<'EOF'
           import { chromium } from 'playwright';
-          const browser = await chromium.launch({ headless: true });
+          const browser = await chromium.launch({ headless: true, args: ['--no-proxy-server'] });
           const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
           const base = 'http://127.0.0.1:8080';
           try {
