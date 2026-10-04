@@ -61,6 +61,7 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/010_20261004_purchase_inventory_integrity.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/012_20261004_physical_cylinder_code.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/013_20261004_customer_credit_sale_control.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/014_20261004_pos_source_filled_cylinder_selection.sql
           printf "SET @lpg_refresh_transactional_data = 0;\\nSOURCE database/migrations/011_20261003_refresh_transactional_data.sql;\\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
 
       - name: CodeIgniter smoke check
