@@ -69,6 +69,12 @@ jobs:
       - name: Run PHPUnit
         env:
           CI_ENVIRONMENT: testing
+          database.tests.hostname: 127.0.0.1
+          database.tests.database: perfect_lpg
+          database.tests.username: root
+          database.tests.password: root
+          database.tests.DBDriver: MySQLi
+          database.tests.DBPrefix: ""
         run: |
           if [ -d tests ] && find tests -type f \( -name '*Test.php' -o -name '*TestCase.php' \) | grep -q .; then
             php vendor/bin/phpunit --no-coverage
