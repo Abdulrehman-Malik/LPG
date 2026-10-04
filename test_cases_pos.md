@@ -53,6 +53,27 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 | POS-024 | Previous balance | Customer has previous OS and makes payment. | Settlement follows configured previous-balance rules. | | |
 | POS-025 | Credit permission bypass | Directly submit credit for customer with Allow Credit OFF. | Server rejects; no financial/inventory changes. | | |
 
+## D. Credit Sale / OS / Credit Limit Rules
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-026 | Customer credit permission OFF | Select actual customer with Allow Credit Sale OFF. Make sale with received amount less than sale total. | Sale is rejected with: "Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record." | | |
+| POS-027 | Customer credit permission ON | Select customer with Allow Credit Sale ON and make a credit sale. | Sale is allowed when the applicable credit-limit rule is satisfied. | | |
+| POS-028 | No credit-limit mode | Set Shop Settings Credit Limit Validation = None. Customer Allow Credit Sale ON. Make credit sale. | Credit sale is allowed regardless of customer Credit Limit. Existing OS is still recorded and increased by the new unpaid amount. | | |
+| POS-029 | Customer-level limit with previous OS | Customer limit Rs.100,000; existing OS Rs.70,000; new credit Rs.20,000. | Projected OS Rs.90,000; sale allowed. | | |
+| POS-030 | Customer-level limit exceeded by previous OS + new credit | Customer limit Rs.100,000; existing OS Rs.90,000; new credit Rs.20,000. | Projected OS Rs.110,000; sale rejected. | | |
+| POS-031 | Customer-level zero limit | Customer Allow Credit Sale ON; Credit Limit Rs.0; make any new credit. | Sale rejected because no additional credit is available. | | |
+| POS-032 | Shop-level limit | Shop limit Rs.1,000,000; current positive shop OS Rs.900,000; new credit Rs.50,000. | Projected shop OS Rs.950,000; sale allowed. | | |
+| POS-033 | Shop-level limit exceeded | Shop limit Rs.1,000,000; current positive shop OS Rs.980,000; new credit Rs.30,000. | Projected shop OS Rs.1,010,000; sale rejected. Individual customer limit is ignored. | | |
+| POS-034 | Shop-level ignores customer limit | Shop mode; customer limit Rs.10,000; shop has available credit; new credit Rs.20,000. | Sale is allowed if shop limit is not exceeded and Allow Credit Sale is ON. | | |
+| POS-035 | Existing OS considered | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.10,000. | New credit Rs.20,000; projected OS Rs.70,000; validation uses Rs.70,000. | | |
+| POS-036 | Payment settles previous OS | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.40,000. | Rs.30,000 settles current sale and Rs.10,000 reduces previous OS; resulting OS is Rs.40,000 and no new credit sale is created. | | |
+| POS-037 | POS customer status | Select customer with Allow Credit ON. | POS immediately shows Credit Sale Allowed and the applicable limit/current OS/available credit according to Shop Settings mode. | | |
+| POS-038 | POS credit disabled status | Select customer with Allow Credit OFF. | POS shows Credit Sale Not Allowed and instructs user to enable Allow Credit Sale. | | |
+| POS-039 | Walk-in creates OS | Walk-in sale total Rs.10,000; receive Rs.9,000. | Sale rejected; Walk-in cannot create OS. | | |
+| POS-040 | Fully paid customer sale | Customer has existing OS; current sale is fully paid. | Sale posts without creating additional credit; existing OS is not treated as new credit. | | |
+| POS-041 | Shop-level concurrent credit | Two sessions attempt credit sales simultaneously near shop limit. | Shop lock prevents combined projected OS from exceeding the shop limit. | | |
+
 ## D. Gas Source Cylinder — Manual Selection ON
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
