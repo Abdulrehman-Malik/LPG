@@ -23,12 +23,14 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 009 | `009_20261003_permissions_sync.sql` | Synchronize standard permissions and role mappings |
 | 010 | `010_20261004_purchase_inventory_integrity.sql` | Persist actual gas weight on purchase lines |
 | 011 | `011_20261003_refresh_transactional_data.sql` | **Manual staging/test-data reset only** |
+| 012 | `012_20261004_physical_cylinder_code.sql` | Global physical-cylinder code format |
+| 013 | `013_20261004_customer_credit_sale_control.sql` | Per-customer credit-sale permission; disabled by default |
 
 ## Deployment rules
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 010**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 013**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
@@ -60,8 +62,8 @@ Use:
 
 ```
 012_YYYYMMDD_feature_name.sql
-013_YYYYMMDD_feature_name.sql
 014_YYYYMMDD_feature_name.sql
+015_YYYYMMDD_feature_name.sql
 ```
 
 Never reuse an existing sequence number.
