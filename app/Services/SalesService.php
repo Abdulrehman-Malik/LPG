@@ -355,6 +355,8 @@ class SalesService
     {
         if(!$lines) throw new RuntimeException('At least one gas line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
+        $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
+        $allowSourceSelection=(int)($shopSettings['allow_pos_source_cylinder_selection']??0)===1;
 
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
         foreach($lines as $i=>$line){
@@ -366,7 +368,8 @@ class SalesService
             $targetId=isset($line['customer_cylinder_unit_id'])&&$line['customer_cylinder_unit_id']!==''?(int)$line['customer_cylinder_unit_id']:null;
 
             if(!$typeId) throw new RuntimeException('Cylinder type is required on gas line '.$n.'.');
-            if(!$sourceId) throw new RuntimeException('Source filled cylinder is required on gas line '.$n.'.');
+            if($allowSourceSelection && !$sourceId) throw new RuntimeException('Source filled cylinder is required on gas line '.$n.'.');
+            if(!$allowSourceSelection) $sourceId=0;
             $type=$this->types->find($typeId);
             if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on gas line '.$n.'.');
             if($qty<=0) throw new RuntimeException('Gas quantity on line '.$n.' must be greater than zero.');
@@ -402,27 +405,32 @@ class SalesService
             $lockKeys=array_map(static fn($row)=>['type'=>'filled_cylinder','cylinder_type_id'=>(int)$row['type_id']],$prepared);
             $this->acquireInventoryLocks($locationId,$lockKeys);
 
-            $sources=[];
-            $sourceIds=array_values(array_unique(array_map(static fn($row)=>(int)$row['source_id'],$prepared)));
-            $placeholders=implode(',',array_fill(0,count($sourceIds),'?'));
-            $sourceRows=$this->db->query(
-                "SELECT cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg
-                 FROM cylinder_units cu
-                 JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
-                 WHERE cu.location_id=? AND cu.status='filled' AND cu.id IN ($placeholders)
-                 FOR UPDATE",
-                array_merge([$locationId],$sourceIds)
-            )->getResultArray();
-            foreach($sourceRows as $row)$sources[(int)$row['id']]=$row;
-
-            $requestedBySource=[];
+            $typeSeen=[];
             foreach($prepared as $row){
-                $source=$sources[$row['source_id']]??null;
-                if(!$source) throw new RuntimeException('Selected source cylinder on gas line '.$row['line_no'].' is no longer available.');
-                if((int)$source['cylinder_type_id']!==$row['type_id']) throw new RuntimeException('Gas line '.$row['line_no'].' cylinder type does not match the selected source cylinder.');
-                $requestedBySource[$row['source_id']]=($requestedBySource[$row['source_id']]??0)+(float)$row['quantity'];
-                if($requestedBySource[$row['source_id']]>(float)$source['gas_weight_kg']+0.00001){
-                    throw new RuntimeException('Gas line '.$row['line_no'].' exceeds selected cylinder '.$source['unit_code'].' stock. Available: '.number_format((float)$source['gas_weight_kg'],2).' KG.');
+                if(isset($typeSeen[$row['type_id']])) throw new RuntimeException('Cylinder type cannot be used on multiple gas sale lines. Combine the quantity into one line.');
+                $typeSeen[$row['type_id']]=true;
+            }
+
+            $sources=[];
+            $sourceIds=$allowSourceSelection?array_values(array_unique(array_map(static fn($row)=>(int)$row['source_id'],$prepared))):[];
+            if($allowSourceSelection){
+                if(!$sourceIds) throw new RuntimeException('Source filled cylinder is required.');
+                $placeholders=implode(',',array_fill(0,count($sourceIds),'?'));
+                $sourceRows=$this->db->query(
+                    "SELECT cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg
+                     FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
+                     WHERE cu.location_id=? AND cu.status='filled' AND cu.id IN ($placeholders) FOR UPDATE",
+                    array_merge([$locationId],$sourceIds)
+                )->getResultArray();
+                foreach($sourceRows as $row)$sources[(int)$row['id']]=$row;
+                $requestedBySource=[];
+                foreach($prepared as $row){
+                    $source=$sources[$row['source_id']]??null;
+                    if(!$source) throw new RuntimeException('Selected source cylinder on gas line '.$row['line_no'].' is no longer available.');
+                    if((int)$source['cylinder_type_id']!==$row['type_id']) throw new RuntimeException('Gas line '.$row['line_no'].' cylinder type does not match the selected source cylinder.');
+                    if(isset($requestedBySource[$row['source_id']])) throw new RuntimeException('The same source filled cylinder cannot be selected on multiple gas sale lines.');
+                    $requestedBySource[$row['source_id']]=(float)$row['quantity'];
+                    if($requestedBySource[$row['source_id']]>(float)$source['gas_weight_kg']+0.00001) throw new RuntimeException('Gas line '.$row['line_no'].' exceeds selected cylinder '.$source['unit_code'].' stock. Available: '.number_format((float)$source['gas_weight_kg'],2).' KG.');
                 }
             }
 
