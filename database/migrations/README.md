@@ -67,3 +67,5 @@ Use:
 ```
 
 Never reuse an existing sequence number.
+
+- `014_20261004_pos_source_filled_cylinder_selection.sql` — adds the branch-level POS setting controlling manual source filled-cylinder selection versus automatic sequential allocation.
