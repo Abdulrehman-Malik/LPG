@@ -302,7 +302,7 @@ For normal gas sales:
 - 1 KG means exactly 1 KG gas consumption.
 - With **Individual Cylinder Tracking OFF** (the default), POS displays aggregate available gas by cylinder type.
 - The backend automatically allocates gas across available filled physical cylinders of the selected type.
-- Physical cylinder units are still maintained internally.
+- Physical cylinder units are the authoritative current stock records; gas KG is derived from them.
 - When a unit reaches zero KG, it becomes empty and the related inventory movements are recorded.
 
 ### Inventory detail
