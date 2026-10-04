@@ -847,12 +847,36 @@ class SalesService
     }
 
     protected function assertStock(int $locationId,string $type,?int $typeId,float $qty,string $direction,string $at): void
-    {
-        if($direction!=='out') return;
-        $q=$this->db->table('inventory_opening_balances')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('inventory_date <=',substr($at,0,10))->get()->getRowArray();
-        $in=$this->db->table('inventory_movements')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('direction','in')->where('movement_at <=',$at)->get()->getRowArray();
-        $out=$this->db->table('inventory_movements')->selectSum('quantity','qty')->where('location_id',$locationId)->where('inventory_type',$type)->where('cylinder_type_id',$typeId)->where('direction','out')->where('movement_at <=',$at)->get()->getRowArray();
-        $stock=(float)($q['qty']??0)+(float)($in['qty']??0)-(float)($out['qty']??0);
-        if($stock+0.00001<$qty) throw new RuntimeException('Insufficient '.$type.' stock.');
-    }
+ {
+  if($direction!=='out') return;
+
+  if($type==='gas_kg'){
+   $row=$this->db->table('cylinder_units')
+    ->selectSum('gas_weight_kg','qty')
+    ->where(['location_id'=>$locationId,'status'=>'filled'])
+    ->get()->getRowArray();
+
+   $stock=(float)($row['qty']??0);
+   if($stock+0.00001<$qty){
+    throw new RuntimeException(
+     'Insufficient gas stock. Available gas is derived from filled physical cylinders: ' .
+     number_format($stock,3) . ' KG.'
+    );
+   }
+   return;
+  }
+
+  $status=$type==='filled_cylinder'?'filled':($type==='empty_cylinder'?'empty':null);
+  if($status===null) throw new RuntimeException('Invalid inventory type.');
+
+  $q=$this->db->table('cylinder_units')->where([
+   'location_id'=>$locationId,
+   'cylinder_type_id'=>$typeId,
+   'status'=>$status
+  ])->countAllResults();
+
+  if((float)$q+0.00001<$qty){
+   throw new RuntimeException('Insufficient '.$type.' stock.');
+  }
+ }
 }
