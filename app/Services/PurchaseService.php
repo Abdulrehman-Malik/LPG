@@ -7,7 +7,7 @@ class PurchaseService{
  public function __construct(){ $this->db=Database::connect(); $this->inv=new InventoryService(); $this->cash=new CashService(); $this->cylinders=new CylinderUnitService(); }
  public function post(array $p,int $userId,int $locationId):array{
   $supplierId=(int)($p['supplier_id']??0); $lines=$p['lines']??[]; $payments=$p['payments']??[];
-  if(!$supplierId||!$lines||!$payments) throw new RuntimeException('Supplier, purchase lines and payments are required.');
+  if(!$supplierId||!$lines) throw new RuntimeException('Supplier and purchase lines are required.');
   $supplier=$this->db->table('suppliers')->where('id',$supplierId)->get()->getRowArray();
   if(!$supplier||(int)$supplier['is_active']!==1) throw new RuntimeException('Supplier is invalid or inactive.');
   $subtotal=0;$prepared=[];$inventory=[];$cash=0;$credit=0;
@@ -20,10 +20,13 @@ class PurchaseService{
    $actualRaw=$l['actual_gas_weight_kg']??null; $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0; if($type==='filled_cylinder'){ if(floor($qty)!==$qty) throw new RuntimeException('Filled cylinder quantity must be a whole number.'); $ctRow=$this->db->table('cylinder_types')->where('id',$ct)->get()->getRowArray(); if(!$ctRow || !(int)$ctRow['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.'); $cap=(float)$ctRow['capacity_kg']; $actual=$actualRaw!==null && $actualRaw!==''?$actual:$cap; if($actual<=0||$actual>$cap) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.'); } else $actual=0;  $inventory[]=['inventory_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual];
   }
   $discount=max(0,(float)($p['discount_amount']??0));if($discount>$subtotal)throw new RuntimeException('Discount exceeds subtotal.');
-  $total=$subtotal-$discount;$paid=0;
-  foreach($payments as $pay){$mode=(string)($pay['payment_mode']??'');$amount=(float)($pay['amount']??0);if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid purchase payment.');$paid+=$amount;if($mode==='cash')$cash+=$amount;if($mode==='credit')$credit+=$amount;}
-  if(abs($paid-$total)>0.01)throw new RuntimeException('Payment total must equal purchase total.');
-  if($credit>0){$currentCredit=$this->supplierBalance($supplierId,$locationId);if($currentCredit+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');}
+  $total=$subtotal-$discount;$paid=0;$normalizedPayments=[];
+  foreach($payments as $pay){$mode=(string)($pay['payment_mode']??'');$amount=(float)($pay['amount']??0);if($amount<=0)continue;if(!in_array($mode,['cash','cheque','online'],true)||$amount<=0)throw new RuntimeException('Invalid purchase payment.');$paid+=$amount;$normalizedPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>trim((string)($pay['reference_no']??''))?:null];}
+  $currentPayable=$total;$previousPayable=$this->supplierBalance($supplierId,$locationId);
+  if($paid>$previousPayable+$currentPayable+0.01)throw new RuntimeException('Amount paid cannot exceed the supplier payable balance of Rs. '.number_format(max(0,$previousPayable+$currentPayable),2).'.');
+  $currentPurchasePaid=min($paid,$currentPayable);$credit=max(0,$currentPayable-$currentPurchasePaid);$priorPayableSettlement=max(0,$paid-$currentPurchasePaid);
+  $newPayable=max(0,$previousPayable-$priorPayableSettlement+$credit);
+  if($newPayable>(float)$supplier['credit_limit']+0.01)throw new RuntimeException('Supplier credit limit exceeded. Available credit is Rs. '.number_format(max(0,(float)$supplier['credit_limit']-$previousPayable),2).'.');
   $this->db->transBegin();
   try{
    $supplier=$this->db->query('SELECT * FROM suppliers WHERE id=? FOR UPDATE',[$supplierId])->getRowArray();
@@ -44,10 +47,15 @@ class PurchaseService{
         $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'purchase','source_id'=>$id,'created_by'=>$userId]);
     }
 }
-   foreach($payments as $pay)$this->db->table('purchase_payments')->insert(['purchase_id'=>$id,'payment_mode'=>$pay['payment_mode'],'amount'=>(float)$pay['amount'],'reference_no'=>trim((string)($pay['reference_no']??''))?:null,'payment_at'=>date('Y-m-d H:i:s'),'paid_by'=>$userId]);
-   if($cash>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'purchase_cash','out',$cash,'purchase',$id,$userId,'Purchase cash');}
+   $remainingCurrent=$currentPayable;$cashPurchase=0;
+   foreach($normalizedPayments as $pay){$applyCurrent=min((float)$pay['amount'],$remainingCurrent);$applyPrior=max(0,(float)$pay['amount']-$applyCurrent);
+    if($applyCurrent>0){$this->db->table('purchase_payments')->insert(['purchase_id'=>$id,'payment_mode'=>$pay['payment_mode'],'amount'=>$applyCurrent,'reference_no'=>$pay['reference_no'],'payment_at'=>date('Y-m-d H:i:s'),'paid_by'=>$userId]);if($pay['payment_mode']==='cash')$cashPurchase+=$applyCurrent;}
+    if($applyPrior>0){$paymentNo='SP'.date('YmdHis').'-'.random_int(100,999);$this->db->table('supplier_payments')->insert(['payment_no'=>$paymentNo,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','amount'=>$applyPrior,'payment_mode'=>$pay['payment_mode'],'payment_at'=>date('Y-m-d H:i:s'),'reference_no'=>$pay['reference_no'],'notes'=>'Applied to previous supplier payable during purchase '.$no,'created_by'=>$userId]);if($pay['payment_mode']==='cash'){ $session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'supplier_payment','out',$applyPrior,'supplier_payment',0,$userId,'Supplier payable settlement during purchase '.$no);}}
+    $remainingCurrent=max(0,$remainingCurrent-(float)$pay['amount']);
+   }
+   if($cashPurchase>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'purchase_cash','out',$cashPurchase,'purchase',$id,$userId,'Purchase cash');}
    if(!$this->db->transStatus())throw new RuntimeException('Purchase posting failed.');
-   $this->db->transCommit();AuditService::log('CREATE','purchase',$id,null,['purchase_no'=>$no,'total'=>$total],$userId,$locationId);return ['id'=>$id,'purchase_no'=>$no,'total'=>$total];
+   $this->db->transCommit();AuditService::log('CREATE','purchase',$id,null,['purchase_no'=>$no,'total'=>$total,'amount_paid'=>$paid,'current_credit'=>$credit,'previous_payable'=>$previousPayable,'new_payable'=>$newPayable],$userId,$locationId);return ['id'=>$id,'purchase_no'=>$no,'total'=>$total,'previous_payable'=>$previousPayable,'amount_paid'=>$paid,'balance_payable'=>$newPayable];
   }catch(\Throwable $e){$this->db->transRollback();throw $e;}
  }
  public function supplierBalance(int $supplierId, ?int $locationId=null): float
