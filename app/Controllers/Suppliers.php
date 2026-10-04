@@ -23,9 +23,34 @@ class Suppliers extends Controller
         $supplier=$this->model->find($id);
         if(!$supplier) return $this->response->setStatusCode(404)->setBody('Supplier not found');
         $db=$this->model->db;
-        $purchases=$db->table('purchases')->select('transaction_at,purchase_no,total_amount,credit_amount,status')->where('supplier_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
-        $payments=$db->table('supplier_payments')->select('payment_at,payment_no,amount,payment_mode,status')->where('supplier_id',$id)->where('location_id',$locationId)->orderBy('payment_at','DESC')->get()->getResultArray();
-        $credit=(float)$supplier['opening_balance']; foreach($purchases as $row) if($row['status']==='posted') $credit+=(float)$row['credit_amount']; foreach($payments as $row) if($row['status']==='posted') $credit-=(float)$row['amount'];
+        $purchases=$db->table('purchases')
+            ->select('transaction_at,purchase_no,total_amount,credit_amount,status,(total_amount-credit_amount) AS paid_amount')
+            ->where('supplier_id',$id)->where('location_id',$locationId)
+            ->orderBy('transaction_at','DESC')->get()->getResultArray();
+
+        $payments=$db->query(
+            "SELECT payment_at,payment_no,amount,payment_mode,status,purchase_no,source
+             FROM (
+                SELECT pp.payment_at, CONCAT('PUR-', p.purchase_no) AS payment_no,
+                       pp.amount, pp.payment_mode, p.status, p.purchase_no,
+                       'Purchase Payment' AS source
+                FROM purchase_payments pp
+                JOIN purchases p ON p.id=pp.purchase_id
+                WHERE p.supplier_id=? AND p.location_id=?
+                UNION ALL
+                SELECT sp.payment_at, sp.payment_no, sp.amount, sp.payment_mode,
+                       sp.status, NULL AS purchase_no,
+                       'Supplier Account Payment' AS source
+                FROM supplier_payments sp
+                WHERE sp.supplier_id=? AND sp.location_id=?
+             ) x
+             ORDER BY payment_at DESC",
+            [$id,$locationId,$id,$locationId]
+        )->getResultArray();
+
+        $credit=(float)$supplier['opening_balance'];
+        foreach($purchases as $row) if($row['status']==='posted') $credit+=(float)$row['credit_amount'];
+        foreach($payments as $row) if($row['status']==='posted' && $row['source']==='Supplier Account Payment') $credit-=(float)$row['amount'];
         $supplier['credit_due']=$credit;
         return view('suppliers/ledger',['title'=>'Supplier Ledger — '.$supplier['name'],'supplier'=>$supplier,'purchases'=>$purchases,'payments'=>$payments]);
     }
