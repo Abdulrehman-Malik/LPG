@@ -324,6 +324,7 @@ Older five-mode test cases already present in this document are retained as hist
 ### Current gas-sale rules
 
 - Gas quantity is measured in KG.
+- **Gas KG is a derived value, not an independent inventory entity.** Available gas is always the sum of `gas_weight_kg` from company-owned physical cylinders whose status is `filled`.
 - Selling 1 KG consumes only 1 KG of gas; it does not consume a complete cylinder.
 - With **Individual Cylinder Tracking OFF** (default), normal POS shows aggregate available gas for the selected cylinder type rather than asking the cashier to choose a physical source cylinder.
 - Backend automatically allocates the requested gas across available filled physical cylinders of that cylinder type.
@@ -333,7 +334,9 @@ Older five-mode test cases already present in this document are retained as hist
 
 ### Current inventory rules
 
+- Physical `cylinder_units` are the authoritative current stock records for filled and empty cylinders.
 - Filled cylinder records contain cylinder type, physical unit code, status and actual gas weight.
+- Available Gas KG is derived from the actual gas weight of currently filled physical cylinders; no purchase, opening, adjustment or sale may create an independent gas stock balance.
 - Actual gas weight cannot exceed cylinder capacity.
 - Opening inventory supports filled and empty physical cylinders.
 - Manual stock +/- movements are handled through the dedicated Stock Adjustment & History screen.
@@ -380,7 +383,7 @@ Before considering the application release-ready, explicitly execute and record:
 8. Cylinder Return / Refund Deposit against the customer's custody cylinder.
 9. Customer OS + partial payment allocation.
 10. Credit-limit validation.
-11. Stock Adjustment +/− and history.
+11. Stock Adjustment +/− and history, including the rule that gas changes must target a physical cylinder rather than a bulk gas bucket.
 12. Inventory Detail Report and partially used-cylinder visibility.
 13. Permission-aware sidebar and unauthorized route protection.
 14. Thermal receipt and browser/JavaScript regression.
