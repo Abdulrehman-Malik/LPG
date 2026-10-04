@@ -62,7 +62,8 @@ class SalesService
             $receivedTypeId=isset($line['received_cylinder_type_id'])&&$line['received_cylinder_type_id']!==''?(int)$line['received_cylinder_type_id']:null;
             $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
             $cylinderRateInput=trim((string)($line['cylinder_rate']??''))===''?null:(float)$line['cylinder_rate'];
-            if($qty<=0) throw new RuntimeException('Line '.($i+1).' quantity must be greater than zero.');
+            $enteredAmount=trim((string)($line['entered_amount']??''))===''?null:(float)$line['entered_amount'];
+            if($enteredAmount!==null && $enteredAmount<=0) throw new RuntimeException('Line '.($i+1).' amount must be greater than zero.');
             if(($gasRateInput!==null && $gasRateInput<0)||($cylinderRateInput!==null && $cylinderRateInput<0)) throw new RuntimeException('Line '.($i+1).' rate cannot be negative.');
 
             $type=$typeId?(new CylinderTypeModel())->find($typeId):null;
@@ -75,7 +76,9 @@ class SalesService
             if(in_array($mode,['sell_gas_only','replace_same','sell_filled','replace_different'],true)){
                 $standardGasRate=$this->rates->currentKgRate($transactionAt);
                 if($standardGasRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
-                $gasRate=$gasRateInput??$standardGasRate;
+                // Amount-entry mode is always converted using the server-side current gas rate.
+                // This prevents a client-submitted quantity/rate from bypassing stock controls.
+                $gasRate=$enteredAmount!==null?$standardGasRate:($gasRateInput??$standardGasRate);
             }
             if(in_array($mode,['sell_filled','replace_different','sell_empty'],true)){
                 $standardCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
@@ -84,7 +87,12 @@ class SalesService
             }
 
             if($mode==='sell_gas_only'){
-                $gasKg=(float)($line['gas_weight_kg']??$qty);
+                if($enteredAmount!==null){
+                    $gasKg=$enteredAmount/$standardGasRate;
+                    if($gasKg<=0) throw new RuntimeException('Calculated gas quantity must be greater than zero on line '.($i+1).'.');
+                }else{
+                    $gasKg=(float)($line['gas_weight_kg']??$qty);
+                }
                 $sourceUnitId=isset($line['source_cylinder_unit_id'])&&$line['source_cylinder_unit_id']!==''?(int)$line['source_cylinder_unit_id']:0;
                 if($gasKg<=0) throw new RuntimeException('Gas KG must be greater than zero on line '.($i+1).'.');
                 if($sourceUnitId<=0) throw new RuntimeException('Source filled cylinder is required on line '.($i+1).'.');
@@ -136,6 +144,7 @@ class SalesService
                 'line_no'=>$i+1,'sale_mode'=>$mode,'line_type'=>$storedLineType,'cylinder_type_id'=>$typeId,
                 'source_cylinder_unit_id'=>($mode==='sell_gas_only'?(int)($line['source_cylinder_unit_id']??0):null),
                 'received_cylinder_type_id'=>$receivedTypeId,'quantity'=>$qty,'gas_weight_kg'=>$gasKg,
+                'entered_amount'=>$enteredAmount,
                 'gas_rate'=>$gasRate,'cylinder_rate'=>$cylinderRate,'standard_gas_rate'=>$standardGasRate,
                 'standard_cylinder_rate'=>$standardCylinderRate,'custom_rate_flag'=>($customGas||$customCylinder)?1:0,
                 'empty_cylinder_received'=>$emptyReceived,'line_discount'=>0,'line_total'=>$lineTotal,
