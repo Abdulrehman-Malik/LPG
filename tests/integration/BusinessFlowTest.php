@@ -19,6 +19,7 @@ final class BusinessFlowTest extends CIUnitTestCase
     {
         parent::setUp();
         $this->db = Database::connect();
+        session()->set(['location_id' => $this->locationId, 'user_id' => $this->userId]);
         if (!$this->db->table('shop_settings')->where('location_id', $this->locationId)->countAllResults()) {
             $this->db->table('shop_settings')->insert([
                 'location_id' => $this->locationId,
