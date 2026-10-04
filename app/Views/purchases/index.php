@@ -41,7 +41,6 @@
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
         <div>
             <h4 class="mb-1">Purchase Entry</h4>
-            <div class="text-muted">Receive supplier stock and record any payment made at the time of purchase.</div>
         </div>
     </div>
 
