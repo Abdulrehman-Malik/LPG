@@ -45,10 +45,10 @@ The POS no longer contains a separate default-transaction preference control. It
 2. Configure the local environment from `.env.example`.
 3. Run `database/schema.sql` on the database.
 4. Run the required non-destructive migrations after the schema: `20260930_shop_settings.sql`, `20261003_pos_transaction_type.sql`, `20261003_individual_cylinder_tracking.sql`, and `20261004_purchase_inventory_integrity.sql`.
-5. On an existing database, also run `database/migrations/20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
+5. On an existing database, also run `database/migrations/009_20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
 6. Run Composer dependencies: `composer install`.
-6. Point Apache/Nginx to the project's `public` directory.
-7. Open the application and log in with the configured user.
+7. Point Apache/Nginx to the project's `public` directory.
+8. Open the application and log in with the configured user.
 
 ## Important Environment Rule
 
@@ -58,13 +58,31 @@ Do not commit a local `.env` file. Use `.env.example` as the template for local 
 
 The branch settings table is intentionally delivered as a non-destructive migration so existing installations are not rebuilt.
 
-Migration: `database/migrations/20260930_shop_settings.sql`
+Migration: `database/migrations/001_20260930_shop_settings.sql`
 
-Permissions migration: `database/migrations/20261003_permissions_sync.sql`
+Permissions migration: `database/migrations/009_20261003_permissions_sync.sql`
 
 It adds missing standard permissions and backfills the default role mappings so Reports (`REPORT_VIEW`) and Shop Settings access are available to the standard roles according to the application's permission model. Custom role permissions are not removed.
 
 It creates one settings record per branch and synchronizes the branch-wide stock-validation flag with the existing inventory policy.
+
+## Database Deployment Migrations
+
+All manual SQL deployment scripts use a numeric sequence prefix. Run only migrations that are not already applied to the target database, in this order:
+
+1. `001_20260930_shop_settings.sql`
+2. `002_20260930_inventory_controls.sql`
+3. `003_20260930_per_cylinder_inventory.sql`
+4. `004_20261002_credit_limit_validation.sql`
+5. `005_20261002_opening_inventory_comments.sql`
+6. `006_20261002_security_deposits.sql`
+7. `007_20261003_pos_transaction_type.sql`
+8. `008_20261003_individual_cylinder_tracking.sql`
+9. `009_20261003_permissions_sync.sql`
+10. `010_20261004_purchase_inventory_integrity.sql`
+11. `011_20261003_refresh_transactional_data.sql` — **manual staging/test-data refresh only; never run automatically in production**
+
+See `database/migrations/README.md` for the deployment procedure and safety rules.
 
 ## QA / Testing
 
