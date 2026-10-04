@@ -9,6 +9,11 @@
 #lines th:nth-child(4){width:16%} #lines th:nth-child(5){width:16%} #lines th:nth-child(6){width:11%} #lines th:nth-child(7){width:5%}
 #lines .form-select,#lines .form-control { min-height:42px; }
 #lines .lineTotal { font-size:1.05rem; white-space:nowrap; }
+.pos-lines-panel > .card > .card-body { padding: .75rem; }
+.pos-summary-card .card-body { padding: .75rem; }
+.pos-summary-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; margin-bottom:.75rem; }
+.pos-summary-metric .form-label { font-size:.8rem; margin-bottom:.25rem; white-space:nowrap; }
+.pos-summary-metric .form-control { padding:.35rem .5rem; min-height:36px; }
 #lines .remove { min-width:38px; min-height:38px; }
 .custody-list { max-height:250px; overflow:auto; }
 .custody-list option { padding:4px; }
@@ -45,7 +50,6 @@
       <option value="security_deposit">Security Deposit / Issue Cylinder</option>
       <option value="cylinder_return">Cylinder Return / Refund Deposit</option>
     </select>
-    <div class="form-text">One transaction type per invoice.</div>
   </div>
   <div class="col-md-4">
     <label class="form-label">Customer</label>
@@ -59,12 +63,11 @@
     <input name="transaction_at" type="datetime-local" class="form-control" value="<?=date('Y-m-d\TH:i')?>">
   </div>
 </div>
-<div id="customerInfo" class="alert alert-light border py-2 small mb-3">Walk-in: cash sales are allowed. Security Deposit and Cylinder Return require a named customer.</div>
 
 <div id="standardTransaction">
   <div class="d-flex justify-content-between align-items-center mb-2">
     <h6 class="mb-0" id="linesTitle">Gas / Refill Lines</h6>
-    <span class="badge text-bg-light border" id="typeHint">Gas is deducted from company stock.</span>
+
   </div>
   <div class="table-responsive">
     <table class="table table-sm align-middle" id="lines">
@@ -83,7 +86,6 @@
       </div>
       <label class="form-label">Company Cylinder(s) to Issue on Custody</label>
       <select name="custody_unit_ids[]" id="custodyUnits" class="form-select custody-list" multiple></select>
-      <div class="form-text">The selected physical cylinders remain company property and move to customer custody. Security deposit is held as a refundable liability.</div>
     </div>
   </div>
 </div>
@@ -96,7 +98,6 @@
       </div>
       <label class="form-label">Customer Custody Cylinder(s)</label>
       <select name="return_unit_ids[]" id="returnUnits" class="form-select custody-list" multiple></select>
-      <div class="form-text">Only the actual physical cylinder can be returned. It must be empty before the security deposit is refunded.</div>
       <div class="mt-3 p-2 bg-light rounded">Refundable Deposit: <strong>Rs. <span id="refundPreview">0.00</span></strong></div>
     </div>
   </div>
@@ -105,27 +106,18 @@
 </div></div></div>
 
 <div class="col-lg-3 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
-<div class="mb-3">
-  <label class="form-label fw-semibold">Current Sale</label>
-  <div class="form-control bg-light fw-semibold">Rs. <span id="saleTotal">0.00</span></div>
+<div class="pos-summary-metrics">
+  <div class="pos-summary-metric"><label class="form-label fw-semibold">Current Sale</label><div class="form-control bg-light fw-semibold">Rs. <span id="saleTotal">0.00</span></div></div>
+  <div class="pos-summary-metric"><label class="form-label">Previous Balance</label><div class="form-control bg-light">Rs. <span id="previousOs">0.00</span></div></div>
+  <div class="pos-summary-metric"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="any" value="0" class="form-control"></div>
 </div>
-<div class="mb-3">
-  <label class="form-label">Previous OS Balance</label>
-  <div class="form-control bg-light">Rs. <span id="previousOs">0.00</span></div>
-</div>
-<div class="mb-3">
-  <label class="form-label">Discount</label>
-  <input name="discount_amount" id="discount" type="number" min="0" step="any" value="0" class="form-control">
-</div>
-<div class="mb-3">
+<div class="mb-3" id="securityDepositBox" style="display:none">
   <label class="form-label fw-semibold">Security Deposit Amount</label>
   <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
-  <div class="form-text" id="depositHelp">Used only for Security Deposit / Issue Cylinder.</div>
 </div>
 <div class="mb-3">
   <label class="form-label">Net Amount Receivable</label>
   <div class="form-control bg-light fw-bold">Rs. <span id="netPayable">0.00</span></div>
-  <div class="small text-muted mt-1">Current Sale + Previous OS + Security Deposit</div>
 </div>
 <div class="mb-3" id="refundBox" style="display:none">
   <div class="form-control bg-light text-danger fw-semibold">Customer Refund: Rs. <span id="refundAmount">0.00</span></div>
@@ -156,15 +148,7 @@ const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementB
 function transactionType(){return document.getElementById('transactionType').value;}
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:Number(creditSaleAllowed[id]||0)===1}:null;}
-function refreshCustomer(){
-  const c=selectedCustomer(),box=document.getElementById('customerInfo');
-  if(!c){box.textContent='Walk-in: cash sales are allowed. Security Deposit and Cylinder Return require a named customer.';return;}
-  if(!c.allowCredit){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Sale: NOT ALLOWED — this customer is cash-only.';return;}
-  if(creditLimitMode==='none'){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Sale: ALLOWED | Credit limit: Rs. '+c.limit.toFixed(2);return;}
-  const limit=creditLimitMode==='shop'?shopCreditLimit:c.limit;
-  const available=Math.max(0,limit-c.balance);
-  box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+limit.toFixed(2)+' | Available Additional Credit: Rs. '+available.toFixed(2)+(limit<=0?' | Full settlement required':'');
-}
+function refreshCustomer(){ return selectedCustomer(); }
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
 }
@@ -301,11 +285,7 @@ function recalc(){
  document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
  const paid=t==='cylinder_return'?0:paymentTotal();
  const balanceAfter=Math.max(0,netReceivable-paid);
- document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
- document.getElementById('typeHint').title='Balance after entered payment: Rs. '+balanceAfter.toFixed(2);
- const after=Number(gasStock||0)-gasRequired;
- const hint=document.getElementById('typeHint');
- if(t==='gas_sale'||t==='cylinder_sale'){hint.classList.toggle('text-danger',after<0);hint.textContent=t==='gas_sale'?'Gas stock after transaction: '+after.toFixed(2)+' KG | Each line consumes only the selected cylinder. Add another line for another cylinder.':'Gas stock after transaction: '+after.toFixed(2)+' KG';}
+ document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';
  updateRefund();
 }
 function refreshForm(){
@@ -313,9 +293,8 @@ function refreshForm(){
  document.getElementById('standardTransaction').style.display=standard?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
- document.getElementById('depositHelp').textContent=t==='security_deposit'?'Enter the refundable amount collected for the selected custody cylinders.':'Security deposit is entered through the Security Deposit transaction.';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?'none':'block';
  document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
