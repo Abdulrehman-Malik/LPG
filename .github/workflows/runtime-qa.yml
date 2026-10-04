@@ -3,6 +3,8 @@ name: LPG Runtime QA
 on:
   push:
     branches: [qa/runtime-deployment]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
