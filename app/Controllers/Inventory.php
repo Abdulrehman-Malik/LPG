@@ -182,23 +182,29 @@ class Inventory extends Controller
 
         $from = $this->validDate($this->request->getGet('from_date'),date('Y-m-d'));
         $to = $this->validDate($this->request->getGet('to_date'),date('Y-m-d'));
+        $allHistory = (string)$this->request->getGet('all_history') === '1';
         if ($from > $to) [$from,$to]=[$to,$from];
 
-        $movements = $db->table('inventory_movements im')
+        $movementsQuery = $db->table('inventory_movements im')
             ->select('im.*,cu.unit_code,s.sale_no,p.purchase_no')
             ->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
             ->where('im.location_id',$locationId)
-            ->where("im.movement_at >=", $from.' 00:00:00')
-            ->where("im.movement_at <=", $to.' 23:59:59')
             ->groupStart()
                 ->where('im.cylinder_type_id',$typeId)
                 ->orGroupStart()
                     ->where('im.inventory_type','gas_kg')
                     ->where('cu.cylinder_type_id',$typeId)
                 ->groupEnd()
-            ->groupEnd()
+            ->groupEnd();
+
+        if (!$allHistory) {
+            $movementsQuery->where("im.movement_at >=", $from.' 00:00:00')
+                ->where("im.movement_at <=", $to.' 23:59:59');
+        }
+
+        $movements = $movementsQuery
             ->orderBy('im.movement_at','ASC')
             ->orderBy('im.id','ASC')
             ->get()->getResultArray();
@@ -220,6 +226,7 @@ class Inventory extends Controller
             'movements'=>$movements,
             'fromDate'=>$from,
             'toDate'=>$to,
+            'allHistory'=>$allHistory,
         ]);
     }
 
