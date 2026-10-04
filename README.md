@@ -121,11 +121,24 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 
 ### 1. Customer and Credit-Sale Rules
 
-1. **Walk-in / Cash customer is cash-only.** A walk-in customer cannot use Credit, Cheque, or Online payment. A walk-in sale must be fully paid and received amount must equal sale total.
-2. **Actual customer credit is permission-controlled.** Credit is allowed only when **Allow Credit Sale** is enabled on the customer record; it is disabled by default.
-3. **Credit limit applies to resulting outstanding.** Resulting customer outstanding must never exceed the configured **Credit Limit**. Zero limit permits no credit.
-4. **Previous OS is included in receivable.** Customer previous outstanding participates in the current receivable/settlement calculation.
-5. **Server-side enforcement is authoritative.** Direct POST bypasses must be rejected even if browser controls are bypassed.
+- A **credit sale** is a sale where the customer does not pay the complete sale amount. The unpaid portion increases the customer's **Outstanding (OS)** balance.
+- **New Credit = Sale Total - Total Amount Received**. A fully paid sale creates no new credit, even if the customer already has a previous OS balance.
+- **Projected Customer OS = Existing Customer OS + New Credit - any amount of the current payment allocated to settle the previous OS**.
+- Walk-in / Cash customers cannot create OS. Their sale must be fully paid and walk-in payments are cash-only.
+- Each actual customer has an **Allow Credit Sale** flag. It is OFF by default. When OFF, any sale that would create additional OS is rejected with: **"Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record."**
+- Shop Settings > **Credit Limit Validation** controls the limit policy:
+  - **None — no credit limit validation:** credit sales are allowed without a limit when Allow Credit Sale is ON.
+  - **Customer Level:** use the selected customer's Credit Limit and validate the resulting customer OS.
+  - **Shop Level:** use one branch/shop-wide Credit Limit and validate the resulting overall positive customer OS; individual customer Credit Limit values are ignored.
+- Existing OS is always considered when validating a new credit sale. The system validates the **projected OS**, not only the new unpaid amount.
+- Under Customer Level, the customer cannot exceed their configured Credit Limit.
+- Under Shop Level, the shop cannot exceed its configured Shop Credit Limit. Positive OS balances are aggregated across customers; one customer's negative balance does not offset another customer's positive OS.
+- When a customer is selected on POS, the screen shows whether credit sale is allowed and displays the applicable limit, current OS and available credit where a limit applies.
+- Server-side validation is authoritative and is performed inside the posting transaction using the latest database values.
+- Shop-level credit-limit sales use a shop-wide database lock so concurrent credit sales cannot collectively exceed the configured shop limit.
+- Customer-level validation locks the selected customer row before calculating the latest OS.
+- Credit-limit values of zero mean no additional credit is available in the corresponding limited mode.
+- Customer credit permission and credit-limit rules apply only when the sale actually creates additional OS; a fully paid sale is not treated as a new credit sale.
 
 ### 2. POS Source Filled-Cylinder Rules
 
