@@ -83,7 +83,7 @@ class InventoryService{
     $this->db->table('inventory_movements')->insert([
      'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,
      'quantity'=>$gasPerUnit,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
-     'source_type'=>'purchase','source_id'=>$purchaseId,'cylinder_unit_id'=>$unitId,
+     'source_type'=>'purchase','source_id'=>$purchaseId,'source_line_id'=>$purchaseLineId,'cylinder_unit_id'=>$unitId,
      'created_by'=>$userId,'notes'=>'Gas contained in purchased filled cylinder'
     ]);
    }
