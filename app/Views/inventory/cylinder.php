@@ -20,7 +20,15 @@
 <div class="col-md-3"><span class="text-muted small d-block">Source</span><strong><?=esc(ucwords(str_replace('_',' ',(string)($unit['source_type']??''))))?><?=!empty($unit['source_id'])?' #'.esc($unit['source_id']):''?></strong></div>
 </div></div></div>
 
-<div class="card shadow-sm"><div class="card-header bg-white"><h5 class="mb-0">Cylinder History & Running Gas Ledger</h5><div class="small text-muted">Gas balance is calculated as previous balance + gas in − gas out.</div></div>
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4"><label class="form-label small">From Date</label><input type="date" name="from_date" class="form-control" value="<?=esc($fromDate)?>" <?=$allHistory?'disabled':''?>></div>
+  <div class="col-md-4"><label class="form-label small">To Date</label><input type="date" name="to_date" class="form-control" value="<?=esc($toDate)?>" <?=$allHistory?'disabled':''?>></div>
+  <div class="col-md-2 align-self-end"><button class="btn btn-primary w-100" <?=$allHistory?'disabled':''?>>View</button></div>
+  <div class="col-md-2 align-self-end">
+    <a class="btn <?=$allHistory?'btn-primary':'btn-outline-secondary'?> w-100" href="<?=site_url('inventory/cylinder/'.$unit['id'])?>?all_history=1">All History</a>
+  </div>
+</form>
+<div class="card shadow-sm"><div class="card-header bg-white"><h5 class="mb-0">Cylinder History & Running Gas Ledger</h5><div class="small text-muted"><?= $allHistory ? 'Complete lifecycle history.' : 'Current date history. Use All History for the complete lifecycle.' ?> Gas balance is calculated as previous balance + gas in − gas out.</div></div>
 <div class="table-responsive"><table class="table table-sm table-striped align-middle mb-0">
 <thead><tr><th>Date/Time</th><th>Activity</th><th>Reference</th><th>Gas In</th><th>Gas Out</th><th>Running Gas</th><th>Status</th><th>User</th><th>Notes</th></tr></thead>
 <tbody>
