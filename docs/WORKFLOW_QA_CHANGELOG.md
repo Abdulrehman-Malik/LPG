@@ -57,3 +57,8 @@ After changing the default to Summary, the browser test exposed a second view-la
 
 ### Fix
 Added a separate safe stock display key that falls back to `filled` for the hidden stock pane while keeping the active dashboard tab as Summary. This preserves the requested default without changing stock data behavior.
+
+
+## Follow-up: remaining fallback-key typo
+
+The next browser run found one remaining reference to the old empty stock key in the hidden-pane empty-state message. It was corrected to use the same safe display stock key. No additional application files were changed.
