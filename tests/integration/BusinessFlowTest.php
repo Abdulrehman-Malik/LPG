@@ -116,6 +116,10 @@ final class BusinessFlowTest extends CIUnitTestCase
         $typeId = $this->typeId();
         $supplierId = $this->addSupplier(1000);
 
+        $beforeFilled = (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId);
+        $beforeGas = (new InventoryService())->stock($this->locationId, 'gas_kg');
+        $beforeBalance = (new PurchaseService())->supplierBalance($supplierId, $this->locationId);
+
         $result = (new PurchaseService())->post([
             'supplier_id' => $supplierId,
             'lines' => [[
@@ -130,9 +134,9 @@ final class BusinessFlowTest extends CIUnitTestCase
 
         $this->assertSame(200.0, round((float) $result['total'], 2));
         $this->assertSame(200.0, round((float) $result['balance_payable'], 2));
-        $this->assertSame(2.0, (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId));
-        $this->assertEqualsWithDelta(23.6, (new InventoryService())->stock($this->locationId, 'gas_kg'), 0.001);
-        $this->assertEqualsWithDelta(200.0, (new PurchaseService())->supplierBalance($supplierId, $this->locationId), 0.001);
+        $this->assertEqualsWithDelta($beforeFilled + 2, (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId), 0.001);
+        $this->assertEqualsWithDelta($beforeGas + 23.6, (new InventoryService())->stock($this->locationId, 'gas_kg'), 0.001);
+        $this->assertEqualsWithDelta($beforeBalance + 200.0, (new PurchaseService())->supplierBalance($supplierId, $this->locationId), 0.001);
     }
 
     public function testCashGasSaleReducesCylinderGasAndIncreasesCash(): void
