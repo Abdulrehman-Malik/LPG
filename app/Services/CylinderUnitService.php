@@ -18,13 +18,24 @@ class CylinderUnitService
         if($status==='empty') $gasWeight=0;
         $ids=[];
         for($i=0;$i<(int)$quantity;$i++){
-            $code='CYL-'.date('YmdHis').'-'.random_int(10000,99999);
+            // Insert first so MySQL's AUTO_INCREMENT provides one global,
+            // concurrency-safe sequence for the whole application. The final
+            // physical cylinder code is based on the cylinder type code + ID.
+            $temporaryCode='TMP-CYL-'.bin2hex(random_bytes(12));
             $this->db->table('cylinder_units')->insert([
-                'location_id'=>$locationId,'cylinder_type_id'=>$typeId,'unit_code'=>$code,
+                'location_id'=>$locationId,'cylinder_type_id'=>$typeId,'unit_code'=>$temporaryCode,
                 'status'=>$status,'gas_weight_kg'=>$gasWeight,'source_type'=>$sourceType,
                 'source_id'=>$sourceId,'created_by'=>$userId
             ]);
-            $ids[]=(int)$this->db->insertID();
+
+            $unitId=(int)$this->db->insertID();
+            $unitCode=(string)$ct['code'].'-'.str_pad((string)$unitId,6,'0',STR_PAD_LEFT);
+
+            $this->db->table('cylinder_units')
+                ->where('id',$unitId)
+                ->update(['unit_code'=>$unitCode]);
+
+            $ids[]=$unitId;
         }
         return $ids;
     }
