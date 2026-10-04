@@ -25,12 +25,13 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 011 | `011_20261003_refresh_transactional_data.sql` | **Manual staging/test-data reset only** |
 | 012 | `012_20261004_physical_cylinder_code.sql` | Global physical-cylinder code format |
 | 013 | `013_20261004_customer_credit_sale_control.sql` | Per-customer credit-sale permission; disabled by default |
+| 014 | `014_20261004_pos_source_filled_cylinder_selection.sql` | Branch-level POS source-cylinder selection setting |
 
 ## Deployment rules
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 013**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 014**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
@@ -69,3 +70,14 @@ Use:
 Never reuse an existing sequence number.
 
 - `014_20261004_pos_source_filled_cylinder_selection.sql` — adds the branch-level POS setting controlling manual source filled-cylinder selection versus automatic sequential allocation.
+
+
+## Credit Sale / OS Rules
+
+- A credit sale exists when a sale is not fully paid and therefore increases customer OS.
+- Existing customer OS is included when validating a new credit sale.
+- Customer Allow Credit Sale is stored in customers.allow_credit_sale and defaults to OFF.
+- credit_limit_validation_mode values are none, customer, and shop.
+- none means no credit-limit restriction; customer validates the selected customer's projected OS; shop validates projected positive OS across the branch and ignores individual customer credit limits.
+- Shop-level validation uses a branch-wide database lock to prevent concurrent credit sales from collectively exceeding the shop limit.
+- These rules are enforced server-side; POS display/JavaScript is only an early user-feedback layer.
