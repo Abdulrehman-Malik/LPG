@@ -62,3 +62,18 @@ Added a separate safe stock display key that falls back to `filled` for the hidd
 ## Follow-up: remaining fallback-key typo
 
 The next browser run found one remaining reference to the old empty stock key in the hidden-pane empty-state message. It was corrected to use the same safe display stock key. No additional application files were changed.
+
+
+## Final warning cleanup
+
+The green runtime run still showed non-fatal dependency/action warnings, so these were cleaned up on the QA branch:
+- Added `**/ThirdParty/**` to Composer's classmap exclusions to stop Composer scanning CodeIgniter's bundled third-party classes under the framework's `CodeIgniter\\` PSR-4 rule.
+- Refreshed `composer.lock`'s content hash to match the current dependency definition.
+- Updated `actions/checkout` to v5 in CI (Node 24).
+- Updated `actions/upload-artifact` to v7 in Runtime QA (Node 24).
+
+MySQL image startup warnings are container-image diagnostics (deprecated MySQL startup flag, self-signed test CA, insecure test pid path, and missing optional timezone files); they do not indicate an application failure and are not application configuration defects.
+
+## Final green validation target
+
+The branch must finish with: HTTP runtime pass, Chromium loopback pass, browser UI pass, PHPUnit pass, and no actionable Composer/action warnings.
