@@ -218,7 +218,18 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 - **Security Deposit Amount** is hidden unless the selected transaction type is **Security Deposit / Issue Cylinder**.
 - These UI changes do not replace server-side validation.
 
-### 10. Recent Migration Rules
+### 10. Amount-Entry Gas Sale Rule
+
+- On a **Gas Sale / Refill** line, the cashier may enter the sale **Amount** instead of manually calculating KG.
+- The system automatically calculates **Gas KG = entered amount ÷ current effective gas/kg rate**.
+- The server uses the current effective gas/kg rate for amount-entry mode; the submitted quantity/rate cannot override this calculation.
+- Stock validation remains fully active: the calculated KG must still pass the selected source-cylinder or total cylinder-type stock validation.
+- Manual source mode still limits the calculated KG to the selected source filled cylinder's actual gas.
+- Automatic source mode still validates the calculated KG against total available gas and consumes physical cylinders in the existing sequence.
+- Amount-entry mode does not disable, reduce, or bypass inventory locking, stock validation, customer credit rules, payment rules, or transaction atomicity.
+- The calculated KG and final line total are stored/posting values; client-side calculations are only convenience behavior.
+
+### 11. Recent Migration Rules
 
 - `010_20261004_purchase_inventory_integrity.sql` — actual gas weight for purchase lines.
 - `012_20261004_physical_cylinder_code.sql` — standardized physical-cylinder codes.
