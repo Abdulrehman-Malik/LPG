@@ -18,6 +18,7 @@ class SalesService
     protected $cash;
     protected $cylinders;
     protected array $inventoryLocks = [];
+    protected array $creditLocks = [];
     protected ?int $currentLocationId = null;
 
     public function __construct()
@@ -720,15 +721,50 @@ class SalesService
             $customerForCredit=$this->customers->find($customerId);
             if(!$customerForCredit || !(int)$customerForCredit['is_active']) throw new RuntimeException('Customer is unavailable.');
             if(!(int)($customerForCredit['allow_credit_sale']??0)){
-                throw new RuntimeException('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record before posting a credit sale.');
+                throw new RuntimeException('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');
             }
-            $creditLimit=(float)($customerForCredit['credit_limit']??0);
-            if($newOs>$creditLimit+0.01){
-                $available=max(0,$creditLimit-$previousOs);
-                throw new RuntimeException('Customer credit limit exceeded. Available additional credit is Rs. '.number_format($available,2).'.');
+
+            $shopSettings=(new ShopSettingsModel())->forLocation($this->currentLocationId ?? 0);
+            $creditMode=(string)($shopSettings['credit_limit_validation_mode']??'none');
+            $settlementTotal=array_sum(array_map(static fn($p)=>(float)$p['amount'],$settlements));
+
+            if($creditMode==='customer'){
+                $creditLimit=(float)($customerForCredit['credit_limit']??0);
+                if($newOs>$creditLimit+0.01){
+                    $available=max(0,$creditLimit-$previousOs);
+                    throw new RuntimeException('Customer credit limit exceeded. Existing OS Rs. '.number_format($previousOs,2).'; available additional credit Rs. '.number_format($available,2).'.');
+                }
+            }elseif($creditMode==='shop'){
+                $this->acquireCreditLimitLock($this->currentLocationId ?? 0);
+                $shopOs=$this->shopOutstanding($this->currentLocationId ?? 0);
+                $projectedShopOs=max(0,$shopOs-$settlementTotal+$creditAmount);
+                $shopLimit=(float)($shopSettings['shop_credit_limit']??0);
+                if($projectedShopOs>$shopLimit+0.01){
+                    $available=max(0,$shopLimit-($shopOs-$settlementTotal));
+                    throw new RuntimeException('Shop credit limit exceeded. Current shop OS Rs. '.number_format($shopOs,2).'; available additional credit Rs. '.number_format($available,2).'.');
+                }
             }
         }
         return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>$newOs];
+    }
+
+    protected function shopOutstanding(int $locationId): float
+    {
+        $sql="SELECT COALESCE(SUM(CASE WHEN (c.opening_balance+COALESCE(s.credit,0)-COALESCE(r.paid,0))>0 THEN (c.opening_balance+COALESCE(s.credit,0)-COALESCE(r.paid,0)) ELSE 0 END),0) AS shop_os
+              FROM customers c
+              LEFT JOIN (SELECT customer_id,SUM(credit_amount) credit FROM sales WHERE location_id=? AND status='posted' AND customer_id IS NOT NULL GROUP BY customer_id) s ON s.customer_id=c.id
+              LEFT JOIN (SELECT customer_id,SUM(amount) paid FROM customer_receipts WHERE location_id=? AND status='posted' GROUP BY customer_id) r ON r.customer_id=c.id";
+        $row=$this->db->query($sql,[$locationId,$locationId])->getRowArray();
+        return (float)($row['shop_os']??0);
+    }
+
+    protected function acquireCreditLimitLock(int $locationId): void
+    {
+        if($locationId<=0) throw new RuntimeException('Invalid shop location for credit-limit validation.');
+        $lockKey='lpg_credit_limit_'.$locationId;
+        $result=$this->db->query("SELECT GET_LOCK(?,5) AS locked",[$lockKey])->getRowArray();
+        if((int)($result['locked']??0)!==1) throw new RuntimeException('Credit limit is busy; please retry the transaction.');
+        $this->creditLocks[]=$lockKey;
     }
 
     protected function postCustomerSettlement(array $settlements,int $locationId,int $saleId,?int $customerId,string $at,int $userId): void
@@ -894,7 +930,10 @@ class SalesService
 
     protected function releaseInventoryLocks(): void
     {
-        if(!$this->inventoryLocks) return;
+        foreach(array_reverse($this->creditLocks) as $lockKey){
+            $this->db->query("SELECT RELEASE_LOCK(?) AS released",[$lockKey]);
+        }
+        $this->creditLocks=[];
         foreach(array_reverse($this->inventoryLocks) as $lockKey){
             $this->db->query("SELECT RELEASE_LOCK(?) AS released",[$lockKey]);
         }
