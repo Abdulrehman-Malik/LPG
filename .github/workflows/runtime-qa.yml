@@ -41,14 +41,10 @@ jobs:
           MYSQL_PWD: root
         run: |
           mysql -h 127.0.0.1 -P 3306 -u root < database/schema.sql
-          for f in database/migrations/*.sql; do
-            echo "Applying $f"
-            if [[ "$f" == *refresh_transactional_data.sql ]]; then
-              printf "SET @lpg_refresh_transactional_data = 0;\nSOURCE $GITHUB_WORKSPACE/$f;\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
-            else
-              mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < "$f"
-            fi
-          done
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/007_20261003_pos_transaction_type.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/008_20261003_individual_cylinder_tracking.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/010_20261004_purchase_inventory_integrity.sql
+          printf "SET @lpg_refresh_transactional_data = 0;\nSOURCE database/migrations/011_20261003_refresh_transactional_data.sql;\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
 
       - name: Prepare test environment
         run: |
