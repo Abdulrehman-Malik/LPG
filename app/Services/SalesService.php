@@ -690,7 +690,7 @@ class SalesService
         foreach($payments as $p){
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
-            if(!$customerId&&$mode!=='cash')throw new RuntimeException('Walk-in transactions are cash only.');
+            if(!$customerId&&$mode!=='cash')throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer.':'Walk-in transactions are cash only.');
             $paymentTotal+=$amount;
         }
         $previousOs=$customerId?max(0,$this->customerBalance($customerId)):0;
