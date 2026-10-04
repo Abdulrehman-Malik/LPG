@@ -74,6 +74,65 @@ jobs:
           curl -fsS http://127.0.0.1:8080/dashboard -o /tmp/dashboard.html || true
           test -s /tmp/dashboard.html
 
+      - name: Browser UI QA (Playwright)
+        run: |
+          set -e
+          npx --yes playwright@1.55.0 install --with-deps chromium
+          cat > /tmp/lpg-ui-qa.mjs <<'EOF'
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+          const base = 'http://127.0.0.1:8080';
+
+          try {
+            await page.goto(base + '/login', { waitUntil: 'networkidle' });
+            await page.screenshot({ path: '/tmp/login.png', fullPage: true });
+
+            const username = page.locator('input[name="username"], input[type="text"]').first();
+            const password = page.locator('input[name="password"], input[type="password"]').first();
+            await username.fill('admin');
+            await password.fill('admin123');
+            await page.locator('button[type="submit"], input[type="submit"]').first().click();
+            await page.waitForLoadState('networkidle');
+
+            if (!page.url().includes('/dashboard')) throw new Error('Login did not reach dashboard');
+            await page.screenshot({ path: '/tmp/dashboard-browser.png', fullPage: true });
+
+            const dashboardText = await page.locator('body').innerText();
+            for (const label of ['Total Sale', 'Cash Sale', 'Credit Sale', 'Payments', 'Stock Purchased']) {
+              if (!dashboardText.toLowerCase().includes(label.toLowerCase())) {
+                throw new Error('Dashboard metric missing: ' + label);
+              }
+            }
+
+            const config = page.getByText('Configuration', { exact: false }).first();
+            if (await config.count() === 0) throw new Error('Configuration menu not found');
+            await config.click();
+            await page.waitForTimeout(300);
+            await page.screenshot({ path: '/tmp/configuration-clicked.png', fullPage: true });
+
+            if (!(await page.locator('body').innerText()).toLowerCase().includes('configuration')) {
+              throw new Error('Configuration menu content disappeared after click');
+            }
+
+            const overflow = await page.evaluate(() => ({
+              htmlOverflow: getComputedStyle(document.documentElement).overflowY,
+              bodyOverflow: getComputedStyle(document.body).overflowY,
+              scrollHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
+              viewportHeight: window.innerHeight
+            }));
+            if (overflow.htmlOverflow === 'hidden' || overflow.bodyOverflow === 'hidden') {
+              throw new Error('Vertical scrolling is explicitly hidden');
+            }
+
+            console.log('UI QA PASS', JSON.stringify(overflow));
+          } finally {
+            await browser.close();
+          }
+          EOF
+          node /tmp/lpg-ui-qa.mjs
+
       - name: Run PHPUnit
         env:
           CI_ENVIRONMENT: testing
