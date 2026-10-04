@@ -77,7 +77,11 @@ jobs:
       - name: Browser UI QA (Playwright)
         run: |
           set -e
-          npx --yes playwright@1.55.0 install --with-deps chromium
+          mkdir -p /tmp/lpg-ui
+          cd /tmp/lpg-ui
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
           cat > /tmp/lpg-ui-qa.mjs <<'EOF'
           import { chromium } from 'playwright';
 
@@ -131,7 +135,7 @@ jobs:
             await browser.close();
           }
           EOF
-          node /tmp/lpg-ui-qa.mjs
+          NODE_PATH=/tmp/lpg-ui/node_modules node /tmp/lpg-ui-qa.mjs
 
       - name: Run PHPUnit
         env:
