@@ -5,7 +5,7 @@ class CustomerModel extends Model
 {
     protected $table='customers'; protected $primaryKey='id'; protected $returnType='array';
     protected $useTimestamps=true; protected $createdField='created_at'; protected $updatedField='updated_at';
-    protected $allowedFields=['code','name','phone','city','address','vehicle_no','credit_limit','opening_balance','is_active'];
+    protected $allowedFields=['code','name','phone','city','address','vehicle_no','credit_limit','allow_credit_sale','opening_balance','is_active'];
     public function withLedgerTotals(int $customerId, ?int $locationId=null): ?array
     {
         $customer=$this->find($customerId); if(!$customer) return null;
