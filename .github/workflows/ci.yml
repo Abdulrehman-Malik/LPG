@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - qa/workflow-cleanup
+      - qa/full-business-testing
   pull_request:
     branches: [main]
 
@@ -58,6 +59,8 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/007_20261003_pos_transaction_type.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/008_20261003_individual_cylinder_tracking.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/010_20261004_purchase_inventory_integrity.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/012_20261004_physical_cylinder_code.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/013_20261004_customer_credit_sale_control.sql
           printf "SET @lpg_refresh_transactional_data = 0;\\nSOURCE database/migrations/011_20261003_refresh_transactional_data.sql;\\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
 
       - name: CodeIgniter smoke check
@@ -68,6 +71,13 @@ jobs:
       - name: Run PHPUnit
         env:
           CI_ENVIRONMENT: testing
+          database.tests.hostname: 127.0.0.1
+          database.tests.database: perfect_lpg
+          database.tests.username: root
+          database.tests.password: root
+          database.tests.DBDriver: MySQLi
+          database.tests.DBPrefix: ""
+          database.tests.DBDebug: true
         run: |
           if [ -d tests ] && find tests -type f \( -name '*Test.php' -o -name '*TestCase.php' \) | grep -q .; then
             php vendor/bin/phpunit --no-coverage

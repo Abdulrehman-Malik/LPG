@@ -501,7 +501,7 @@ class SalesService
 
                 if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
             }
-            if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed.');
+            if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed. DB=' . json_encode($this->db->error()));
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
             $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
             $cash=$this->paymentCash($paymentPlan['sale_payments']);
@@ -569,7 +569,7 @@ class SalesService
                 $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['gas_rate']+$row['cyl_rate']):$row['cyl_rate'],'standard_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['std_gas']+$row['cyl_rate']):$row['cyl_rate'],'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>'Cylinder sale']);
             }
             $lineIds=[];foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row)$lineIds[(int)$row['line_no']]=(int)$row['id'];
-            foreach($inventory as $m){$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>'Cylinder sale']);$this->cylinders->markSold((int)$m['unit_id']);}
+            foreach($inventory as $m){$this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>'Cylinder sale']);if(in_array($m['type'],['filled_cylinder','empty_cylinder'],true))$this->cylinders->markSold((int)$m['unit_id']);}
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);$this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);$cash=$this->paymentCash($paymentPlan['sale_payments']);if($cash>0){$s=$this->cash->openSessionForLocation($locationId);if(!$s)throw new RuntimeException('Open the counter cash session before posting a cash sale.');$this->cash->postSaleCash((int)$s['id'],$saleId,$cash,$userId,$transactionAt);}
             if(!$this->db->transStatus())throw new RuntimeException('Cylinder sale posting failed.');
             $this->db->transCommit();$this->releaseInventoryLocks();return ['id'=>$saleId,'sale_no'=>$saleNo,'total'=>$total,'customer_id'=>$customerId,'credit_amount'=>$this->paymentCredit($payments)];
