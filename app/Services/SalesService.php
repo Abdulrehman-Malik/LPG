@@ -43,6 +43,13 @@ class SalesService
         $payments=is_array($payload['payments']??null)?$payload['payments']:[];
         if(!$lines) throw new RuntimeException('At least one sale line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
+        // Reject walk-in credit immediately so the cashier receives the business-rule error
+        // before unrelated line validation can mask the reason the sale is not allowed.
+        if(!$customerId){
+            foreach($payments as $p){
+                if((string)($p['payment_mode']??'')==='credit') throw new RuntimeException('Credit sale is not allowed for Walk-in / Cash customer. Select an actual customer and enable Allow Credit Sale.');
+            }
+        }
 
         $transactionAt=str_replace('T',' ',trim((string)($payload['transaction_at']??date('Y-m-d H:i:s'))));
         $notes=trim((string)($payload['notes']??''))?:null;
@@ -158,7 +165,7 @@ class SalesService
         foreach($payments as $p){
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0) throw new RuntimeException('Invalid payment.');
-            if(!$customerId && $mode!=='cash') throw new RuntimeException('Walk-in sales are cash only.');
+            if(!$customerId && $mode!=='cash') throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer. Select an actual customer and enable Allow Credit Sale.':'Walk-in sales are cash only.');
             $paymentTotal+=$amount;if($mode==='credit') $credit+=$amount;if($mode==='cash') $cashAmount+=$amount;
         }
         if(abs($paymentTotal-$total)>0.01) throw new RuntimeException('Payment total must equal sale total.');
