@@ -84,26 +84,26 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 | POS-097 | Source over quantity | Source has 5 KG; enter 6 KG. | Sale rejected. | | |
 | POS-098 | Same source twice | Use same source on two lines. | Duplicate source is rejected. | | |
 | POS-099 | Source depleted | Sell exactly all gas from source. | Gas becomes zero and cylinder becomes Empty. | | |
-| POS-100 | Partial source sale | Source has 10 KG; sell 4 KG. | Source remains Filled with about 6 KG. | | |
+| POS-32 | Partial source sale | Source has 10 KG; sell 4 KG. | Source remains Filled with about 6 KG. | | |
 
 ## E. Gas Source Cylinder — Automatic Selection OFF
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-101 | Setting OFF | Disable source-cylinder selection. | Source selector is hidden. | | |
-| POS-102 | Automatic sequence | Multiple filled cylinders; sell gas. | Cylinders are consumed in ascending global sequence/ID. | | |
-| POS-103 | One cylinder first | First cylinder has enough gas. | Only first required cylinder is consumed. | | |
-| POS-104 | Cross-cylinder allocation | Request more than first cylinder but less than total. | First cylinder is consumed, then next cylinder. | | |
-| POS-105 | Insufficient stock | Request more than total available gas. | Sale rejected; no inventory changes. | | |
-| POS-106 | Duplicate type lines | Add same cylinder type on two gas lines. | Sale rejected; same type cannot appear on multiple gas lines. | | |
+| POS-33 | Setting OFF | Disable source-cylinder selection. | Source selector is hidden. | | |
+| POS-34 | Automatic sequence | Multiple filled cylinders; sell gas. | Cylinders are consumed in ascending global sequence/ID. | | |
+| POS-35 | One cylinder first | First cylinder has enough gas. | Only first required cylinder is consumed. | | |
+| POS-36 | Cross-cylinder allocation | Request more than first cylinder but less than total. | First cylinder is consumed, then next cylinder. | | |
+| POS-37 | Insufficient stock | Request more than total available gas. | Sale rejected; no inventory changes. | | |
+| POS-38 | Duplicate type lines | Add same cylinder type on two gas lines. | Sale rejected; same type cannot appear on multiple gas lines. | | |
 
 ## F. Gas Amount / Rs. Mode
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-107 | Amount calculation | Current rate 200/KG; enter Rs.1000. | Calculated KG = 5.000. | | |
-| POS-108 | Current rate authority | Select Rs. mode and attempt custom rate. | Server uses current effective gas rate. | | |
-| POS-109 | Amount exceeds stock | Stock 5 KG, rate 200/KG, enter Rs.1200. | Sale rejected because calculated KG is 6. | | |
+| POS-39 | Amount calculation | Current rate 200/KG; enter Rs.1000. | Calculated KG = 5.000. | | |
+| POS-40 | Current rate authority | Select Rs. mode and attempt custom rate. | Server uses current effective gas rate. | | |
+| POS-41 | Amount exceeds stock | Stock 5 KG, rate 200/KG, enter Rs.1200. | Sale rejected because calculated KG is 6. | | |
 | POS-042 | Valid amount sale | Enter valid amount within stock and pay fully. | Sale posts with calculated KG. | | |
 | POS-043 | Return to KG | Switch Rs. to KG and change quantity. | KG input becomes authoritative. | | |
 | POS-044 | Amount server validation | Submit manipulated amount/quantity directly. | Server recalculates KG and validates stock. | | |
