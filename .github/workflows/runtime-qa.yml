@@ -102,7 +102,7 @@ jobs:
             await page.locator('button[type="submit"], input[type="submit"]').first().click();
             await page.waitForLoadState('networkidle');
 
-            if (!page.url().includes('/dashboard')) throw new Error('Login did not reach dashboard');
+            if (!page.url().includes('/dashboard')) { console.log('LOGIN_DIAGNOSTIC_URL', page.url()); console.log('LOGIN_DIAGNOSTIC_TITLE', await page.title()); console.log('LOGIN_DIAGNOSTIC_BODY', (await page.locator('body').innerText()).slice(0,4000)); throw new Error('Login did not reach dashboard'); }
             await page.screenshot({ path: '/tmp/dashboard-browser.png', fullPage: true });
 
             const dashboardText = await page.locator('body').innerText();
