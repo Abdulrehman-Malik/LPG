@@ -51,12 +51,15 @@ jobs:
       - name: Prepare test environment
         run: |
           cp env .env
-          sed -i 's#^app.baseURL.*#app.baseURL = http://127.0.0.1:8080/#' .env
-          sed -i 's#^database.default.hostname.*#database.default.hostname = 127.0.0.1#' .env
-          sed -i 's#^database.default.database.*#database.default.database = perfect_lpg#' .env
-          sed -i 's#^database.default.username.*#database.default.username = root#' .env
-          sed -i 's#^database.default.password.*#database.default.password = root#' .env
-          sed -i 's#^CI_ENVIRONMENT.*#CI_ENVIRONMENT = testing#' .env
+          cat >> .env <<'EOF'
+app.baseURL = 'http://127.0.0.1:8080/'
+database.default.hostname = 127.0.0.1
+database.default.database = perfect_lpg
+database.default.username = root
+database.default.password = root
+database.default.DBDriver = MySQLi
+CI_ENVIRONMENT = testing
+EOF
 
       - name: Start web application
         run: |
