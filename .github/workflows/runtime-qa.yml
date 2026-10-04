@@ -127,6 +127,15 @@ jobs:
             for (const label of ['Total Sale', 'Cash Sale', 'Credit Sale', 'Payments', 'Stock Purchased']) {
               if (!dashboardText.toLowerCase().includes(label.toLowerCase())) throw new Error('Dashboard metric missing: ' + label);
             }
+            const stockTab = page.locator('#stock-tab');
+            await stockTab.click();
+            await page.waitForTimeout(300);
+            const stockText = await page.locator('#stock-pane').innerText();
+            for (const label of ['Filled Cylinders', 'Empty Cylinders', 'Issued Temporarily Against Deposit']) {
+              if (!stockText.toLowerCase().includes(label.toLowerCase())) throw new Error('Current stock metric missing: ' + label);
+            }
+            await page.locator('#summary-tab').click();
+            await page.waitForTimeout(300);
             const config = page.getByText('Configuration', { exact: false }).first();
             if (await config.count() === 0) throw new Error('Configuration menu not found');
             await config.click();
