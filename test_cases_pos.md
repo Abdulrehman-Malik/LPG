@@ -1,0 +1,202 @@
+# POS Test Cases
+
+## Purpose
+Use this file as the manual POS regression checklist. Execute the steps and mark TRUE or FALSE in the Result column.
+
+**Test date:** __________  
+**Tester:** __________  
+**Build / Commit:** __________  
+**Environment:** __________  
+
+### Result convention
+- TRUE = Expected result occurred.
+- FALSE = Expected result did not occur.
+- Record the actual message/behavior in Actual Result / Notes.
+
+## A. POS Basic Validation
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-001 | Open POS | Open POS screen. | POS loads without JavaScript/PHP errors. | | |
+| POS-002 | Default transaction | Open POS with default transaction. | Correct default transaction and required sections are shown. | | |
+| POS-003 | No line | Remove all sale lines and click Post Sale. | Sale is rejected with a clear line-required message. | | |
+| POS-004 | Missing cylinder type | Add gas line, leave Cylinder Type blank, post. | Sale is rejected; cylinder type is required. | | |
+| POS-005 | Zero KG | Select KG mode and enter 0 KG. | Sale is rejected; valid quantity is required. | | |
+| POS-006 | Negative KG | Try to enter negative KG. | Negative quantity is rejected. | | |
+| POS-007 | KG mode valid | Select KG, cylinder type and valid KG. | Amount is calculated from KG × applicable rate. | | |
+| POS-008 | Rs. mode valid | Select Rs., cylinder type and valid amount. | KG is calculated from amount ÷ current gas rate. | | |
+| POS-009 | Screen-level mode | Add two gas lines and change KG/Rs once. | Same mode applies to all gas lines; no per-line selector exists. | | |
+| POS-010 | KG to Rs | Enter KG then switch to Rs. | Existing amount is converted using current rate. | | |
+| POS-011 | Rs to KG | Enter amount then switch to KG. | Existing KG is converted using current rate. | | |
+
+## B. Walk-in / Cash Customer
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-012 | Walk-in cash sale | Select Walk-in / Cash, valid sale, full cash payment, post. | Sale posts successfully if all validations pass. | | |
+| POS-013 | Walk-in credit sale | Select Walk-in / Cash, select Credit payment, enter valid sale, post. | Sale is NOT posted. Error says credit sale is not allowed for Walk-in / Cash customer. | | |
+| POS-014 | Walk-in cheque | Select Walk-in / Cash and Cheque payment. | Sale is rejected; walk-in is cash only. | | |
+| POS-015 | Walk-in online | Select Walk-in / Cash and Online payment. | Sale is rejected; walk-in is cash only. | | |
+| POS-016 | Walk-in underpayment | Sale total 1000, receive 900. | Sale is rejected; received amount must equal sale total. | | |
+| POS-017 | Walk-in overpayment | Sale total 1000, receive 1100. | Sale is rejected; payment cannot exceed receivable. | | |
+| POS-018 | Walk-in credit bypass | Submit Walk-in + Credit directly if possible. | Server rejects credit sale; nothing is posted. | | |
+
+## C. Named Customer Credit
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-019 | Customer cash sale | Active customer, valid sale, full cash. | Sale posts. | | |
+| POS-020 | Credit disabled | Customer Allow Credit Sale OFF, use Credit. | Sale rejected; credit is not allowed. | | |
+| POS-021 | Credit enabled | Customer Allow Credit Sale ON, within limit, use Credit. | Sale posts. | | |
+| POS-022 | Credit limit exceeded | Attempt credit above available limit. | Sale rejected; credit limit exceeded. | | |
+| POS-023 | Zero credit limit | Allow Credit ON but limit 0, attempt credit. | Sale rejected. | | |
+| POS-024 | Previous balance | Customer has previous OS and makes payment. | Settlement follows configured previous-balance rules. | | |
+| POS-025 | Credit permission bypass | Directly submit credit for customer with Allow Credit OFF. | Server rejects; no financial/inventory changes. | | |
+
+## D. Gas Source Cylinder — Manual Selection ON
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-026 | Setting ON | Enable source-cylinder selection setting. | Source Filled Cylinder selector is visible. | | |
+| POS-027 | Valid source | Select type/source with sufficient gas and valid KG. | Only selected source cylinder is reduced. | | |
+| POS-028 | Missing source | Leave source blank and post. | Sale rejected; source is required. | | |
+| POS-029 | Source over quantity | Source has 5 KG; enter 6 KG. | Sale rejected. | | |
+| POS-030 | Same source twice | Use same source on two lines. | Duplicate source is rejected. | | |
+| POS-031 | Source depleted | Sell exactly all gas from source. | Gas becomes zero and cylinder becomes Empty. | | |
+| POS-032 | Partial source sale | Source has 10 KG; sell 4 KG. | Source remains Filled with about 6 KG. | | |
+
+## E. Gas Source Cylinder — Automatic Selection OFF
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-033 | Setting OFF | Disable source-cylinder selection. | Source selector is hidden. | | |
+| POS-034 | Automatic sequence | Multiple filled cylinders; sell gas. | Cylinders are consumed in ascending global sequence/ID. | | |
+| POS-035 | One cylinder first | First cylinder has enough gas. | Only first required cylinder is consumed. | | |
+| POS-036 | Cross-cylinder allocation | Request more than first cylinder but less than total. | First cylinder is consumed, then next cylinder. | | |
+| POS-037 | Insufficient stock | Request more than total available gas. | Sale rejected; no inventory changes. | | |
+| POS-038 | Duplicate type lines | Add same cylinder type on two gas lines. | Sale rejected; same type cannot appear on multiple gas lines. | | |
+
+## F. Gas Amount / Rs. Mode
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-039 | Amount calculation | Current rate 200/KG; enter Rs.1000. | Calculated KG = 5.000. | | |
+| POS-040 | Current rate authority | Select Rs. mode and attempt custom rate. | Server uses current effective gas rate. | | |
+| POS-041 | Amount exceeds stock | Stock 5 KG, rate 200/KG, enter Rs.1200. | Sale rejected because calculated KG is 6. | | |
+| POS-042 | Valid amount sale | Enter valid amount within stock and pay fully. | Sale posts with calculated KG. | | |
+| POS-043 | Return to KG | Switch Rs. to KG and change quantity. | KG input becomes authoritative. | | |
+| POS-044 | Amount server validation | Submit manipulated amount/quantity directly. | Server recalculates KG and validates stock. | | |
+
+## G. Payments and Totals
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-045 | Exact payment | Sale 1000, pay 1000. | Accepted. | | |
+| POS-046 | Underpayment | Sale 1000, pay 900. | Rejected. | | |
+| POS-047 | Overpayment | Sale 1000, pay 1100. | Rejected. | | |
+| POS-048 | Split payment | Pay 600 + 400. | Total equals sale total and can post. | | |
+| POS-049 | Zero payment | Add blank/zero payment. | Payment rejected. | | |
+| POS-050 | Cash + credit | Named customer with credit enabled; valid cash + credit within limit. | Sale posts and credit becomes outstanding. | | |
+| POS-051 | Valid discount | Discount less than subtotal. | Net total recalculates correctly. | | |
+| POS-052 | Excess discount | Discount greater than subtotal. | Sale rejected. | | |
+
+## H. Customer Cylinder / Replacement
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-053 | Customer cylinder | Select named customer cylinder and valid gas. | Gas is added subject to capacity. | | |
+| POS-054 | Capacity exceeded | Sell more gas than remaining customer-cylinder capacity. | Sale rejected. | | |
+| POS-055 | Replacement without customer | Attempt replacement with Walk-in. | Sale rejected; named customer required. | | |
+| POS-056 | Replace same | Valid customer and same type replacement. | Replacement posts. | | |
+| POS-057 | Replace different | Choose a different received cylinder type. | Replacement posts. | | |
+| POS-058 | Same type for different replacement | Replace Different but choose same type. | Sale rejected. | | |
+
+## I. Cylinder Sale / Empty Cylinder
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-059 | Filled cylinder sale | Valid whole quantity. | Sale posts using actual gas weight and cylinder rate. | | |
+| POS-060 | Filled insufficient | Request more filled cylinders than available. | Sale rejected. | | |
+| POS-061 | Fractional cylinder qty | Enter 1.5 cylinders. | Rejected; whole number required. | | |
+| POS-062 | Empty cylinder sale | Valid empty-cylinder quantity. | Sale posts against available empty cylinders. | | |
+| POS-063 | Empty insufficient | Request more empty cylinders than available. | Sale rejected. | | |
+
+## J. Security Deposit / Custody
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-064 | Deposit UI | Select Security Deposit. | Security Deposit field is visible. | | |
+| POS-065 | Normal sale UI | Select Gas Sale. | Security Deposit field is hidden. | | |
+| POS-066 | Deposit Walk-in | Attempt Security Deposit with Walk-in. | Rejected; named customer required. | | |
+| POS-067 | Valid deposit | Customer, cylinder, deposit amount and payment. | Deposit posts and cylinder enters custody. | | |
+| POS-068 | Duplicate custody | Place same cylinder into custody again. | Rejected. | | |
+| POS-069 | Return filled cylinder | Return custody cylinder containing gas. | Rejected; cylinder must be empty. | | |
+| POS-070 | Return empty cylinder | Return eligible empty custody cylinder. | Cylinder returns to company inventory and deposit refund is recorded. | | |
+| POS-071 | Wrong customer return | Return another customer's custody cylinder. | Rejected. | | |
+| POS-072 | Custody capacity | Add gas beyond cylinder capacity. | Rejected. | | |
+
+## K. Physical Cylinder / Inventory Integrity
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-073 | Physical cylinder code | Create a physical cylinder. | Code follows cylinder-type-code plus global sequence. | | |
+| POS-074 | Global sequence | Create cylinders under different types. | Sequence remains globally unique. | | |
+| POS-075 | Gas stock source | Compare POS stock with sum of physical filled-cylinder gas. | Values agree. | | |
+| POS-076 | Transaction rollback | Force posting failure after validation. | No partial sale/payment/inventory/customer update remains. | | |
+| POS-077 | Concurrent sale | Two sessions sell the same limited stock simultaneously. | Locks prevent overselling. | | |
+| POS-078 | Sale void | Post then void a sale. | Inventory and financial effects reverse exactly once. | | |
+| POS-079 | Double void | Void the same sale twice. | Second void is rejected; no duplicate reversal. | | |
+
+## L. UI Regression
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-080 | Compact summary | Open normal POS. | Current Sale, Previous Balance and Discount are one row. | | |
+| POS-081 | Help text | Review POS line area. | Unnecessary descriptions are removed. | | |
+| POS-082 | Screen-level KG/Rs | Review gas line table. | One KG/Rs selector at screen level; none inside rows. | | |
+| POS-083 | Source OFF UI | Disable source selection. | Source column is hidden. | | |
+| POS-084 | Source ON UI | Enable source selection. | Source column is visible. | | |
+| POS-085 | Error clarity | Trigger validation failures. | Error identifies the actual business rule that failed, not an unrelated lower-level error. | | |
+
+## M. Server-Side Bypass
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-086 | Walk-in credit API bypass | Submit Walk-in + Credit directly. | Server rejects credit sale. | | |
+| POS-087 | Credit permission bypass | Submit credit for customer with Allow Credit OFF. | Server rejects. | | |
+| POS-088 | Credit limit bypass | Submit credit above limit. | Server rejects. | | |
+| POS-089 | Stock bypass | Submit quantity above physical stock. | Server rejects. | | |
+| POS-090 | Source bypass | Submit invalid source cylinder. | Server rejects. | | |
+| POS-091 | Duplicate source bypass | Submit same source on multiple lines. | Server rejects. | | |
+| POS-092 | Duplicate type bypass | Submit same cylinder type on multiple gas lines. | Server rejects. | | |
+| POS-093 | Amount bypass | Submit Rs. amount converting to more KG than stock. | Server rejects. | | |
+
+## Final POS Acceptance Summary
+
+| Area | Passed | Failed | Not Executed | Notes |
+|---|---:|---:|---:|---|
+| Basic validation | | | | |
+| Walk-in / Cash | | | | |
+| Customer credit | | | | |
+| Manual source selection | | | | |
+| Automatic source allocation | | | | |
+| KG / Rs. mode | | | | |
+| Payments / totals | | | | |
+| Customer cylinder / replacement | | | | |
+| Cylinder sale | | | | |
+| Security deposit / custody | | | | |
+| Inventory integrity | | | | |
+| UI regression | | | | |
+| Server-side bypass | | | | |
+| Overall | | | | |
+
+### Release decision
+
+- [ ] PASS — all critical tests are TRUE.
+- [ ] FAIL — one or more critical tests are FALSE.
+- [ ] BLOCKED — test could not be executed because of environment/data/setup issue.
+
+**Tester comments:**  
+__________________________________________________________________  
+__________________________________________________________________  
+__________________________________________________________________
