@@ -55,6 +55,7 @@ final class BusinessFlowTest extends CIUnitTestCase
             'code' => $this->unique('T-C'),
             'name' => $this->unique('Test Customer'),
             'credit_limit' => $creditLimit,
+            'allow_credit_sale' => 1,
             'opening_balance' => 0,
             'is_active' => 1,
         ]);
@@ -94,9 +95,9 @@ final class BusinessFlowTest extends CIUnitTestCase
         ]);
     }
 
-    private function typeId(): int
+    private function typeId(string $code = 'C11_8'): int
     {
-        return (int) $this->db->table('cylinder_types')->where('code', 'C11_8')->get()->getRow('id');
+        return (int) $this->db->table('cylinder_types')->where('code', $code)->get()->getRow('id');
     }
 
     private function cashSession(float $opening = 1000): int
@@ -201,9 +202,9 @@ final class BusinessFlowTest extends CIUnitTestCase
 
     public function testFilledCylinderSaleMarksUnitSoldAndPostsCash(): void
     {
-        $typeId = $this->typeId();
+        $typeId = $this->typeId('C15');
         $this->addRates($typeId, 100, 1000);
-        $unitId = (new CylinderUnitService())->createUnits($this->locationId, $typeId, 1, 'filled', 11.8, $this->userId, 'test', 0)[0];
+        $unitId = (new CylinderUnitService())->createUnits($this->locationId, $typeId, 1, 'filled', 15, $this->userId, 'test', 0)[0];
         $sessionId = $this->cashSession();
 
         $result = (new SalesService())->post([
