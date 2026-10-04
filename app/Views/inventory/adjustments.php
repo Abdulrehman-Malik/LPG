@@ -129,9 +129,17 @@ const adjustActualGas=document.getElementById('adjustActualGas');
 const adjustHelp=document.getElementById('adjustHelp');
 
 function refreshAdjustmentFields(){
-  const scope=adjustScope.value;
   const type=adjustType.value;
+
+  if(type==='gas_kg' && adjustScope.value!=='specific'){
+    adjustScope.value='specific';
+  }
+
+  const scope=adjustScope.value;
   const increase=document.querySelector('input[name="direction"]:checked')?.value==='in';
+  Array.from(adjustScope.options).forEach(opt => {
+    opt.disabled = type === 'gas_kg' && opt.value !== 'specific';
+  });
   const cylinder=type!=='gas_kg';
   const filled=type==='filled_cylinder';
 
@@ -170,13 +178,13 @@ function refreshAdjustmentFields(){
 
   if(scope==='specific'){
     adjustHelp.textContent=type==='gas_kg'
-      ? 'Specific mode changes gas only on the selected physical cylinder. Decreasing the last remaining gas moves that exact cylinder to empty; increasing gas on an empty cylinder fills that same unit.'
+      ? 'Gas is stored only inside physical cylinders. Specific mode changes the actual gas weight on the selected cylinder; when it reaches zero, the cylinder becomes empty.'
       : type==='filled_cylinder'
         ? (increase ? 'Select one empty physical cylinder and enter the actual gas KG added to that unit.' : 'Select one filled physical cylinder. Only that unit will leave filled-cylinder stock, and its remaining gas will be removed.')
         : 'Select one empty physical cylinder. Only that exact unit will leave empty-cylinder stock.';
   }else{
     adjustHelp.textContent=type==='gas_kg'
-      ? 'Bulk mode adjusts the branch-level Gas KG balance and does not select a physical cylinder.'
+      ? 'Gas is not an independent stock item. Select a specific physical cylinder to change its gas weight.'
       : filled&&increase
         ? 'Bulk mode creates the requested number of new filled physical cylinders of the selected type, each with the entered actual gas KG.'
         : filled
