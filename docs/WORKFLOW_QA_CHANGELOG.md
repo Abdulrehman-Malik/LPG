@@ -27,3 +27,7 @@ No application PHP, JavaScript, CSS, database schema, controller, model, view, o
 
 ### Next verification
 Run the complete Runtime QA workflow on this branch. The loopback probe will distinguish a Chromium/runner networking problem from a PHP/CodeIgniter browser-request problem.
+
+## Follow-up: Probe setup correction
+
+The first isolated probe attempt exposed a QA-script issue: the probe ran in a separate workflow step before the temporary Playwright directory was created. The probe step now installs Playwright/Chromium itself before testing loopback, making the diagnostic self-contained.
