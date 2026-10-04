@@ -192,6 +192,27 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 | POS-092 | Duplicate type bypass | Submit same cylinder type on multiple gas lines. | Server rejects. | | |
 | POS-093 | Amount bypass | Submit Rs. amount converting to more KG than stock. | Server rejects. | | |
 
+## N. Sale History / Void
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-094 | Sale History tab | Open POS and select Sale History. | History tab opens without changing New Sale behavior. | | |
+| POS-095 | Default history date | Open Sale History. | From Date and To Date default to today's business date. | | |
+| POS-096 | Today's sales | Search with default dates. | Only today's branch sales are shown. | | |
+| POS-097 | All history date range | Select an earlier From Date and today's To Date. | Sales for the complete selected range are shown. | | |
+| POS-098 | History filters | Filter by sale no, customer, type and status. | Each filter returns only matching records. | | |
+| POS-099 | Posted and voided visibility | Search without status filter after voiding a sale. | Original sale remains visible with VOID status. | | |
+| POS-100 | Sale details | Click a history row. | Details show header, lines, physical/source cylinder, quantities, rates, amounts and payments. | | |
+| POS-101 | Gas source detail | Open a gas sale that consumed a physical source cylinder. | Actual physical source cylinder code is shown in sale details. | | |
+| POS-102 | Void permission visibility | Login as user without POS_VOID permission. | Delete/Void action is not visible. | | |
+| POS-103 | Void authorized user | Login as user with POS_VOID permission and select a posted sale. | Delete button is visible only for posted sale. | | |
+| POS-104 | Void complete reversal | Void a posted sale with reason. | Sale becomes VOID; gas/cylinder inventory, cash and customer ledger effects are reversed atomically. | | |
+| POS-105 | Void reason required | Attempt void with blank reason. | Void is rejected and original sale remains posted. | | |
+| POS-106 | Double void | Attempt to void an already voided sale. | Second void is rejected and no duplicate reversal is created. | | |
+| POS-107 | Void audit trail | Void a sale and reopen its details. | Void date/time, voiding user and reason are retained. | | |
+| POS-108 | Unauthorized server bypass | POST directly to sales/void without POS_VOID permission. | Server returns Forbidden; sale and ledgers remain unchanged. | | |
+| POS-109 | Cross-branch protection | Request another branch's sale id from history/details/void. | Sale is not exposed or modified. | | |
+
 ## Final POS Acceptance Summary
 
 | Area | Passed | Failed | Not Executed | Notes |
