@@ -60,7 +60,7 @@
 
 <div class="modal fade" id="form" tabindex="-1">
     <div class="modal-dialog">
-        <form method="post" action="<?= site_url('inventory/opening/save') ?>" class="modal-content">
+        <form method="post" action="<?= site_url('inventory/opening/save') ?>" class="modal-content" onsubmit="syncOpeningFields()">
             <?= csrf_field() ?>
             <input type="hidden" name="opening_id" id="openingId">
             <input type="hidden" name="inventory_type" id="editInventoryType">
@@ -120,6 +120,16 @@
 </div>
 
 <script>
+function syncOpeningFields() {
+    // The visible selects are disabled during edit, so their values must be
+    // copied to the hidden POST fields before the form is submitted.
+    document.getElementById('editInventoryType').value =
+        document.getElementById('invType').value || '';
+
+    document.getElementById('editCylinderTypeId').value =
+        document.getElementById('cylinderTypeId').value || '';
+}
+
 function toggleOpening() {
     const filled = document.getElementById('invType').value === 'filled_cylinder';
     document.getElementById('gasWeightWrap').style.display = filled ? 'block' : 'none';
@@ -137,8 +147,7 @@ function prepareAdd() {
     document.getElementById('comments').value = '';
     document.getElementById('invType').disabled = false;
     document.getElementById('cylinderTypeId').disabled = false;
-    document.getElementById('editInventoryType').value = '';
-    document.getElementById('editCylinderTypeId').value = '';
+    syncOpeningFields();
     toggleOpening();
 }
 
@@ -149,15 +158,21 @@ function prepareEdit(row) {
     document.getElementById('invType').value = row.type;
     document.getElementById('cylinderTypeId').value = row.cylinderTypeId;
     document.getElementById('quantity').value = row.quantity;
-    document.getElementById('actualGasWeight').value = row.type === 'filled_cylinder' && row.quantity > 0 ? '' : '';
+    document.getElementById('actualGasWeight').value = '';
     document.getElementById('comments').value = row.comments || '';
     document.getElementById('invType').disabled = true;
     document.getElementById('cylinderTypeId').disabled = true;
-    document.getElementById('editInventoryType').value = row.type;
-    document.getElementById('editCylinderTypeId').value = row.cylinderTypeId;
+    syncOpeningFields();
     toggleOpening();
 }
-document.getElementById('invType')?.addEventListener('change', toggleOpening);
+
+document.getElementById('invType')?.addEventListener('change', function () {
+    syncOpeningFields();
+    toggleOpening();
+});
+
+document.getElementById('cylinderTypeId')?.addEventListener('change', syncOpeningFields);
+
 toggleOpening();
 </script>
 <?= $this->endSection() ?>
