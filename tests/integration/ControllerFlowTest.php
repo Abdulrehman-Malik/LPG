@@ -142,7 +142,7 @@ final class ControllerFlowTest extends CIUnitTestCase
             'supplier_id' => $supplierId,
             'lines' => [[
                 'line_type' => 'gas_kg',
-                'cylinder_type_id' => null,
+                'cylinder_type_id' => $this->typeId(),
                 'quantity' => 10,
                 'actual_gas_weight_kg' => 0,
                 'unit_rate' => 100,
