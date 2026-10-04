@@ -42,7 +42,7 @@
 <div class="col-lg-9 pos-lines-panel"><div class="card"><div class="card-body">
 
 <div class="row g-3 mb-3">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label fw-semibold">Transaction Type</label>
     <select name="transaction_type" id="transactionType" class="form-select">
       <option value="gas_sale">Gas Sale / Refill</option>
@@ -51,24 +51,25 @@
       <option value="cylinder_return">Cylinder Return / Refund Deposit</option>
     </select>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
+    <label class="form-label fw-semibold">Gas Entry</label>
+    <select id="gasEntryMode" class="form-select"><option value="quantity">KG</option><option value="amount">Rs.</option></select>
+  </div>
+  <div class="col-md-3">
     <label class="form-label">Customer</label>
     <select name="customer_id" id="customer_id" class="form-select">
       <option value="">Walk-in / Cash</option>
       <?php foreach($customers as $c): ?><option value="<?=$c['id']?>"><?=esc(($c['code']?$c['code'].' — ':'').$c['name'])?></option><?php endforeach; ?>
     </select>
-    <div id="customerCreditStatus" class="small mt-1 text-muted">Walk-in / Cash: credit sale not allowed.</div>
+    <div id="customerCreditStatus" class="small mt-1 text-muted text-nowrap">Walk-in / Cash: credit sale not allowed.</div>\n    <div id="customerOsBalance" class="mt-1 fw-bold text-primary">Current OS Balance: Rs. 0.00</div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label">Transaction Time</label>
     <input name="transaction_at" type="datetime-local" class="form-control" value="<?=date('Y-m-d\TH:i')?>">
   </div>
 </div>
 
 <div id="standardTransaction">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h6 class="mb-0" id="linesTitle">Gas / Refill Lines</h6><div id="gasEntryModeBox" class="d-flex align-items-center gap-2"><label for="gasEntryMode" class="small fw-semibold mb-0">Gas Entry:</label><select id="gasEntryMode" class="form-select form-select-sm" style="width:auto"><option value="quantity">KG</option><option value="amount">Rs.</option></select></div>
-  </div>
   <div class="table-responsive">
     <table class="table table-sm align-middle" id="lines">
       <thead id="lineHead"></thead>
@@ -149,13 +150,14 @@ function transactionType(){return document.getElementById('transactionType').val
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:String(creditSaleAllowed[String(id)]??'0')==='1'}:null;}
 function refreshCustomer(){
- const c=selectedCustomer(),box=document.getElementById('customerCreditStatus');
+ const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalance');
+ if(osBox)osBox.textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
  if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.';return c;}
- if(creditLimitMode==='none'){box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited — Current OS: Rs. '+c.balance.toFixed(2);return c;}
- if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Shop credit limit reached. Shop OS: Rs. '+shopOutstanding.toFixed(2)+' / Rs. '+shopCreditLimit.toFixed(2);return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Shop Limit: Rs. '+shopCreditLimit.toFixed(2)+' — Shop OS: Rs. '+shopOutstanding.toFixed(2)+' — Available: Rs. '+available.toFixed(2);return c;}
- const available=Math.max(0,c.limit-c.balance);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached. Current OS: Rs. '+c.balance.toFixed(2)+' / Rs. '+c.limit.toFixed(2);return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' — Current OS: Rs. '+c.balance.toFixed(2)+' — Available: Rs. '+available.toFixed(2);return c;
+ if(creditLimitMode==='none'){box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited';return c;}
+ if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Shop credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Rs. '+shopCreditLimit.toFixed(2);return c;}
+ const available=Math.max(0,c.limit-c.balance);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2);return c;
 }
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
@@ -287,7 +289,7 @@ function recalc(){
 }
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
- document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeBox').style.display=t==='gas_sale'?'flex':'none';
+ document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'block';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
@@ -320,9 +322,9 @@ document.getElementById('customer_id').onchange=()=>{
   refreshForm();
   if(selected){
     const c=selectedCustomer();
-    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
+    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);\n    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
   }else{
-    document.getElementById('previousOs').textContent='0.00';
+    document.getElementById('previousOs').textContent='0.00';\n    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. 0.00';
   }
   recalc();
 };
