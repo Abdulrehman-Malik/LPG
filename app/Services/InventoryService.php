@@ -101,15 +101,7 @@ class InventoryService{
 
   if($adjustmentScope==='bulk'){
    if($type==='gas_kg'){
-    if($typeId!==null) throw new RuntimeException('Bulk Gas KG adjustment does not use a cylinder type.');
-    if($direction==='out' && $this->stock($locationId,$type,null)<$qty) throw new RuntimeException('Insufficient gas stock.');
-    $this->db->table('inventory_movements')->insert([
-     'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$qty,
-     'direction'=>$direction,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'adjustment','source_id'=>0,
-     'created_by'=>$userId,'notes'=>$notes?:'Manual gas stock adjustment'
-    ]);
-    AuditService::log('CREATE','inventory_adjustment',0,null,['inventory_type'=>$type,'cylinder_type_id'=>null,'quantity'=>$qty,'direction'=>$direction,'actual_gas_weight_kg'=>$actualGasWeight,'notes'=>$notes,'adjustment_scope'=>'bulk'],$userId,$locationId);
-    return;
+    throw new RuntimeException('Gas is not an independent stock item. Select Specific — Physical Cylinder and adjust the gas weight on that cylinder.');
    }
 
    if(!$typeId) throw new RuntimeException('Cylinder type is required.');
