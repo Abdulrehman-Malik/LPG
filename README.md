@@ -44,9 +44,9 @@ The POS no longer contains a separate default-transaction preference control. It
 1. Create/configure a MySQL 8+ database.
 2. Configure the local environment from `.env.example`.
 3. Run `database/schema.sql` on the database.
-4. Run `database/migrations/20260930_shop_settings.sql` once after the schema (fresh or existing database).
-5. On an existing database, run `database/migrations/20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
-5. Run Composer dependencies: `composer install`.
+4. Run the required non-destructive migrations after the schema: `20260930_shop_settings.sql`, `20261003_pos_transaction_type.sql`, `20261003_individual_cylinder_tracking.sql`, and `20261004_purchase_inventory_integrity.sql`.
+5. On an existing database, also run `database/migrations/20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
+6. Run Composer dependencies: `composer install`.
 6. Point Apache/Nginx to the project's `public` directory.
 7. Open the application and log in with the configured user.
 
