@@ -77,7 +77,7 @@ Cylinder-type inventory policy overrides remain available under Inventory Contro
 - Stock validation must be configurable at shop/location level, with optional cylinder-type overrides.
 - When stock validation is ON, gas sales must not exceed available gas stock.
 - When stock validation is OFF, a gas sale that exceeds available stock requires an explicit user confirmation and the override must be traceable.
-- The system must provide a separate gas-wastage report with date-range and cylinder-type filtering.
+- The system must provide a separate gas-wastage report with date-range and cylinder-type filtering. Wastage reduces the actual gas weight on the affected physical filled cylinder.
 - A filled physical cylinder can be converted to empty stock through an authorized inventory wastage/leakage adjustment. The gas lost is deducted from gas inventory and recorded with physical cylinder, user, date and reason.
 - Wastage policy must support percentage or fixed-KG configuration, at shop level with cylinder-type override capability.
 - Residual gas/wastage from a cylinder that is made empty must never exceed the cylinder's current actual gas weight.
@@ -121,7 +121,7 @@ A requirement is marked Done only after implementation, validation, transaction 
 
 ## SQA-Confirmed POS / Inventory Requirements
 - Filled-cylinder POS selection must show the currently available filled-cylinder quantity for the selected cylinder type and a clear gas-stock figure without misleading the user about whether gas is allocated to individual cylinders.
-- The current inventory model maintains a location-level gas KG balance plus physical cylinder units. Each filled cylinder unit stores its actual gas weight and status, allowing partial fills and actual-weight deductions.
+- The current inventory model does NOT maintain an independent gas KG stock bucket. Available gas is derived from the actual gas weight of company-owned filled physical cylinders. Each filled cylinder unit stores its actual gas weight and status, allowing partial fills and actual-weight deductions.
 - The system must support partially filled cylinders: a cylinder type defines maximum capacity, while each filled cylinder may contain an actual gas weight from 0 up to that capacity. Inventory must prevent actual gas weight above cylinder capacity and account for actual weight when selling, refilling and exchanging cylinders.
 - POS transaction types must use user-friendly names and display a short operational hint explaining what the selected transaction will do.
 - The active Counter Cash session status should be prominent at the top-left of the POS screen.
