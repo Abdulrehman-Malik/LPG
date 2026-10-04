@@ -49,6 +49,14 @@
                         <div class="form-text">This value is selected automatically when the POS opens. The cashier can still change the transaction type for the current invoice.</div>
                     </div>
                     <div class="col-md-5">
+                        <label class="form-label">Source Filled Cylinder Selection on POS</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="allow_pos_source_cylinder_selection" id="allowPosSourceCylinderSelection" <?= !empty($settings['allow_pos_source_cylinder_selection']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="allowPosSourceCylinderSelection">Allow user to select the source filled cylinder on POS</label>
+                        </div>
+                        <div class="form-text">ON: cashier selects one source cylinder per gas line. OFF: system automatically consumes physical filled cylinders in ascending sequence order.</div>
+                    </div>
+                    <div class="col-md-5">
                         <label class="form-label">Individual Cylinder Tracking</label>
                         <div class="form-check form-switch mt-2">
                             <input class="form-check-input" type="checkbox" name="individual_cylinder_tracking" id="individualCylinderTracking" <?= !empty($settings['individual_cylinder_tracking']) ? 'checked' : '' ?>>
