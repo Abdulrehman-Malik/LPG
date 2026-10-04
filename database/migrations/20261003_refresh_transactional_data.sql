@@ -66,6 +66,12 @@ DELIMITER $$
 
 CREATE PROCEDURE sp_lpg_refresh_transactional_data()
 BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET FOREIGN_KEY_CHECKS = 1;
+        RESIGNAL;
+    END;
+
     IF @lpg_refresh_transactional_data = 1 THEN
 
         SET FOREIGN_KEY_CHECKS = 0;
