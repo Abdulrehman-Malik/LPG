@@ -75,6 +75,7 @@ jobs:
           database.tests.password: root
           database.tests.DBDriver: MySQLi
           database.tests.DBPrefix: ""
+          database.tests.DBDebug: true
         run: |
           if [ -d tests ] && find tests -type f \( -name '*Test.php' -o -name '*TestCase.php' \) | grep -q .; then
             php vendor/bin/phpunit --no-coverage
