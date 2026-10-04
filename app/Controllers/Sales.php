@@ -74,7 +74,7 @@ class Sales extends Controller
     public function history()
     {
         if($r=$this->guard()) return $r;
-        $db=\\Config\\Database::connect();
+        $db=\Config\Database::connect();
         $from=trim((string)$this->request->getGet('from')) ?: date('Y-m-d');
         $to=trim((string)$this->request->getGet('to')) ?: $from;
         if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/',$from)) $from=date('Y-m-d');
@@ -90,7 +90,7 @@ class Sales extends Controller
     public function details(int $id)
     {
         if($r=$this->guard()) return $r;
-        $db=\\Config\\Database::connect(); $locationId=(int)session()->get('location_id');
+        $db=\Config\Database::connect(); $locationId=(int)session()->get('location_id');
         $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone,u.name created_by_name,vu.name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where(['s.id'=>$id,'s.location_id'=>$locationId])->get()->getRowArray();
         if(!$sale) return $this->response->setStatusCode(404)->setJSON(['error'=>'Sale not found.']);
         $items=$db->table('sale_items si')->select('si.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg,cu.unit_code customer_unit_code')->join('cylinder_types ct','ct.id=si.cylinder_type_id','left')->join('cylinder_units cu','cu.id=si.customer_cylinder_unit_id','left')->where('si.sale_id',$id)->orderBy('si.line_no')->get()->getResultArray();
