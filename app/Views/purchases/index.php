@@ -104,7 +104,7 @@
                                 <th class="ps-3" style="width:18%">Stock Type</th>
                                 <th style="width:18%">Cylinder Type</th>
                                 <th class="text-end" style="width:10%">Quantity</th>
-                                <th class="text-end" style="width:16%">Actual Gas (KG)</th>
+                                <th class="text-end" style="width:16%">Actual Gas / Cylinder (KG)</th>
                                 <th class="text-end" style="width:15%">Unit Rate</th>
                                 <th class="text-end" style="width:18%">Line Amount</th>
                                 <th class="text-center pe-3" style="width:5%"></th>
@@ -219,7 +219,6 @@ function addLine() {
     row.innerHTML = `
         <td class="ps-3">
             <select class="form-select type">
-                <option value="gas_kg">Gas (KG)</option>
                 <option value="filled_cylinder">Filled Cylinder</option>
                 <option value="empty_cylinder">Empty Cylinder</option>
             </select>
@@ -234,7 +233,7 @@ function addLine() {
             <input class="form-control qty text-end" type="number" min=".001" step=".001" value="1">
         </td>
         <td>
-            <input class="form-control actual text-end" type="number" min="0" step=".001" placeholder="Filled only">
+            <input class="form-control actual text-end" type="number" min="0" step=".001" placeholder="Filled cylinders only">
         </td>
         <td>
             <input class="form-control rate text-end" type="number" min="0" step=".01" value="0">
