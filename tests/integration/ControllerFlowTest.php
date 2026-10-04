@@ -187,20 +187,21 @@ final class ControllerFlowTest extends CIUnitTestCase
 
     public function testInventoryAdjustmentControllerPostsGasIntoStock(): void
     {
-        $before = (new \App\Services\InventoryService())->stock($this->locationId, 'gas_kg');
+        $before = (new \\App\\Services\\InventoryService())->stock($this->locationId, 'gas_kg');
+        $unitId = (new CylinderUnitService())->createUnits($this->locationId, $this->typeId(), 1, 'empty', 0, $this->userId, 'test', 0)[0];
 
         $this->controller(Inventory::class, [
             'inventory_type' => 'gas_kg',
-            'cylinder_type_id' => '',
+            'cylinder_type_id' => $this->typeId(),
             'quantity' => 2,
             'direction' => 'in',
             'actual_gas_weight_kg' => 0,
-            'adjustment_scope' => 'bulk',
-            'source_cylinder_unit_id' => '',
+            'adjustment_scope' => 'specific',
+            'source_cylinder_unit_id' => $unitId,
             'notes' => 'Controller integration test',
         ])->adjust();
 
-        $after = (new \App\Services\InventoryService())->stock($this->locationId, 'gas_kg');
+        $after = (new \\App\\Services\\InventoryService())->stock($this->locationId, 'gas_kg');
         $this->assertEqualsWithDelta($before + 2, $after, 0.001);
 
         $movement = $this->db->table('inventory_movements')
