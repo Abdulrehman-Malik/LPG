@@ -663,14 +663,16 @@ class SalesService
         }
         $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
         $newOs=max(0,$remainingOs+$creditAmount);
-        $settings=(new ShopSettingsModel())->forLocation($this->currentLocationId ?? 0);
-        $validationMode=(string)($settings['credit_limit_validation_mode']??'none');
-        if($customerId!==null && $validationMode!=='none'){
-            $creditLimit=$validationMode==='shop'?(float)($settings['shop_credit_limit']??0):(float)(($this->customers->find($customerId)['credit_limit']??0));
+        if($customerId!==null && $creditAmount>0.01){
+            $customerForCredit=$this->customers->find($customerId);
+            if(!$customerForCredit || !(int)$customerForCredit['is_active']) throw new RuntimeException('Customer is unavailable.');
+            if(!(int)($customerForCredit['allow_credit_sale']??0)){
+                throw new RuntimeException('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record before posting a credit sale.');
+            }
+            $creditLimit=(float)($customerForCredit['credit_limit']??0);
             if($newOs>$creditLimit+0.01){
                 $available=max(0,$creditLimit-$previousOs);
-                $label=$validationMode==='shop'?'shop':'customer';
-                throw new RuntimeException(ucfirst($label).' credit limit exceeded. Available additional credit is Rs. '.number_format($available,2).'.');
+                throw new RuntimeException('Customer credit limit exceeded. Available additional credit is Rs. '.number_format($available,2).'.');
             }
         }
         return ['sale_payments'=>$salePayments,'settlements'=>$settlements,'credit_amount'=>$creditAmount,'previous_os'=>$previousOs,'payment_total'=>$paymentTotal,'net_receivable'=>$maxReceivable,'remaining_os'=>$newOs];
