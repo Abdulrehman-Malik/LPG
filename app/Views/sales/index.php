@@ -328,7 +328,7 @@ document.getElementById('saleForm').onsubmit=()=>{
    const seenTypes=new Set(),seenSources=new Set();
    for(const [i,l] of lines.entries()){
      const q=Number(l.quantity||0),a=Number(l.entered_amount||0);
-     if(!l.cylinder_type_id||q<=0||a<=0){alert('Gas line '+(i+1)+' is invalid. Enter quantity or amount.');return false;}
+     if(!l.cylinder_type_id || (document.getElementById('gasEntryMode').value==='amount' ? a<=0 : q<=0)){alert('Gas line '+(i+1)+' is invalid. Enter a valid '+(document.getElementById('gasEntryMode').value==='amount'?'amount':'quantity')+'.');return false;}
      if(seenTypes.has(String(l.cylinder_type_id))){alert('Cylinder type cannot be used on multiple gas sale lines. Combine the quantity into one line.');return false;}
      seenTypes.add(String(l.cylinder_type_id));
      if(allowPosSourceCylinderSelection){
