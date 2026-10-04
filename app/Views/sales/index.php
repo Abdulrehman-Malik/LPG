@@ -61,7 +61,8 @@
       <option value="">Walk-in / Cash</option>
       <?php foreach($customers as $c): ?><option value="<?=$c['id']?>"><?=esc(($c['code']?$c['code'].' — ':'').$c['name'])?></option><?php endforeach; ?>
     </select>
-    <div id="customerCreditStatus" class="small mt-1 text-muted text-nowrap">Walk-in / Cash: credit sale not allowed.</div>\n    <div id="customerOsBalance" class="mt-1 fw-bold text-primary">Current OS Balance: Rs. 0.00</div>
+    <div id="customerCreditStatus" class="small mt-1 text-muted text-nowrap">Walk-in / Cash: credit sale not allowed.</div>
+    <div id="customerOsBalance" class="mt-1 fw-bold text-primary">Current OS Balance: Rs. 0.00</div>
   </div>
   <div class="col-md-3">
     <label class="form-label">Transaction Time</label>
@@ -322,9 +323,11 @@ document.getElementById('customer_id').onchange=()=>{
   refreshForm();
   if(selected){
     const c=selectedCustomer();
-    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);\n    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
+    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
+    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
   }else{
-    document.getElementById('previousOs').textContent='0.00';\n    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. 0.00';
+    document.getElementById('previousOs').textContent='0.00';
+    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. 0.00';
   }
   recalc();
 };
