@@ -49,6 +49,7 @@ class Customers extends Controller
             'address'=>trim((string)$this->request->getPost('address')) ?: null,
             'vehicle_no'=>trim((string)$this->request->getPost('vehicle_no')) ?: null,
             'credit_limit'=>(float)$this->request->getPost('credit_limit'),
+            'allow_credit_sale'=>$this->request->getPost('allow_credit_sale') ? 1 : 0,
             'opening_balance'=>(float)$this->request->getPost('opening_balance'),
             'is_active'=>$this->request->getPost('is_active') ? 1 : 0,
         ];
