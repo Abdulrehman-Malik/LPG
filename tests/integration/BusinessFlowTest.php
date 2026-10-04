@@ -214,12 +214,12 @@ final class BusinessFlowTest extends CIUnitTestCase
                 'cylinder_status' => 'filled',
                 'quantity' => 1,
             ]],
-            'payments' => [['payment_mode' => 'cash', 'amount' => 2180]],
+            'payments' => [['payment_mode' => 'cash', 'amount' => 2500]],
         ], $this->userId, $this->locationId);
 
         $unit = $this->db->table('cylinder_units')->where('id', $unitId)->get()->getRowArray();
         $this->assertSame('sold', $unit['status']);
-        $this->assertEqualsWithDelta(2180, (float) $result['total'], 0.001);
+        $this->assertEqualsWithDelta(2500, (float) $result['total'], 0.001);
         $this->assertSame(0, (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId));
 
         $this->closeCash($sessionId);
