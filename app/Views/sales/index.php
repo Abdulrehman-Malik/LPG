@@ -182,7 +182,7 @@ function refreshGasSourceLine(tr, resetSource=true){
   if(unit){
     const max=Number(unit.gas_weight_kg||0);
     qty.max=max;
-    if(Number(qty.value||0)>max)qty.value=max;
+    if(tr.dataset.entryMode!=='amount' && Number(qty.value||0)>max)qty.value=max;
   }else{
     qty.removeAttribute('max');
   }
@@ -295,7 +295,7 @@ function recalc(){
  tbody.querySelectorAll('tr').forEach(tr=>{
    const qty=Math.max(0,Number(tr.querySelector('.qty')?.value||0));
    let amount=0,gas=0;
-   if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value;const available=(filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);const prior=Number(usedByType[typeId]||0);const remaining=Math.max(0,available-prior);tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));tr.querySelector('.qty').max=Math.max(0,remaining);if(qty>remaining){tr.querySelector('.qty').value=remaining;gas=remaining;}usedByType[typeId]=(prior+gas);const rate=Number(tr.querySelector('.gasRate').value||0);amount=gas*rate;}
+   if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value;const available=(filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);const prior=Number(usedByType[typeId]||0);const remaining=Math.max(0,available-prior);tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));tr.querySelector('.qty').max=Math.max(0,remaining);if(qty>remaining && tr.dataset.entryMode!=='amount'){tr.querySelector('.qty').value=remaining;gas=remaining;}usedByType[typeId]=(prior+gas);const rate=Number(tr.querySelector('.gasRate').value||0);amount=gas*rate;}
    else if(t==='cylinder_sale'){gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=gas*gr+q*cr;}
    gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent='Rs. '+amount.toFixed(2);
  });
@@ -359,7 +359,7 @@ document.getElementById('saleForm').onsubmit=()=>{
    const seenTypes=new Set(),seenSources=new Set();
    for(const [i,l] of lines.entries()){
      const q=Number(l.quantity||0);
-     if(!l.cylinder_type_id||q<=0||Number(l.entered_amount||0)<=0){alert('Gas line '+(i+1)+' requires a valid amount; quantity is calculated automatically from the current gas rate.');return false;}
+     if(!l.cylinder_type_id||q<=0){alert('Gas line '+(i+1)+' is invalid. Enter quantity or amount.');return false;}
      if(seenTypes.has(String(l.cylinder_type_id))){alert('Cylinder type cannot be used on multiple gas sale lines. Combine the quantity into one line.');return false;}
      seenTypes.add(String(l.cylinder_type_id));
      if(allowPosSourceCylinderSelection){
