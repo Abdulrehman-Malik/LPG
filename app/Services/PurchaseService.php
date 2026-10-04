@@ -15,7 +15,7 @@ class PurchaseService{
    $type=(string)($l['line_type']??'');$qty=(float)($l['quantity']??0);$rate=(float)($l['unit_rate']??0);$ct=isset($l['cylinder_type_id'])&&$l['cylinder_type_id']!==''?(int)$l['cylinder_type_id']:null;
    if($qty<=0||$rate<0) throw new RuntimeException('Invalid purchase line '.($i+1).'.');
    if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase type.');
-   if(!$ct) throw new RuntimeException('Cylinder type required.');
+   if($type!=='gas_kg' && !$ct) throw new RuntimeException('Cylinder type required.');
 
    $actualRaw=$l['actual_gas_weight_kg']??null;
    $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0;
