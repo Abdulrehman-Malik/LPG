@@ -112,16 +112,6 @@
                         <tbody id="lines"></tbody>
                     </table>
                 </div>
-                <div class="border-top bg-light px-3 py-3">
-                    <div class="row justify-content-end">
-                        <div class="col-sm-5 col-lg-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-semibold">Current Purchase</span>
-                                <span class="fw-bold fs-5">Rs. <span id="total">0.00</span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
