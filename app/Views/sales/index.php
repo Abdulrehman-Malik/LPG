@@ -45,7 +45,7 @@
     <div class="col-md-2"><label class="form-label">Customer</label><input type="text" id="historyCustomer" class="form-control" placeholder="Name / code"></div>
     <div class="col-md-2"><label class="form-label">Transaction Type</label><select id="historyType" class="form-select"><option value="">All Types</option><option value="gas_sale">Gas Sale</option><option value="cylinder_sale">Cylinder Sale</option><option value="security_deposit">Security Deposit</option><option value="cylinder_return">Cylinder Return</option><option value="refill_service">Refill Service</option><option value="cylinder_exchange">Cylinder Exchange</option><option value="filled_cylinder">Filled Cylinder</option><option value="empty_sale">Empty Cylinder</option><option value="mixed">Mixed</option></select></div>
     <div class="col-md-2"><label class="form-label">Status</label><select id="historyStatus" class="form-select"><option value="">All</option><option value="posted">Posted</option><option value="voided">Void</option></select></div>
-    <div class="col-12 d-flex justify-content-between align-items-center mt-2"><button type="button" class="btn btn-primary" id="historySearch">Search</button><span class="small text-muted" id="historyCount"></span></div>
+    <div class="col-12 d-flex justify-content-between align-items-center mt-2"><div class="d-flex gap-2"><button type="button" class="btn btn-primary" id="historySearch">Search</button><button type="button" class="btn btn-outline-secondary" id="historyAll">All History</button></div><span class="small text-muted" id="historyCount"></span></div>
   </div></div></div>
   <div class="card"><div class="table-responsive"><table class="table table-sm table-hover align-middle mb-0"><thead><tr>
     <th>Sale No.</th><th>Date / Time</th><th>Customer</th><th>Type</th><th class="text-end">Net Amount</th><th class="text-end">Received</th><th class="text-end">Credit / OS</th><th>Status</th><th>User</th><th class="text-end">Action</th>
@@ -166,6 +166,7 @@ function voidSale(id,no){if(!canVoidSales)return;if(!confirm('Void sale '+no+'? 
 document.getElementById('newSaleTab').onclick=()=>{document.getElementById('saleForm').style.display='';document.getElementById('saleHistoryPanel').style.display='none';document.getElementById('newSaleTab').className='btn btn-primary';document.getElementById('saleHistoryTab').className='btn btn-outline-primary';};
 document.getElementById('saleHistoryTab').onclick=()=>{document.getElementById('saleForm').style.display='none';document.getElementById('saleHistoryPanel').style.display='';document.getElementById('newSaleTab').className='btn btn-outline-primary';document.getElementById('saleHistoryTab').className='btn btn-primary';loadSaleHistory();};
 document.getElementById('historySearch').onclick=loadSaleHistory;
+document.getElementById('historyAll').onclick=()=>{document.getElementById('historyFrom').value='2000-01-01';document.getElementById('historyTo').value=new Date().toISOString().slice(0,10);loadSaleHistory();};
 const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)?>;
 const rates=<?=json_encode($cylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
@@ -286,7 +287,7 @@ function refreshPaymentModes(){const walkIn=!selectedCustomerId(),customer=selec
 function addPayment(){
  const div=document.createElement('div');div.className='input-group mb-2 payment';
  div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="any" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';
- payments.appendChild(div);div.querySelector('.mode').value=defaultPaymentMode;div.querySelector('.mode').onchange=refreshPaymentModes;div.querySelector('.remove').onclick=()=>{div.remove();};refreshPaymentModes();
+ payments.appendChild(div);div.querySelector('.mode').value=defaultPaymentMode;div.querySelector('.mode').onchange=()=>{refreshPaymentModes();recalc();};div.querySelector('.amount').oninput=recalc;div.querySelector('.remove').onclick=()=>{div.remove();};refreshPaymentModes();
 }
 function paymentTotal(){return [...payments.querySelectorAll('.payment')].reduce((s,p)=>s+Number(p.querySelector('.amount').value||0),0);}
 function gasForCylinderSale(tr){
@@ -353,10 +354,10 @@ document.getElementById('customer_id').onchange=()=>{
   if(selected){
     const c=selectedCustomer();
     document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
-    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
+    document.getElementById('customerOsBalanceValue').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
   }else{
     document.getElementById('previousOs').textContent='0.00';
-    document.getElementById('customerOsBalance').textContent='Current OS Balance: Rs. 0.00';
+    document.getElementById('customerOsBalanceValue').textContent='0.00';
   }
   recalc();
 };
