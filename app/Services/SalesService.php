@@ -470,6 +470,8 @@ class SalesService
                 'status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,
                 'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,
                 'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
+                'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>$paymentPlan['payment_total'],
+                'net_receivable_amount'=>$paymentPlan['net_receivable'],'os_balance'=>$paymentPlan['remaining_os'],
                 'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId
             ]);
             $saleId=(int)$this->db->insertID();
@@ -612,7 +614,10 @@ class SalesService
             if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
             $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
-            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId]);
+            $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
+                'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>$paymentPlan['payment_total'],
+                'net_receivable_amount'=>$paymentPlan['net_receivable'],'os_balance'=>$paymentPlan['remaining_os'],
+                'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId]);
             $saleId=(int)$this->db->insertID();$this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['type'],'cylinder_type_id'=>$row['cylinder_type_id']],$inventory));
             foreach($prepared as $row){
                 $this->db->table('sale_items')->insert(['sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['gas_rate']+$row['cyl_rate']):$row['cyl_rate'],'standard_rate'=>$row['status']==='filled'?(($row['gas_kg']/max($row['quantity'],1))*$row['std_gas']+$row['cyl_rate']):$row['cyl_rate'],'custom_rate_flag'=>0,'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>'Cylinder sale']);
