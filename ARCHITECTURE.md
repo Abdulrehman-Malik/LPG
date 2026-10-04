@@ -30,9 +30,11 @@ Source of truth:
 - immutable inventory movements
 
 Track:
-- gas KG
-- filled cylinders by type
-- empty cylinders by type
+- filled physical cylinders by type and actual gas weight
+- empty physical cylinders by type
+
+Gas KG is a derived value, never an independent stock entity:
+`available_gas_kg = SUM(cylinder_units.gas_weight_kg) WHERE status = 'filled'`.
 
 Use reversal movements instead of deleting posted movements.
 
@@ -177,4 +179,4 @@ Each filled physical cylinder is represented by a `cylinder_units` record with a
 
 ## Wastage Behavior
 
-Partial wastage deducts only the recorded gas loss and leaves the physical cylinder filled with its remaining gas. If the recorded wastage equals all remaining gas, the physical cylinder is moved to empty stock. Wastage is limited by the configured shop/type percentage or fixed-KG allowance and is recorded with physical unit, user, reason and timestamp.
+Partial wastage deducts only the recorded gas loss from the physical cylinder's `gas_weight_kg`; the derived gas stock therefore decreases automatically while the cylinder remains filled with its remaining gas. If the recorded wastage equals all remaining gas, the physical cylinder is moved to empty stock. Wastage is limited by the configured shop/type percentage or fixed-KG allowance and is recorded with physical unit, user, reason and timestamp.
