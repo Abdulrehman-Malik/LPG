@@ -19,7 +19,7 @@
 --
 --     USE perfect_lpg;
 --     SET @lpg_refresh_transactional_data = 1;
---     SOURCE database/migrations/20261003_refresh_transactional_data.sql;
+--     SOURCE database/migrations/011_20261003_refresh_transactional_data.sql;
 --
 --   Or pass the file through mysql after setting the session variable in the
 --   same connection. Do NOT use this against production unless a deliberate
