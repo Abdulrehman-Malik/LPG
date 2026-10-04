@@ -101,3 +101,15 @@ These rules are mandatory and are enforced in both the POS UI and SalesService s
 3. **Credit limit:** For an actual customer allowed to buy on credit, the resulting customer outstanding balance must never exceed that customer's configured **Credit Limit**. A zero credit limit therefore permits no credit.
 4. **Server-side enforcement:** UI restrictions are not trusted by themselves; direct POST requests are validated by the sales service as well.
 5. **Customer configuration:** The Customers / Parties screen shows the credit-sale status and provides the **Allow Credit Sale** option alongside the customer's Credit Limit.
+
+
+## POS Source Filled Cylinder Selection
+
+Shop Settings → POS & Sales includes **Allow user to select the source filled cylinder on POS**.
+
+- **ON:** Gas Sale / Refill shows the Source Filled Cylinder dropdown. One source physical cylinder can be used on only one POS line, the entered KG cannot exceed that cylinder's available gas, and stock is deducted only from the selected cylinder.
+- **OFF:** The source dropdown is hidden. The system automatically allocates gas from filled physical cylinders in ascending global sequence (cylinder unit ID), consuming one cylinder's available quantity before moving to the next.
+- The same cylinder type cannot appear on multiple gas-sale lines. Available gas stock is shown in the Cylinder Type dropdown as the sum of gas across its filled physical cylinders.
+- Server-side validation and transaction locking enforce the same rules and prevent concurrent overselling.
+
+Migration: `database/migrations/014_20261004_pos_source_filled_cylinder_selection.sql`.
