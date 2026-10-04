@@ -48,8 +48,9 @@ jobs:
       - name: Prepare test environment
         run: |
           cp env .env
+          sed -i "s# app.baseURL = 'http://localhost:180/LPG/public/'#app.baseURL = 'http://localhost:8080/'#" .env
+          sed -i "s# app_baseURL = 'http://localhost:180/LPG/public/'#app_baseURL = 'http://localhost:8080/'#" .env
           cat >> .env <<'EOF'
-          app.baseURL = 'http://127.0.0.1:8080/'
           database.default.hostname = 127.0.0.1
           database.default.database = perfect_lpg
           database.default.username = root
