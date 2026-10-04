@@ -9,11 +9,31 @@ class InventoryService{
  public function __construct(){ $this->db=Database::connect(); $this->cylinders=new CylinderUnitService(); }
 
  public function stock(int $locationId,string $type,?int $typeId=null,?string $at=null):float{
-  $at=$at?:date('Y-m-d H:i:s'); $date=substr($at,0,10);
-  $q=$this->db->table('inventory_opening_balances')->selectSum('quantity','q')->where(['location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId])->where('inventory_date <=',$date)->get()->getRowArray();
-  $in=$this->db->table('inventory_movements')->selectSum('quantity','q')->where(['location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,'direction'=>'in'])->where('movement_at <=',$at)->get()->getRowArray();
-  $out=$this->db->table('inventory_movements')->selectSum('quantity','q')->where(['location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,'direction'=>'out'])->where('movement_at <=',$at)->get()->getRowArray();
-  return (float)($q['q']??0)+(float)($in['q']??0)-(float)($out['q']??0);
+  /*
+   * Physical cylinder units are the authoritative current inventory state.
+   * Gas is never an independent stock bucket: available gas is always the
+   * sum of actual gas weight on company-owned filled cylinders.
+   *
+   * inventory_movements remains the immutable transaction/audit history.
+   * The optional $at parameter is retained for compatibility.
+   */
+  if($type==='gas_kg'){
+   $row=$this->db->table('cylinder_units')
+      ->selectSum('gas_weight_kg','q')
+      ->where(['location_id'=>$locationId,'status'=>'filled'])
+      ->get()->getRowArray();
+   return (float)($row['q']??0);
+  }
+
+  if(in_array($type,['filled_cylinder','empty_cylinder'],true)){
+   if($typeId===null) return 0;
+   $status=$type==='filled_cylinder'?'filled':'empty';
+   return (float)$this->db->table('cylinder_units')
+      ->where(['location_id'=>$locationId,'cylinder_type_id'=>$typeId,'status'=>$status])
+      ->countAllResults();
+  }
+
+  throw new RuntimeException('Invalid inventory type.');
  }
 
  public function receivePurchase(int $locationId,string $type,?int $typeId,float $qty,float $actualGasWeight,int $purchaseId,int $userId,?int $purchaseLineId=null): void
