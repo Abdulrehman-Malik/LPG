@@ -27,13 +27,13 @@
         </div>
       </div>
       <div class="tab-pane fade" id="supplierPurchases">
-        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Purchase</th><th>Total</th><th>Credit</th><th>Status</th></tr></thead><tbody>
-        <?php foreach($purchases as $r): ?><tr><td><?=esc($r['transaction_at'])?></td><td><?=esc($r['purchase_no'])?></td><td>Rs. <?=number_format((float)$r['total_amount'],2)?></td><td>Rs. <?=number_format((float)$r['credit_amount'],2)?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
+        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Purchase</th><th>Total</th><th>Paid</th><th>Added to Payable</th><th>Status</th></tr></thead><tbody>
+        <?php foreach($purchases as $r): ?><tr><td><?=esc($r['transaction_at'])?></td><td><?=esc($r['purchase_no'])?></td><td>Rs. <?=number_format((float)$r['total_amount'],2)?></td><td>Rs. <?=number_format(max(0,(float)$r['paid_amount']),2)?></td><td>Rs. <?=number_format(max(0,(float)$r['credit_amount']),2)?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
         </tbody></table></div>
       </div>
       <div class="tab-pane fade" id="supplierPayments">
-        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Mode</th><th>Status</th></tr></thead><tbody>
-        <?php foreach($payments as $r): ?><tr><td><?=esc($r['payment_at'])?></td><td><?=esc($r['payment_no'])?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc(ucfirst($r['payment_mode']))?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
+        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Method</th><th>Applied To</th><th>Status</th></tr></thead><tbody>
+        <?php foreach($payments as $r): ?><tr><td><?=esc($r['payment_at'])?></td><td><?=esc($r['payment_no'])?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc(ucfirst($r['payment_mode']))?></td><td><?=esc($r['source'])?><?=!empty($r['purchase_no'])?' · '.esc($r['purchase_no']):''?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
         </tbody></table></div>
       </div>
     </div>
