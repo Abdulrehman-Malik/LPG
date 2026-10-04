@@ -45,9 +45,10 @@ class Purchases extends Controller
         }
 
         $history = [];
+        $purchaseDetails = [];
         if ($activeTab === 'history') {
             $history = $db->table('purchases p')
-                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, s.name AS supplier_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
+                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, p.notes, s.name AS supplier_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
                 ->join('suppliers s', 's.id = p.supplier_id')
                 ->join('purchase_payments pp', 'pp.purchase_id = p.id', 'left')
                 ->where('p.location_id', (int) session()->get('location_id'))
@@ -58,6 +59,42 @@ class Purchases extends Controller
                 ->orderBy('p.id', 'DESC')
                 ->get()
                 ->getResultArray();
+
+            if ($history) {
+                $purchaseIds = array_map(static fn(array $row): int => (int) $row['id'], $history);
+
+                $items = $db->table('purchase_items pi')
+                    ->select('pi.purchase_id, pi.line_no, pi.line_type, pi.quantity, pi.actual_gas_weight_kg, pi.unit_rate, pi.line_total, ct.code AS cylinder_code, ct.name AS cylinder_name')
+                    ->join('cylinder_types ct', 'ct.id = pi.cylinder_type_id', 'left')
+                    ->whereIn('pi.purchase_id', $purchaseIds)
+                    ->orderBy('pi.purchase_id', 'ASC')
+                    ->orderBy('pi.line_no', 'ASC')
+                    ->get()
+                    ->getResultArray();
+
+                $payments = $db->table('purchase_payments pp')
+                    ->select('pp.purchase_id, pp.payment_mode, pp.amount, pp.reference_no, pp.payment_at')
+                    ->whereIn('pp.purchase_id', $purchaseIds)
+                    ->orderBy('pp.purchase_id', 'ASC')
+                    ->orderBy('pp.payment_at', 'ASC')
+                    ->get()
+                    ->getResultArray();
+
+                foreach ($purchaseIds as $purchaseId) {
+                    $purchaseDetails[$purchaseId] = [
+                        'items' => [],
+                        'payments' => [],
+                    ];
+                }
+
+                foreach ($items as $item) {
+                    $purchaseDetails[(int) $item['purchase_id']]['items'][] = $item;
+                }
+
+                foreach ($payments as $payment) {
+                    $purchaseDetails[(int) $payment['purchase_id']]['payments'][] = $payment;
+                }
+            }
         }
 
         return view('purchases/index', [
@@ -66,6 +103,7 @@ class Purchases extends Controller
             'fromDate'         => $fromDate,
             'toDate'           => $toDate,
             'purchaseHistory'  => $history,
+            'purchaseDetails'  => $purchaseDetails,
             'suppliers'        => $suppliers,
             'supplierBalances' => $supplierBalances,
             'types'            => $db->table('cylinder_types')
