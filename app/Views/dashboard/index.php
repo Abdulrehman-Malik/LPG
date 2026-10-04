@@ -230,7 +230,7 @@ $displayStockTab = $stockTab !== '' ? $stockTab : 'filled';
             <?php endif; ?>
 
             <?php if (!$stock[$displayStockTab]['rows']): ?>
-                <div class="alert alert-light border rounded-0 mb-0">No <?= esc(strtolower($stock[$stockTab]['title'])) ?> found in the current physical stock.</div>
+                <div class="alert alert-light border rounded-0 mb-0">No <?= esc(strtolower($stock[$displayStockTab]['title'])) ?> found in the current physical stock.</div>
             <?php endif; ?>
         </div>
     </div>
