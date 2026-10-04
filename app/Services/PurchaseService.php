@@ -34,8 +34,13 @@ class PurchaseService{
    foreach($inventory as $m){if($this->inv->stock($locationId,$m['inventory_type'],$m['cylinder_type_id'])<0)throw new RuntimeException('Invalid inventory state.');}
    $no='P'.date('YmdHis').'-'.random_int(100,999);
    $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
-   foreach($prepared as $row){$row['purchase_id']=$id;$this->db->table('purchase_items')->insert($row);}
-   foreach($inventory as $m){
+   $purchaseLineIds=[];
+   foreach($prepared as $row){
+    $row['purchase_id']=$id;
+    $this->db->table('purchase_items')->insert($row);
+    $purchaseLineIds[(int)$row['line_no']]=(int)$this->db->insertID();
+   }
+   foreach($inventory as $index=>$m){
     $this->inv->receivePurchase(
       $locationId,
       $m['inventory_type'],
@@ -43,7 +48,8 @@ class PurchaseService{
       (float)$m['quantity'],
       (float)$m['actual_gas_weight_kg'],
       $id,
-      $userId
+      $userId,
+      $purchaseLineIds[$index+1] ?? null
     );
    }
    $remainingCurrent=$currentPayable;$cashPurchase=0;
