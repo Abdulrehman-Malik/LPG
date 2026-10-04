@@ -6,6 +6,7 @@ on:
       - main
       - qa/runtime-deployment
       - qa/runtime-deployment-verify
+      - qa/workflow-cleanup
   workflow_dispatch:
 
 jobs:
@@ -26,7 +27,7 @@ jobs:
           --health-retries=20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -47,8 +48,9 @@ jobs:
       - name: Prepare test environment
         run: |
           cp env .env
+          sed -i "s# app.baseURL = 'http://localhost:180/LPG/public/'#app.baseURL = 'http://localhost:8080/'#" .env
+          sed -i "s# app_baseURL = 'http://localhost:180/LPG/public/'#app_baseURL = 'http://localhost:8080/'#" .env
           cat >> .env <<'EOF'
-          app.baseURL = 'http://127.0.0.1:8080/'
           database.default.hostname = 127.0.0.1
           database.default.database = perfect_lpg
           database.default.username = root
@@ -58,7 +60,7 @@ jobs:
           EOF
       - name: Start web application
         run: |
-          nohup php spark serve --host 127.0.0.1 --port 8080 > /tmp/lpg-server.log 2>&1 &
+          nohup php spark serve --host 0.0.0.0 --port 8080 > /tmp/lpg-server.log 2>&1 &
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8080/ > /tmp/lpg-login.html; then exit 0; fi
             sleep 2
@@ -72,6 +74,27 @@ jobs:
           curl -fsS http://127.0.0.1:8080/login | grep -qiE 'login|password'
           curl -fsS http://127.0.0.1:8080/dashboard -o /tmp/dashboard.html || true
           test -s /tmp/dashboard.html
+      - name: Browser loopback probe (Playwright)
+        run: |
+          set -e
+          mkdir -p /tmp/lpg-ui
+          cd /tmp/lpg-ui
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8090 --bind 127.0.0.1 > /tmp/lpg-probe.log 2>&1 &
+          PROBE_PID=$!
+          trap 'kill $PROBE_PID 2>/dev/null || true' EXIT
+          sleep 1
+          env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy NO_PROXY=127.0.0.1,localhost node - <<'EOF'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true,args:['--no-proxy-server','--disable-features=ProxyResolutionService']});
+          const page = await browser.newPage();
+          await page.goto('http://127.0.0.1:8090/', {waitUntil:'domcontentloaded', timeout:10000});
+          console.log('CHROMIUM_LOOPBACK_PROBE_PASS', await page.title());
+          await browser.close();
+          EOF
+
       - name: Browser UI QA (Playwright)
         run: |
           set -e
@@ -82,9 +105,9 @@ jobs:
           npx playwright install --with-deps chromium
           cat > /tmp/lpg-ui/lpg-ui-qa.mjs <<'EOF'
           import { chromium } from 'playwright';
-          const browser = await chromium.launch({ headless: true, args: ['--no-proxy-server'] });
+          const browser = await chromium.launch({ headless: true, args: ['--no-proxy-server', '--disable-features=ProxyResolutionService'] });
           const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-          const base = 'http://127.0.0.1:8080';
+          const base = 'http://localhost:8080';
           try {
             await page.goto(base + '/login', { waitUntil: 'networkidle' });
             await page.screenshot({ path: '/tmp/login.png', fullPage: true });
@@ -104,6 +127,15 @@ jobs:
             for (const label of ['Total Sale', 'Cash Sale', 'Credit Sale', 'Payments', 'Stock Purchased']) {
               if (!dashboardText.toLowerCase().includes(label.toLowerCase())) throw new Error('Dashboard metric missing: ' + label);
             }
+            const stockTab = page.locator('#stock-tab');
+            await stockTab.click();
+            await page.waitForTimeout(300);
+            const stockText = await page.locator('#stock-pane').innerText();
+            for (const label of ['Filled Cylinders', 'Empty Cylinders', 'Issued Temporarily Against Deposit']) {
+              if (!stockText.toLowerCase().includes(label.toLowerCase())) throw new Error('Current stock metric missing: ' + label);
+            }
+            await page.locator('#summary-tab').click();
+            await page.waitForTimeout(300);
             const config = page.getByText('Configuration', { exact: false }).first();
             if (await config.count() === 0) throw new Error('Configuration menu not found');
             await config.click();
@@ -122,10 +154,12 @@ jobs:
         run: php vendor/bin/phpunit --no-coverage
       - name: Upload runtime logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: runtime-qa-logs
           path: |
             /tmp/lpg-server.log
+            /tmp/lpg-probe.log
             /tmp/lpg-login.html
             /tmp/dashboard.html
+            /tmp/*.png

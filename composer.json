@@ -55,7 +55,8 @@
             "CodeIgniter\\": "system/"
         },
         "exclude-from-classmap": [
-            "**/Database/Migrations/**"
+            "**/Database/Migrations/**",
+            "**/ThirdParty/**"
         ]
     },
     "config": {

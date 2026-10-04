@@ -2,7 +2,9 @@ name: LPG CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - qa/workflow-cleanup
   pull_request:
     branches: [main]
 
@@ -26,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
