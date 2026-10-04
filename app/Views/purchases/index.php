@@ -278,6 +278,7 @@ function calculate() {
     document.getElementById('summaryCurrent').textContent = money(current);
     document.getElementById('summaryTotalPayable').textContent = money(totalPayable);
     document.getElementById('summaryBalance').textContent = money(balance);
+    document.getElementById('amountPaid').max = money(totalPayable);
 
     const over = paid > totalPayable + 0.01;
     document.getElementById('amountPaid').classList.toggle('is-invalid', over);
@@ -287,7 +288,10 @@ function calculate() {
 document.getElementById('add').onclick = addLine;
 document.getElementById('discount').addEventListener('input', calculate);
 document.getElementById('supplier_id').addEventListener('change', calculate);
-document.getElementById('paymentType').addEventListener('change', calculate);
+document.getElementById('paymentType').addEventListener('change', function () {
+    if (!this.value) document.getElementById('amountPaid').value = '0.00';
+    calculate();
+});
 document.getElementById('amountPaid').addEventListener('input', calculate);
 
 document.getElementById('purchaseForm').onsubmit = function () {
