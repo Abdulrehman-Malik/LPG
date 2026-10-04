@@ -52,7 +52,7 @@ final class BusinessFlowTest extends CIUnitTestCase
 
     private function addRates(int $typeId, float $gasRate = 100, float $cylinderRate = 1000): void
     {
-        $when = '2030-01-01 00:00:00';
+        $when = '2020-01-01 00:00:00';
         $this->db->table('rate_cards')->insert([
             'location_id' => $this->locationId,
             'rate_type' => 'gas_per_kg',
