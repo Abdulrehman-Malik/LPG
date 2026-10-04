@@ -11,13 +11,29 @@ class PurchaseService{
   $supplier=$this->db->table('suppliers')->where('id',$supplierId)->get()->getRowArray();
   if(!$supplier||(int)$supplier['is_active']!==1) throw new RuntimeException('Supplier is invalid or inactive.');
   $subtotal=0;$prepared=[];$inventory=[];$cash=0;$credit=0;
-  foreach($lines as $i=>$l){$type=(string)($l['line_type']??'');$qty=(float)($l['quantity']??0);$rate=(float)($l['unit_rate']??0);$ct=isset($l['cylinder_type_id'])&&$l['cylinder_type_id']!==''?(int)$l['cylinder_type_id']:null;
+  foreach($lines as $i=>$l){
+   $type=(string)($l['line_type']??'');$qty=(float)($l['quantity']??0);$rate=(float)($l['unit_rate']??0);$ct=isset($l['cylinder_type_id'])&&$l['cylinder_type_id']!==''?(int)$l['cylinder_type_id']:null;
    if($qty<=0||$rate<0) throw new RuntimeException('Invalid purchase line '.($i+1).'.');
    if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase type.');
    if($type!=='gas_kg'&&!$ct) throw new RuntimeException('Cylinder type required.');
-   if($type==='gas_kg')$ct=null; $total=$qty*$rate;$subtotal+=$total;
-   $prepared[]=['line_no'=>$i+1,'line_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual,'unit_rate'=>$rate,'line_total'=>$total];
-   $actualRaw=$l['actual_gas_weight_kg']??null; $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0; if($type==='filled_cylinder'){ if(floor($qty)!==$qty) throw new RuntimeException('Filled cylinder quantity must be a whole number.'); $ctRow=$this->db->table('cylinder_types')->where('id',$ct)->get()->getRowArray(); if(!$ctRow || !(int)$ctRow['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.'); $cap=(float)$ctRow['capacity_kg']; $actual=$actualRaw!==null && $actualRaw!==''?$actual:$cap; if($actual<=0||$actual>$cap) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.'); } else $actual=0;  $inventory[]=['inventory_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual];
+   if($type==='gas_kg') $ct=null;
+
+   $actualRaw=$l['actual_gas_weight_kg']??null;
+   $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0;
+   if($type==='filled_cylinder'){
+    if(floor($qty)!==$qty) throw new RuntimeException('Filled cylinder quantity must be a whole number.');
+    $ctRow=$this->db->table('cylinder_types')->where('id',$ct)->get()->getRowArray();
+    if(!$ctRow || !(int)$ctRow['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+    $cap=(float)$ctRow['capacity_kg'];
+    $actual=$actualRaw!==null && $actualRaw!==''?$actual:$cap;
+    if($actual<=0||$actual>$cap) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
+   } else {
+    $actual=0;
+   }
+
+   $lineTotal=$qty*$rate;$subtotal+=$lineTotal;
+   $prepared[]=['line_no'=>$i+1,'line_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual,'unit_rate'=>$rate,'line_total'=>$lineTotal];
+   $inventory[]=['inventory_type'=>$type,'cylinder_type_id'=>$ct,'quantity'=>$qty,'actual_gas_weight_kg'=>$actual];
   }
   $discount=max(0,(float)($p['discount_amount']??0));if($discount>$subtotal)throw new RuntimeException('Discount exceeds subtotal.');
   $total=$subtotal-$discount;$paid=0;$normalizedPayments=[];
