@@ -5,10 +5,10 @@
 <a class="btn btn-outline-secondary" href="<?=site_url('inventory')?>"><i class="bi bi-arrow-left me-1"></i>Inventory</a>
 </div>
 <form method="get" class="row g-2 mb-3">
-<div class="col-md-4"><label class="form-label small">From Date</label><input type="date" name="from_date" class="form-control" value="<?=esc($fromDate)?>"></div>
-<div class="col-md-4"><label class="form-label small">To Date</label><input type="date" name="to_date" class="form-control" value="<?=esc($toDate)?>"></div>
-<div class="col-md-2 align-self-end"><button class="btn btn-primary w-100">View</button></div>
-<div class="col-md-2 align-self-end"><a class="btn btn-outline-secondary w-100" href="<?=site_url('inventory/type-history/'.$type['id'])?>">Current Date</a></div>
+<div class="col-md-4"><label class="form-label small">From Date</label><input type="date" name="from_date" class="form-control" value="<?=esc($fromDate)?>" <?=$allHistory?'disabled':''?>></div>
+<div class="col-md-4"><label class="form-label small">To Date</label><input type="date" name="to_date" class="form-control" value="<?=esc($toDate)?>" <?=$allHistory?'disabled':''?>></div>
+<div class="col-md-2 align-self-end"><button class="btn btn-primary w-100" <?=$allHistory?'disabled':''?>>View</button></div>
+<div class="col-md-2 align-self-end"><a class="btn <?=$allHistory?'btn-primary':'btn-outline-secondary'?> w-100" href="<?=site_url('inventory/type-history/'.$type['id'])?>?all_history=1">All History</a></div>
 </form>
 <div class="card shadow-sm"><div class="card-header bg-white"><h5 class="mb-0">Running Inventory Movements</h5><div class="small text-muted">Gas running balance follows physical-cylinder gas movements for this cylinder type.</div></div>
 <div class="table-responsive"><table class="table table-sm table-striped align-middle mb-0">
