@@ -130,16 +130,11 @@
             <div class="card-header py-3">
                 <div class="fw-semibold">Supplier Settlement</div>
                 <div class="small text-muted mt-1">
-                    Payment is optional. Leave it empty for a full credit purchase, or enter one or more payments made now.
+                    Payment is optional. Leave it as “No Payment” for a full credit purchase, or enter the amount paid now.
                 </div>
             </div>
 
             <div class="card-body">
-                <div id="payments"></div>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="pay">
-                    <i class="bi bi-plus-lg me-1"></i>Add Payment
-                </button>
-
                 <div class="row g-4 mt-2">
                     <div class="col-lg-7">
                         <label class="form-label fw-semibold">Purchase Notes</label>
@@ -173,9 +168,22 @@
                                 <strong>Rs. <span id="summaryTotalPayable">0.00</span></strong>
                             </div>
 
-                            <div class="summary-row">
-                                <span>Amount Paid</span>
-                                <strong>Rs. <span id="summaryPaid">0.00</span></strong>
+                            <div class="summary-row align-items-center">
+                                <span class="fw-semibold">Payment Type</span>
+                                <select id="paymentType" class="form-select form-select-sm" style="max-width:180px">
+                                    <option value="">No Payment</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="online">Online</option>
+                                    <option value="cheque">Cheque</option>
+                                </select>
+                            </div>
+
+                            <div class="summary-row align-items-center">
+                                <span class="fw-semibold">Amount Paid</span>
+                                <div class="input-group input-group-sm" style="max-width:180px">
+                                    <span class="input-group-text">Rs.</span>
+                                    <input id="amountPaid" class="form-control text-end" type="number" min="0" step=".01" value="0" placeholder="0.00">
+                                </div>
                             </div>
 
                             <div class="summary-balance d-flex justify-content-between align-items-center">
@@ -246,37 +254,6 @@ function addLine() {
     row.querySelectorAll('select').forEach(element => element.addEventListener('change', calculate));
 }
 
-function addPayment() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'payment-row mb-2';
-    wrapper.innerHTML = `
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold">Payment Method</label>
-                <select class="form-select mode">
-                    <option value="cash">Cash</option>
-                    <option value="online">Online</option>
-                    <option value="cheque">Cheque</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold">Amount Paid</label>
-                <input class="form-control amount text-end" type="number" min=".01" step=".01" placeholder="0.00">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">Reference / Cheque No.</label>
-                <input class="form-control ref" placeholder="Optional">
-            </div>
-            <div class="col-md-2">
-                <button type="button" class="btn btn-outline-danger w-100 removePayment">Remove</button>
-            </div>
-        </div>`;
-
-    document.getElementById('payments').append(wrapper);
-    wrapper.querySelector('.removePayment').onclick = () => { wrapper.remove(); calculate(); };
-    wrapper.querySelector('.amount').addEventListener('input', calculate);
-}
-
 function calculate() {
     let current = 0;
 
@@ -294,10 +271,7 @@ function calculate() {
     const previous = getPreviousPayable();
     const totalPayable = previous + current;
 
-    let paid = 0;
-    document.querySelectorAll('.payment').forEach(row => {
-        paid += Number(row.querySelector('.amount').value || 0);
-    });
+    const paid = Math.max(0, Number(document.getElementById('amountPaid').value || 0));
 
     const balance = Math.max(0, totalPayable - paid);
 
@@ -314,9 +288,10 @@ function calculate() {
 }
 
 document.getElementById('add').onclick = addLine;
-document.getElementById('pay').onclick = addPayment;
 document.getElementById('discount').addEventListener('input', calculate);
 document.getElementById('supplier_id').addEventListener('change', calculate);
+document.getElementById('paymentType').addEventListener('change', calculate);
+document.getElementById('amountPaid').addEventListener('input', calculate);
 
 document.getElementById('purchaseForm').onsubmit = function () {
     const lines = [...document.querySelectorAll('.line')].map(row => ({
@@ -327,13 +302,19 @@ document.getElementById('purchaseForm').onsubmit = function () {
         actual_gas_weight_kg: row.querySelector('.actual').value
     }));
 
-    const payments = [...document.querySelectorAll('.payment')]
-        .map(row => ({
-            payment_mode: row.querySelector('.mode').value,
-            amount: row.querySelector('.amount').value,
-            reference_no: row.querySelector('.ref').value
-        }))
-        .filter(payment => Number(payment.amount || 0) > 0);
+    const paymentType = document.getElementById('paymentType').value;
+    const paidAmount = Number(document.getElementById('amountPaid').value || 0);
+
+    if (paidAmount > 0 && !paymentType) {
+        alert('Select a payment type for the amount paid.');
+        return false;
+    }
+
+    const payments = paidAmount > 0 ? [{
+        payment_mode: paymentType,
+        amount: paidAmount,
+        reference_no: ''
+    }] : [];
 
     if (!lines.length) {
         alert('Add at least one stock line.');
