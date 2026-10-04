@@ -76,7 +76,11 @@ jobs:
       - name: Browser loopback probe (Playwright)
         run: |
           set -e
+          mkdir -p /tmp/lpg-ui
           cd /tmp/lpg-ui
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps chromium
           python3 -m http.server 8090 --bind 127.0.0.1 > /tmp/lpg-probe.log 2>&1 &
           PROBE_PID=$!
           trap 'kill $PROBE_PID 2>/dev/null || true' EXIT
