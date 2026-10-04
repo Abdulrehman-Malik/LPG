@@ -33,12 +33,12 @@
                   <option value="bulk">Bulk — Cylinder Type</option>
                   <option value="specific">Specific — Physical Cylinder</option>
                 </select>
-                <div class="form-text">Bulk changes the selected cylinder type. Specific changes only the selected physical cylinder unit.</div>
+                <div class="form-text">Gas can only be adjusted on a specific physical cylinder. Filled and empty cylinder quantities can be adjusted by cylinder type or by specific unit.</div>
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Stock Item</label>
                 <select name="inventory_type" id="adjustType" class="form-select">
-                  <option value="gas_kg">Gas KG</option>
+                  <option value="gas_kg">Gas in Physical Cylinder (KG)</option>
                   <option value="filled_cylinder">Filled Cylinder</option>
                   <option value="empty_cylinder">Empty Cylinder</option>
                 </select>
