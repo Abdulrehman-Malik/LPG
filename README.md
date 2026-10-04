@@ -218,15 +218,18 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 - **Security Deposit Amount** is hidden unless the selected transaction type is **Security Deposit / Issue Cylinder**.
 - These UI changes do not replace server-side validation.
 
-### 10. Amount-Entry Gas Sale Rule
+### 10. Gas Entry Mode — Screen-Level KG / Rs. Rule
 
-- On a **Gas Sale / Refill** line, the cashier may enter the sale **Amount** instead of manually calculating KG.
-- The system automatically calculates **Gas KG = entered amount ÷ current effective gas/kg rate**.
+- On **Gas Sale / Refill**, the cashier selects one screen-level **Gas Entry: KG / Rs.** mode. The selection applies to all gas-sale lines on that invoice; there is no KG/Rs selector per line.
+- **KG mode:** the cashier enters gas quantity in KG and the system calculates the line amount using the applicable gas/kg rate.
+- **Rs. mode:** the cashier enters the sale amount and the system automatically calculates **Gas KG = entered amount ÷ current effective gas/kg rate**.
 - The server uses the current effective gas/kg rate for amount-entry mode; the submitted quantity/rate cannot override this calculation.
 - Stock validation remains fully active: the calculated KG must still pass the selected source-cylinder or total cylinder-type stock validation.
 - Manual source mode still limits the calculated KG to the selected source filled cylinder's actual gas.
 - Automatic source mode still validates the calculated KG against total available gas and consumes physical cylinders in the existing sequence.
-- Amount-entry mode does not disable, reduce, or bypass inventory locking, stock validation, customer credit rules, payment rules, or transaction atomicity.
+- In Rs. mode, gas rate is controlled by the current effective server-side rate and is not manually overridden by the cashier.
+- Changing between KG and Rs. converts the existing gas-line values using the current displayed rate so the transaction remains consistent.
+- Rs. mode does not disable, reduce, or bypass inventory locking, stock validation, customer credit rules, payment rules, or transaction atomicity.
 - The calculated KG and final line total are stored/posting values; client-side calculations are only convenience behavior.
 
 ### 11. Recent Migration Rules
