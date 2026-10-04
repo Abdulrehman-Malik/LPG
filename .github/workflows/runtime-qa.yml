@@ -154,7 +154,7 @@ jobs:
         run: php vendor/bin/phpunit --no-coverage
       - name: Upload runtime logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: runtime-qa-logs
           path: |
