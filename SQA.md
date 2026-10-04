@@ -418,3 +418,17 @@ Before considering the application release-ready, explicitly execute and record:
 - Actual customer = credit only when **Allow Credit Sale** is enabled on the customer record.
 - Customer credit = resulting outstanding must not exceed the customer's configured **Credit Limit**.
 - These rules are enforced server-side and must not be disabled by the branch-level credit-limit validation mode setting.
+
+
+## Source Filled Cylinder Selection Tests
+
+- **J15** — Shop Settings ON: Source Filled Cylinder dropdown is visible on Gas Sale.
+- **J16** — Shop Settings ON: same physical source cylinder on two lines is rejected.
+- **J17** — Shop Settings ON: source-cylinder quantity above available KG is rejected.
+- **J18** — Shop Settings ON: sale deducts gas only from the selected physical cylinder; when its remaining gas reaches zero it becomes empty.
+- **J19** — Shop Settings OFF: source dropdown is hidden and gas is allocated automatically by ascending physical-cylinder sequence.
+- **J20** — Shop Settings OFF: allocation consumes one cylinder down to zero before moving to the next cylinder.
+- **J21** — Shop Settings OFF: gas quantity above the selected cylinder type's total available KG is rejected.
+- **J22** — Same cylinder type on multiple gas-sale lines is rejected in both ON and OFF modes.
+- **J23** — Cylinder Type dropdown displays available gas grouped by cylinder type.
+- **J24** — Concurrent gas sales cannot oversell the same physical-cylinder quantity because source rows are locked inside the posting transaction.
