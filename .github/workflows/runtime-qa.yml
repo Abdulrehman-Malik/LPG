@@ -48,7 +48,7 @@ jobs:
 
       - name: Prepare test environment
         run: |
-          cp .env.example .env
+          cp env .env
           sed -i 's#^app.baseURL.*#app.baseURL = http://127.0.0.1:8080/#' .env
           sed -i 's#^database.default.hostname.*#database.default.hostname = 127.0.0.1#' .env
           sed -i 's#^database.default.database.*#database.default.database = perfect_lpg#' .env
