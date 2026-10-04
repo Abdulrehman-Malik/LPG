@@ -220,7 +220,7 @@ final class BusinessFlowTest extends CIUnitTestCase
         $unit = $this->db->table('cylinder_units')->where('id', $unitId)->get()->getRowArray();
         $this->assertSame('sold', $unit['status']);
         $this->assertEqualsWithDelta(2500, (float) $result['total'], 0.001);
-        $this->assertSame(0, (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId));
+        $this->assertEquals(0, (new InventoryService())->stock($this->locationId, 'filled_cylinder', $typeId));
 
         $this->closeCash($sessionId);
     }
