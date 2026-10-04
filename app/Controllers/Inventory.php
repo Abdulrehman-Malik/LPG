@@ -131,17 +131,23 @@ class Inventory extends Controller
 
         if (!$unit) return $this->response->setStatusCode(404)->setBody('Physical cylinder not found.');
 
-        $movements = $db->table('inventory_movements im')
+        $fromDate = $this->validDate($this->request->getGet('from_date'),date('Y-m-d'));
+        $toDate = $this->validDate($this->request->getGet('to_date'),date('Y-m-d'));
+        $allHistory = (string)$this->request->getGet('all_history') === '1';
+        if ($fromDate > $toDate) [$fromDate,$toDate]=[$toDate,$fromDate];
+
+        $historyQuery = $db->table('inventory_movements im')
             ->select("im.*,s.sale_no,p.purchase_no,c.name customer_name,u.full_name")
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('customers c','c.id=s.customer_id','left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
             ->join('users u','u.id=im.created_by','left')
             ->where('im.location_id',$locationId)
-            ->where('im.cylinder_unit_id',$unitId)
-            ->orderBy('im.movement_at','ASC')
-            ->orderBy('im.id','ASC')
-            ->get()->getResultArray();
+            ->where('im.cylinder_unit_id',$unitId);
+        if (!$allHistory) {
+            $historyQuery->where('im.movement_at >=',$fromDate.' 00:00:00')->where('im.movement_at <=',$toDate.' 23:59:59');
+        }
+        $movements = $historyQuery->orderBy('im.movement_at','ASC')->orderBy('im.id','ASC')->get()->getResultArray();
 
         $runningGas = 0.0;
         foreach ($movements as &$movement) {
@@ -159,6 +165,9 @@ class Inventory extends Controller
             'title' => 'Cylinder Details',
             'unit' => $unit,
             'movements' => $movements,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'allHistory' => $allHistory,
         ]);
     }
 
