@@ -136,6 +136,17 @@ class Inventory extends Controller
         $allHistory = (string)$this->request->getGet('all_history') === '1';
         if ($fromDate > $toDate) [$fromDate,$toDate]=[$toDate,$fromDate];
 
+        $openingGas = 0.0;
+        if (!$allHistory) {
+            $opening = $db->query(
+                "SELECT COALESCE(SUM(CASE WHEN direction='in' THEN quantity WHEN direction='out' THEN -quantity ELSE 0 END),0) AS opening_gas
+                   FROM inventory_movements
+                  WHERE location_id=? AND cylinder_unit_id=? AND inventory_type='gas_kg' AND movement_at < ?",
+                [$locationId,$unitId,$fromDate.' 00:00:00']
+            )->getRowArray();
+            $openingGas = max(0.0,(float)($opening['opening_gas']??0));
+        }
+
         $historyQuery = $db->table('inventory_movements im')
             ->select("im.*,s.sale_no,p.purchase_no,c.name customer_name,u.full_name")
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
@@ -149,7 +160,7 @@ class Inventory extends Controller
         }
         $movements = $historyQuery->orderBy('im.movement_at','ASC')->orderBy('im.id','ASC')->get()->getResultArray();
 
-        $runningGas = 0.0;
+        $runningGas = $openingGas;
         foreach ($movements as &$movement) {
             if ($movement['inventory_type'] === 'gas_kg') {
                 if ($movement['direction'] === 'in') $runningGas += (float)$movement['quantity'];
@@ -185,6 +196,18 @@ class Inventory extends Controller
         $allHistory = (string)$this->request->getGet('all_history') === '1';
         if ($from > $to) [$from,$to]=[$to,$from];
 
+        $openingGas = 0.0;
+        if (!$allHistory) {
+            $opening = $db->query(
+                "SELECT COALESCE(SUM(CASE WHEN im.direction='in' THEN im.quantity WHEN im.direction='out' THEN -im.quantity ELSE 0 END),0) AS opening_gas
+                   FROM inventory_movements im
+                   LEFT JOIN cylinder_units cu ON cu.id=im.cylinder_unit_id
+                  WHERE im.location_id=? AND im.inventory_type='gas_kg' AND (cu.cylinder_type_id=? OR im.cylinder_type_id=?) AND im.movement_at < ?",
+                [$locationId,$typeId,$typeId,$from.' 00:00:00']
+            )->getRowArray();
+            $openingGas = max(0.0,(float)($opening['opening_gas']??0));
+        }
+
         $movementsQuery = $db->table('inventory_movements im')
             ->select('im.*,cu.unit_code,s.sale_no,p.purchase_no')
             ->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')
@@ -209,7 +232,7 @@ class Inventory extends Controller
             ->orderBy('im.id','ASC')
             ->get()->getResultArray();
 
-        $runningGas=0.0;
+        $runningGas=$openingGas;
         foreach($movements as &$movement){
             if($movement['inventory_type']==='gas_kg'){
                 if($movement['direction']==='in') $runningGas+=(float)$movement['quantity'];
