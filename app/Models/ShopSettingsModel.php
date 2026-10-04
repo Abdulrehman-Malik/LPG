@@ -11,7 +11,7 @@ class ShopSettingsModel extends Model
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'location_id','default_sale_mode','default_transaction_type','individual_cylinder_tracking','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
+        'location_id','default_sale_mode','default_transaction_type','individual_cylinder_tracking','allow_pos_source_cylinder_selection','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
         'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit',
         'backup_enabled','db_backup_url','backup_notes',
         'receipt_title','receipt_footer','show_address_on_receipt',
@@ -45,6 +45,7 @@ class ShopSettingsModel extends Model
             'default_sale_mode' => 'sell_gas_only',
             'default_transaction_type' => 'gas_sale',
             'individual_cylinder_tracking' => 0,
+            'allow_pos_source_cylinder_selection' => 0,
             'default_payment_mode' => 'cash',
             'pos_font_size_px' => 14,
             'theme_mode' => 'light',
