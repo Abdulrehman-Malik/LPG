@@ -25,9 +25,9 @@ Controllers should not contain financial posting logic.
 - Write audit log.
 
 ### InventoryService
-Source of truth:
-- opening balances
-- immutable inventory movements
+Current stock source of truth:
+- physical `cylinder_units` records
+- immutable inventory movements remain the audit/reconciliation history
 
 Track:
 - filled physical cylinders by type and actual gas weight
