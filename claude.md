@@ -85,9 +85,9 @@ The branch default transaction type is stored in `shop_settings.default_transact
 
 ### Inventory
 - Opening inventory supports filled cylinders and empty cylinders; gas-only opening records remain historically supported.
-- Gas stock for filled opening cylinders is derived from physical cylinder gas weights.
-- Inventory has a separate Stock Adjustment & History screen for manual + / - movements.
-- Filled-cylinder IN requires actual gas weight and cannot exceed cylinder capacity.
+- Gas stock is never stored independently. Available Gas KG is always derived from `cylinder_units.gas_weight_kg` for company-owned cylinders with `status='filled'`.
+- Inventory has a separate Stock Adjustment & History screen for physical-cylinder and cylinder-count adjustments. Gas adjustments must target a specific physical cylinder and change that unit's actual gas weight; bulk independent Gas KG adjustments are not allowed.
+- Filled-cylinder IN requires actual gas weight and cannot exceed cylinder capacity. Purchasing gas must therefore be represented by receiving filled physical cylinders with actual gas weights.
 - Inventory Detail Report shows current gas stock, filled/empty cylinder counts, stock by cylinder type, and partially used physical cylinders.
 
 ### Permissions
