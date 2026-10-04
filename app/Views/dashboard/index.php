@@ -9,6 +9,7 @@ $stockTab = trim((string)(service('request')->getGet('stock_tab') ?? ''));
 if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
     $stockTab = '';
 }
+$displayStockTab = $stockTab !== '' ? $stockTab : 'filled';
 ?>
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
@@ -158,11 +159,11 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
 
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3">
-                <strong><?= esc($stock[$stockTab]['title']) ?></strong>
-                <span class="badge text-bg-secondary float-end"><?= number_format((int)$stock[$stockTab]['count']) ?> record(s)</span>
+                <strong><?= esc($stock[$displayStockTab]['title']) ?></strong>
+                <span class="badge text-bg-secondary float-end"><?= number_format((int)$stock[$displayStockTab]['count']) ?> record(s)</span>
             </div>
 
-            <?php if ($stockTab === 'filled'): ?>
+            <?php if ($displayStockTab === 'filled'): ?>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 datatable">
                         <thead>
@@ -184,7 +185,7 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
                         </tbody>
                     </table>
                 </div>
-            <?php elseif ($stockTab === 'empty'): ?>
+            <?php elseif ($displayStockTab === 'empty'): ?>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover align-middle mb-0 datatable">
                         <thead>
@@ -228,7 +229,7 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
                 </div>
             <?php endif; ?>
 
-            <?php if (!$stock[$stockTab]['rows']): ?>
+            <?php if (!$stock[$displayStockTab]['rows']): ?>
                 <div class="alert alert-light border rounded-0 mb-0">No <?= esc(strtolower($stock[$stockTab]['title'])) ?> found in the current physical stock.</div>
             <?php endif; ?>
         </div>
