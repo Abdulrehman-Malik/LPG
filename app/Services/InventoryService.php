@@ -89,7 +89,11 @@ class InventoryService{
    }
   }
 
-  if(!$this->db->transStatus()) throw new RuntimeException('Purchase inventory posting failed.');
+  if(!$this->db->transStatus()){
+   $error=$this->db->error();
+   $message=trim((string)($error['message']??''));
+   throw new RuntimeException('Purchase inventory posting failed.'.($message!==''?' '.$message:''));
+  }
  }
 
  public function adjust(int $locationId,string $type,?int $typeId,float $qty,string $direction,int $userId,string $notes='',float $actualGasWeight=0,?int $sourceCylinderUnitId=null,string $adjustmentScope='bulk'):void{
