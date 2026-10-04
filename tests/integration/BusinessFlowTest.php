@@ -19,6 +19,28 @@ final class BusinessFlowTest extends CIUnitTestCase
     {
         parent::setUp();
         $this->db = Database::connect();
+        if (!$this->db->table('shop_settings')->where('location_id', $this->locationId)->countAllResults()) {
+            $this->db->table('shop_settings')->insert([
+                'location_id' => $this->locationId,
+                'default_sale_mode' => 'sell_gas_only',
+                'default_transaction_type' => 'gas_sale',
+                'individual_cylinder_tracking' => 0,
+                'default_payment_mode' => 'cash',
+                'pos_font_size_px' => 14,
+                'theme_mode' => 'light',
+                'font_family' => 'system',
+                'primary_color' => '#1b2a3a',
+                'accent_color' => '#ff7a1a',
+                'stock_validation_enabled' => 1,
+                'allow_stock_override' => 1,
+                'credit_limit_validation_mode' => 'none',
+                'shop_credit_limit' => 0,
+                'backup_enabled' => 0,
+                'receipt_title' => 'SALE RECEIPT',
+                'receipt_footer' => 'Thank you',
+                'show_address_on_receipt' => 1,
+            ]);
+        }
     }
 
     private function unique(string $prefix): string
@@ -130,6 +152,10 @@ final class BusinessFlowTest extends CIUnitTestCase
             ], $this->userId, $this->locationId);
         } catch (\Throwable $e) {
             $this->fail($e->getMessage() . ' | DB: ' . json_encode($this->db->error()));
+        } finally {
+            if ((new CashService())->openSessionForLocation($this->locationId)) {
+                $this->closeCash($sessionId);
+            }
         }
 
         $unit = $this->db->table('cylinder_units')->where('id', $unitId)->get()->getRowArray();
@@ -142,7 +168,6 @@ final class BusinessFlowTest extends CIUnitTestCase
         $this->assertEqualsWithDelta(6.8, (float) $unit['gas_weight_kg'], 0.001);
         $this->assertEqualsWithDelta(1500, $summary['expected'], 0.001);
 
-        $this->closeCash($sessionId);
     }
 
     public function testCustomerCreditSaleCreatesReceivableWithoutCashMovement(): void
