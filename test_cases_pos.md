@@ -57,53 +57,53 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-026 | Customer credit permission OFF | Select actual customer with Allow Credit Sale OFF. Make sale with received amount less than sale total. | Sale is rejected with: "Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record." | | |
-| POS-027 | Customer credit permission ON | Select customer with Allow Credit Sale ON and make a credit sale. | Sale is allowed when the applicable credit-limit rule is satisfied. | | |
-| POS-028 | No credit-limit mode | Set Shop Settings Credit Limit Validation = None. Customer Allow Credit Sale ON. Make credit sale. | Credit sale is allowed regardless of customer Credit Limit. Existing OS is still recorded and increased by the new unpaid amount. | | |
-| POS-029 | Customer-level limit with previous OS | Customer limit Rs.100,000; existing OS Rs.70,000; new credit Rs.20,000. | Projected OS Rs.90,000; sale allowed. | | |
-| POS-030 | Customer-level limit exceeded by previous OS + new credit | Customer limit Rs.100,000; existing OS Rs.90,000; new credit Rs.20,000. | Projected OS Rs.110,000; sale rejected. | | |
-| POS-031 | Customer-level zero limit | Customer Allow Credit Sale ON; Credit Limit Rs.0; make any new credit. | Sale rejected because no additional credit is available. | | |
-| POS-032 | Shop-level limit | Shop limit Rs.1,000,000; current positive shop OS Rs.900,000; new credit Rs.50,000. | Projected shop OS Rs.950,000; sale allowed. | | |
-| POS-033 | Shop-level limit exceeded | Shop limit Rs.1,000,000; current positive shop OS Rs.980,000; new credit Rs.30,000. | Projected shop OS Rs.1,010,000; sale rejected. Individual customer limit is ignored. | | |
-| POS-034 | Shop-level ignores customer limit | Shop mode; customer limit Rs.10,000; shop has available credit; new credit Rs.20,000. | Sale is allowed if shop limit is not exceeded and Allow Credit Sale is ON. | | |
-| POS-035 | Existing OS considered | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.10,000. | New credit Rs.20,000; projected OS Rs.70,000; validation uses Rs.70,000. | | |
-| POS-036 | Payment settles previous OS | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.40,000. | Rs.30,000 settles current sale and Rs.10,000 reduces previous OS; resulting OS is Rs.40,000 and no new credit sale is created. | | |
-| POS-037 | POS customer status | Select customer with Allow Credit ON. | POS immediately shows Credit Sale Allowed and the applicable limit/current OS/available credit according to Shop Settings mode. | | |
-| POS-038 | POS credit disabled status | Select customer with Allow Credit OFF. | POS shows Credit Sale Not Allowed and instructs user to enable Allow Credit Sale. | | |
-| POS-039 | Walk-in creates OS | Walk-in sale total Rs.10,000; receive Rs.9,000. | Sale rejected; Walk-in cannot create OS. | | |
-| POS-040 | Fully paid customer sale | Customer has existing OS; current sale is fully paid. | Sale posts without creating additional credit; existing OS is not treated as new credit. | | |
-| POS-041 | Shop-level concurrent credit | Two sessions attempt credit sales simultaneously near shop limit. | Shop lock prevents combined projected OS from exceeding the shop limit. | | |
+| POS-094 | Customer credit permission OFF | Select actual customer with Allow Credit Sale OFF. Make sale with received amount less than sale total. | Sale is rejected with: "Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record." | | |
+| POS-095 | Customer credit permission ON | Select customer with Allow Credit Sale ON and make a credit sale. | Sale is allowed when the applicable credit-limit rule is satisfied. | | |
+| POS-096 | No credit-limit mode | Set Shop Settings Credit Limit Validation = None. Customer Allow Credit Sale ON. Make credit sale. | Credit sale is allowed regardless of customer Credit Limit. Existing OS is still recorded and increased by the new unpaid amount. | | |
+| POS-097 | Customer-level limit with previous OS | Customer limit Rs.100,000; existing OS Rs.70,000; new credit Rs.20,000. | Projected OS Rs.90,000; sale allowed. | | |
+| POS-098 | Customer-level limit exceeded by previous OS + new credit | Customer limit Rs.100,000; existing OS Rs.90,000; new credit Rs.20,000. | Projected OS Rs.110,000; sale rejected. | | |
+| POS-099 | Customer-level zero limit | Customer Allow Credit Sale ON; Credit Limit Rs.0; make any new credit. | Sale rejected because no additional credit is available. | | |
+| POS-100 | Shop-level limit | Shop limit Rs.1,000,000; current positive shop OS Rs.900,000; new credit Rs.50,000. | Projected shop OS Rs.950,000; sale allowed. | | |
+| POS-101 | Shop-level limit exceeded | Shop limit Rs.1,000,000; current positive shop OS Rs.980,000; new credit Rs.30,000. | Projected shop OS Rs.1,010,000; sale rejected. Individual customer limit is ignored. | | |
+| POS-102 | Shop-level ignores customer limit | Shop mode; customer limit Rs.10,000; shop has available credit; new credit Rs.20,000. | Sale is allowed if shop limit is not exceeded and Allow Credit Sale is ON. | | |
+| POS-103 | Existing OS considered | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.10,000. | New credit Rs.20,000; projected OS Rs.70,000; validation uses Rs.70,000. | | |
+| POS-104 | Payment settles previous OS | Customer existing OS Rs.50,000; sale Rs.30,000; receive Rs.40,000. | Rs.30,000 settles current sale and Rs.10,000 reduces previous OS; resulting OS is Rs.40,000 and no new credit sale is created. | | |
+| POS-105 | POS customer status | Select customer with Allow Credit ON. | POS immediately shows Credit Sale Allowed and the applicable limit/current OS/available credit according to Shop Settings mode. | | |
+| POS-106 | POS credit disabled status | Select customer with Allow Credit OFF. | POS shows Credit Sale Not Allowed and instructs user to enable Allow Credit Sale. | | |
+| POS-107 | Walk-in creates OS | Walk-in sale total Rs.10,000; receive Rs.9,000. | Sale rejected; Walk-in cannot create OS. | | |
+| POS-108 | Fully paid customer sale | Customer has existing OS; current sale is fully paid. | Sale posts without creating additional credit; existing OS is not treated as new credit. | | |
+| POS-109 | Shop-level concurrent credit | Two sessions attempt credit sales simultaneously near shop limit. | Shop lock prevents combined projected OS from exceeding the shop limit. | | |
 
 ## D. Gas Source Cylinder — Manual Selection ON
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-026 | Setting ON | Enable source-cylinder selection setting. | Source Filled Cylinder selector is visible. | | |
-| POS-027 | Valid source | Select type/source with sufficient gas and valid KG. | Only selected source cylinder is reduced. | | |
-| POS-028 | Missing source | Leave source blank and post. | Sale rejected; source is required. | | |
-| POS-029 | Source over quantity | Source has 5 KG; enter 6 KG. | Sale rejected. | | |
-| POS-030 | Same source twice | Use same source on two lines. | Duplicate source is rejected. | | |
-| POS-031 | Source depleted | Sell exactly all gas from source. | Gas becomes zero and cylinder becomes Empty. | | |
-| POS-032 | Partial source sale | Source has 10 KG; sell 4 KG. | Source remains Filled with about 6 KG. | | |
+| POS-094 | Setting ON | Enable source-cylinder selection setting. | Source Filled Cylinder selector is visible. | | |
+| POS-095 | Valid source | Select type/source with sufficient gas and valid KG. | Only selected source cylinder is reduced. | | |
+| POS-096 | Missing source | Leave source blank and post. | Sale rejected; source is required. | | |
+| POS-097 | Source over quantity | Source has 5 KG; enter 6 KG. | Sale rejected. | | |
+| POS-098 | Same source twice | Use same source on two lines. | Duplicate source is rejected. | | |
+| POS-099 | Source depleted | Sell exactly all gas from source. | Gas becomes zero and cylinder becomes Empty. | | |
+| POS-100 | Partial source sale | Source has 10 KG; sell 4 KG. | Source remains Filled with about 6 KG. | | |
 
 ## E. Gas Source Cylinder — Automatic Selection OFF
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-033 | Setting OFF | Disable source-cylinder selection. | Source selector is hidden. | | |
-| POS-034 | Automatic sequence | Multiple filled cylinders; sell gas. | Cylinders are consumed in ascending global sequence/ID. | | |
-| POS-035 | One cylinder first | First cylinder has enough gas. | Only first required cylinder is consumed. | | |
-| POS-036 | Cross-cylinder allocation | Request more than first cylinder but less than total. | First cylinder is consumed, then next cylinder. | | |
-| POS-037 | Insufficient stock | Request more than total available gas. | Sale rejected; no inventory changes. | | |
-| POS-038 | Duplicate type lines | Add same cylinder type on two gas lines. | Sale rejected; same type cannot appear on multiple gas lines. | | |
+| POS-101 | Setting OFF | Disable source-cylinder selection. | Source selector is hidden. | | |
+| POS-102 | Automatic sequence | Multiple filled cylinders; sell gas. | Cylinders are consumed in ascending global sequence/ID. | | |
+| POS-103 | One cylinder first | First cylinder has enough gas. | Only first required cylinder is consumed. | | |
+| POS-104 | Cross-cylinder allocation | Request more than first cylinder but less than total. | First cylinder is consumed, then next cylinder. | | |
+| POS-105 | Insufficient stock | Request more than total available gas. | Sale rejected; no inventory changes. | | |
+| POS-106 | Duplicate type lines | Add same cylinder type on two gas lines. | Sale rejected; same type cannot appear on multiple gas lines. | | |
 
 ## F. Gas Amount / Rs. Mode
 
 | ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
 |---|---|---|---|---|---|
-| POS-039 | Amount calculation | Current rate 200/KG; enter Rs.1000. | Calculated KG = 5.000. | | |
-| POS-040 | Current rate authority | Select Rs. mode and attempt custom rate. | Server uses current effective gas rate. | | |
-| POS-041 | Amount exceeds stock | Stock 5 KG, rate 200/KG, enter Rs.1200. | Sale rejected because calculated KG is 6. | | |
+| POS-107 | Amount calculation | Current rate 200/KG; enter Rs.1000. | Calculated KG = 5.000. | | |
+| POS-108 | Current rate authority | Select Rs. mode and attempt custom rate. | Server uses current effective gas rate. | | |
+| POS-109 | Amount exceeds stock | Stock 5 KG, rate 200/KG, enter Rs.1200. | Sale rejected because calculated KG is 6. | | |
 | POS-042 | Valid amount sale | Enter valid amount within stock and pay fully. | Sale posts with calculated KG. | | |
 | POS-043 | Return to KG | Switch Rs. to KG and change quantity. | KG input becomes authoritative. | | |
 | POS-044 | Amount server validation | Submit manipulated amount/quantity directly. | Server recalculates KG and validates stock. | | |
