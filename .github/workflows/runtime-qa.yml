@@ -1,0 +1,93 @@
+name: LPG Runtime QA
+
+on:
+  push:
+    branches: [qa/runtime-deployment]
+
+jobs:
+  runtime-qa:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: perfect_lpg
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, mysqli
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Bootstrap database
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root < database/schema.sql
+          for f in database/migrations/*.sql; do
+            echo "Applying $f"
+            if [[ "$f" == *refresh_transactional_data.sql ]]; then
+              printf "SET @lpg_refresh_transactional_data = 0;\nSOURCE $GITHUB_WORKSPACE/$f;\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
+            else
+              mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < "$f"
+            fi
+          done
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          sed -i 's#^app.baseURL.*#app.baseURL = http://127.0.0.1:8080/#' .env
+          sed -i 's#^database.default.hostname.*#database.default.hostname = 127.0.0.1#' .env
+          sed -i 's#^database.default.database.*#database.default.database = perfect_lpg#' .env
+          sed -i 's#^database.default.username.*#database.default.username = root#' .env
+          sed -i 's#^database.default.password.*#database.default.password = root#' .env
+          sed -i 's#^CI_ENVIRONMENT.*#CI_ENVIRONMENT = testing#' .env
+
+      - name: Start web application
+        run: |
+          nohup php spark serve --host 127.0.0.1 --port 8080 > /tmp/lpg-server.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8080/ > /tmp/lpg-login.html; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/lpg-server.log
+          exit 1
+
+      - name: HTTP runtime smoke tests
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:8080/ | grep -qiE 'login|password'
+          curl -fsS http://127.0.0.1:8080/login | grep -qiE 'login|password'
+          curl -fsS http://127.0.0.1:8080/dashboard -o /tmp/dashboard.html || true
+          test -s /tmp/dashboard.html
+
+      - name: Run PHPUnit
+        env:
+          CI_ENVIRONMENT: testing
+        run: php vendor/bin/phpunit --no-coverage
+
+      - name: Upload runtime logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-qa-logs
+          path: |
+            /tmp/lpg-server.log
+            /tmp/lpg-login.html
+            /tmp/dashboard.html
