@@ -279,11 +279,10 @@ function calculate() {
     document.getElementById('summaryPrevious').textContent = money(previous);
     document.getElementById('summaryCurrent').textContent = money(current);
     document.getElementById('summaryTotalPayable').textContent = money(totalPayable);
-    document.getElementById('summaryPaid').textContent = money(paid);
     document.getElementById('summaryBalance').textContent = money(balance);
 
     const over = paid > totalPayable + 0.01;
-    document.getElementById('summaryPaid').classList.toggle('text-danger', over);
+    document.getElementById('amountPaid').classList.toggle('is-invalid', over);
     document.getElementById('postPurchase').disabled = over;
 }
 
