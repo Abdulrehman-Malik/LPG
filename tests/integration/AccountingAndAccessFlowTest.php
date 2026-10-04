@@ -111,7 +111,7 @@ final class AccountingAndAccessFlowTest extends CIUnitTestCase
         $unit = $this->db->table('cylinder_units')->where('id', $unitId)->get()->getRowArray();
         $summary = $cash->summary($sessionId);
 
-        $this->assertSame('void', $row['status']);
+        $this->assertSame('voided', $row['status']);
         $this->assertSame('filled', $unit['status']);
         $this->assertEqualsWithDelta(11.8, (float) $unit['gas_weight_kg'], 0.001);
         $this->assertEqualsWithDelta(1000, $summary['expected'], 0.001);
@@ -139,8 +139,23 @@ final class AccountingAndAccessFlowTest extends CIUnitTestCase
             $this->assertStringContainsString($page['expected'], $response);
         }
 
-        $customer = $this->db->table('customers')->orderBy('id')->get()->getRowArray();
-        $supplier = $this->db->table('suppliers')->orderBy('id')->get()->getRowArray();
+        $this->db->table('customers')->insert([
+            'code' => 'REPORT-C-' . bin2hex(random_bytes(3)),
+            'name' => 'Report Test Customer',
+            'credit_limit' => 1000,
+            'allow_credit_sale' => 1,
+            'opening_balance' => 0,
+            'is_active' => 1,
+        ]);
+        $this->db->table('suppliers')->insert([
+            'code' => 'REPORT-S-' . bin2hex(random_bytes(3)),
+            'name' => 'Report Test Supplier',
+            'credit_limit' => 1000,
+            'opening_balance' => 0,
+            'is_active' => 1,
+        ]);
+        $customer = $this->db->table('customers')->orderBy('id', 'DESC')->get()->getRowArray();
+        $supplier = $this->db->table('suppliers')->orderBy('id', 'DESC')->get()->getRowArray();
 
         $customerPage = $this->controller(Customers::class)->ledger((int) $customer['id']);
         $supplierPage = $this->controller(Suppliers::class)->ledger((int) $supplier['id']);
@@ -161,6 +176,18 @@ final class AccountingAndAccessFlowTest extends CIUnitTestCase
             ->orderBy('u.id')
             ->get()->getRowArray();
 
+        if (!$cashier) {
+            $roleId = (int) $this->db->table('roles')->where('code', 'CASHIER')->get()->getRow('id');
+            $this->db->table('users')->insert([
+                'location_id' => $this->locationId,
+                'role_id' => $roleId,
+                'full_name' => 'QA Cashier',
+                'username' => 'qa_cashier_' . bin2hex(random_bytes(3)),
+                'password_hash' => password_hash('qa-test', PASSWORD_DEFAULT),
+                'is_active' => 1,
+            ]);
+            $cashier = ['id' => $this->db->insertID()];
+        }
         $this->assertNotEmpty($cashier);
         session()->set('user_id', (int) $cashier['id']);
 
