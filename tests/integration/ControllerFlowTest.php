@@ -141,7 +141,7 @@ final class ControllerFlowTest extends CIUnitTestCase
         (new PurchaseService())->post([
             'supplier_id' => $supplierId,
             'lines' => [[
-                'line_type' => 'gas_bulk',
+                'line_type' => 'gas_kg',
                 'cylinder_type_id' => null,
                 'quantity' => 10,
                 'actual_gas_weight_kg' => 0,
