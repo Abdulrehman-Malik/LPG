@@ -284,14 +284,11 @@
                                 </tbody>
                             </table>
                         </div>
-                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-
                         <?php foreach ($purchaseHistory as $purchase): ?>
                             <?php
                             $detail = $purchaseDetails[(int) $purchase['id']] ?? ['items' => [], 'payments' => []];
+                            $detailStatus = (string) ($purchase['status'] ?? 'posted');
+                            $detailStatusClass = $detailStatus === 'posted' ? 'bg-success' : 'bg-secondary';
                             ?>
                             <div class="modal fade" id="purchaseDetailModal<?= (int) $purchase['id'] ?>" tabindex="-1" aria-labelledby="purchaseDetailLabel<?= (int) $purchase['id'] ?>" aria-hidden="true">
                                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -326,7 +323,7 @@
                                                 <div class="col-md-4">
                                                     <div class="purchase-detail-summary p-3 h-100">
                                                         <div class="small text-muted">Status</div>
-                                                        <div><span class="badge <?= $statusClass ?>"><?= esc(ucfirst($status)) ?></span></div>
+                                                        <div><span class="badge <?= $detailStatusClass ?>"><?= esc(ucfirst($detailStatus)) ?></span></div>
                                                     </div>
                                                 </div>
                                             </div>
