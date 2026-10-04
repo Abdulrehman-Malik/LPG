@@ -258,7 +258,12 @@ class SalesService
                 if($mode==='credit')$credit+=$amount;if($mode==='cash')$cashAmount+=$amount;
             }
             if(abs($paymentTotal-$total)>0.01) throw new RuntimeException('Payment total must equal the recalculated sale total.');
-            if($customerId && $credit>0 && $this->customerBalance($customerId)+$credit>(float)$customer['credit_limit']) throw new RuntimeException('Credit limit exceeded.');
+            if(!$customerId && abs($paymentTotal-$total)>0.01) throw new RuntimeException('Walk-in sale must be fully paid. Received amount must equal sale total.');
+            if($customerId && $credit>0.01){
+                if(!(int)($customer['allow_credit_sale']??0)) throw new RuntimeException('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record before posting a credit sale.');
+                $newBalance=$this->customerBalance($customerId)+$credit;
+                if($newBalance>(float)$customer['credit_limit']+0.01) throw new RuntimeException('Customer credit limit exceeded.');
+            }
 
             $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
             $scenarioTypes=array_values(array_unique(array_column($prepared,'sale_mode')));
