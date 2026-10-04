@@ -21,6 +21,14 @@ class Purchases extends Controller
         }
 
         $db = Database::connect();
+        $today = date('Y-m-d');
+        $activeTab = (string) $this->request->getGet('tab') === 'history' ? 'history' : 'new';
+        $fromDate = $this->validHistoryDate($this->request->getGet('from_date'), $today);
+        $toDate = $this->validHistoryDate($this->request->getGet('to_date'), $today);
+
+        if ($fromDate > $toDate) {
+            [$fromDate, $toDate] = [$toDate, $fromDate];
+        }
         $purchaseService = new PurchaseService();
         $suppliers = $db->table('suppliers')
             ->where('is_active', 1)
@@ -36,8 +44,28 @@ class Purchases extends Controller
             );
         }
 
+        $history = [];
+        if ($activeTab === 'history') {
+            $history = $db->table('purchases p')
+                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, s.name AS supplier_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
+                ->join('suppliers s', 's.id = p.supplier_id')
+                ->join('purchase_payments pp', 'pp.purchase_id = p.id', 'left')
+                ->where('p.location_id', (int) session()->get('location_id'))
+                ->where('p.transaction_at >=', $fromDate . ' 00:00:00')
+                ->where('p.transaction_at <=', $toDate . ' 23:59:59')
+                ->groupBy('p.id')
+                ->orderBy('p.transaction_at', 'DESC')
+                ->orderBy('p.id', 'DESC')
+                ->get()
+                ->getResultArray();
+        }
+
         return view('purchases/index', [
             'title'            => 'Purchases',
+            'activeTab'        => $activeTab,
+            'fromDate'         => $fromDate,
+            'toDate'           => $toDate,
+            'purchaseHistory'  => $history,
             'suppliers'        => $suppliers,
             'supplierBalances' => $supplierBalances,
             'types'            => $db->table('cylinder_types')
@@ -46,6 +74,20 @@ class Purchases extends Controller
                 ->get()
                 ->getResultArray(),
         ]);
+    }
+
+    private function validHistoryDate($value, string $default): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return $default;
+        }
+
+        $date = \DateTime::createFromFormat('!Y-m-d', $value);
+        $errors = \DateTime::getLastErrors();
+        $hasErrors = is_array($errors) && ($errors['warning_count'] > 0 || $errors['error_count'] > 0);
+
+        return $date && !$hasErrors && $date->format('Y-m-d') === $value ? $value : $default;
     }
 
     public function save()
