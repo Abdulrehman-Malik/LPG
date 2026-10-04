@@ -44,7 +44,7 @@ The POS no longer contains a separate default-transaction preference control. It
 1. Create/configure a MySQL 8+ database.
 2. Configure the local environment from `.env.example`.
 3. Run `database/schema.sql` on the database.
-4. Run the required non-destructive migrations after the schema: `20260930_shop_settings.sql`, `20261003_pos_transaction_type.sql`, `20261003_individual_cylinder_tracking.sql`, and `20261004_purchase_inventory_integrity.sql`.
+4. Run the required non-destructive migrations after the schema, including `013_20261004_customer_credit_sale_control.sql` for the customer credit-sale rule.
 5. On an existing database, also run `database/migrations/009_20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
 6. Run Composer dependencies: `composer install`.
 7. Point Apache/Nginx to the project's `public` directory.
@@ -81,6 +81,8 @@ All manual SQL deployment scripts use a numeric sequence prefix. Run only migrat
 9. `009_20261003_permissions_sync.sql`
 10. `010_20261004_purchase_inventory_integrity.sql`
 11. `011_20261003_refresh_transactional_data.sql` — **manual staging/test-data refresh only; never run automatically in production**
+12. `012_20261004_physical_cylinder_code.sql` — physical cylinder code migration
+13. `013_20261004_customer_credit_sale_control.sql` — per-customer credit-sale permission
 
 See `database/migrations/README.md` for the deployment procedure and safety rules.
 
@@ -89,3 +91,13 @@ See `database/migrations/README.md` for the deployment procedure and safety rule
 - `TESTING.md` — development status and release gate.
 - `SQA.md` — detailed execution matrix with expected/actual/status fields.
 - No browser execution is falsely marked PASS unless it has been executed in the user's local test environment.
+
+## POS Customer Credit Business Rules
+
+These rules are mandatory and are enforced in both the POS UI and SalesService server-side posting logic:
+
+1. **Walk-in / Cash customer:** Credit sale is never allowed. A walk-in sale must be fully paid at posting time; **received amount must equal the sale total**. Walk-in payments are cash only.
+2. **Actual customer:** Credit sale is allowed only when **Allow Credit Sale** is enabled on that customer's record.
+3. **Credit limit:** For an actual customer allowed to buy on credit, the resulting customer outstanding balance must never exceed that customer's configured **Credit Limit**. A zero credit limit therefore permits no credit.
+4. **Server-side enforcement:** UI restrictions are not trusted by themselves; direct POST requests are validated by the sales service as well.
+5. **Customer configuration:** The Customers / Parties screen shows the credit-sale status and provides the **Allow Credit Sale** option alongside the customer's Credit Limit.
