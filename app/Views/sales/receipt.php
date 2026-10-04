@@ -54,7 +54,14 @@ $typeLabel=$typeLabels[$sale['transaction_type']]??ucwords(str_replace('_',' ',$
 <div class="row refund"><span>Security Deposit Refund</span><span>Rs. <?=number_format((float)$sale['security_deposit_refund_amount'],2)?></span></div>
 <?php endif;?>
 
+<div class="rule"></div>
+<div class="row"><span>Previous OS Balance</span><span>Rs. <?=number_format((float)($sale['previous_os_balance']??0),2)?></span></div>
+<div class="row"><span>Current Sale</span><span>Rs. <?=number_format((float)$sale['total_amount'],2)?></span></div>
+<div class="row"><span>Discount</span><span>Rs. <?=number_format((float)$sale['discount_amount'],2)?></span></div>
+<div class="row"><span>Net Receivable Amount</span><span>Rs. <?=number_format((float)($sale['net_receivable_amount']??$sale['total_amount']),2)?></span></div>
 <?php foreach($payments as $p): ?><div class="row"><span><?=esc(ucfirst($p['payment_mode']))?></span><span>Rs. <?=number_format((float)$p['amount'],2)?></span></div><?php endforeach;?>
+<div class="row total"><span>Receipt Amount</span><span>Rs. <?=number_format((float)($sale['receipt_amount']??0),2)?></span></div>
+<div class="row total"><span>OS Balance</span><span>Rs. <?=number_format((float)($sale['os_balance']??$sale['credit_amount']),2)?></span></div>
 <?php if($sale['transaction_type']==='security_deposit'): ?><div class="row total"><span>Net Amount Payable</span><span>Rs. <?=number_format((float)$sale['security_deposit_amount'],2)?></span></div><?php elseif($sale['transaction_type']==='cylinder_return'): ?><div class="row total"><span>Customer Receives</span><span>Rs. <?=number_format((float)$sale['security_deposit_refund_amount'],2)?></span></div><?php endif;?>
 <div class="rule"></div><div class="footer"><?=nl2br(esc($shopSettings['receipt_footer']??'Thank you'))?></div>
 <div class="actions"><button type="button" onclick="window.print()">Print</button><button type="button" onclick="window.close()">Close</button></div>
