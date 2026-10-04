@@ -39,3 +39,13 @@ The Chromium loopback probe passed, proving the runner and Chromium could reach 
 
 ### Fix
 The QA workflow now replaces the active `app.baseURL` and `app_baseURL` values in the copied `.env` before adding database/test settings. This is QA configuration only; the repository application configuration files remain unchanged.
+
+
+## Application behavior fix
+
+The browser test reached the dashboard successfully after the base URL fix, but the dashboard opened on **Current Stock** by default. Review of `app/Views/dashboard/index.php` showed the default `stockTab` was being forced to `filled` when no `stock_tab` query parameter was supplied. This made the requested Summary tab inaccessible as the default view.
+
+### Fix on QA branch
+- Changed the default dashboard tab to Summary (`stock_tab = ''` when no valid stock tab is requested).
+- Strengthened browser QA to verify the five Summary metrics, switch to Current Stock, verify Filled/Empty/Issued cards, return to Summary, then continue Configuration and scrollbar checks.
+- This is the only application file changed for this behavior fix: `app/Views/dashboard/index.php`.
