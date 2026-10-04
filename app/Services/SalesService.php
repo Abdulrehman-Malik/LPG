@@ -496,7 +496,7 @@ class SalesService
 
                 if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
             }
-            if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed.');
+            if(!$this->db->transStatus()) throw new RuntimeException('Gas sale posting failed. DB=' . json_encode($this->db->error()));
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
             $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
             $cash=$this->paymentCash($paymentPlan['sale_payments']);
