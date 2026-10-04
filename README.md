@@ -113,3 +113,117 @@ Shop Settings → POS & Sales includes **Allow user to select the source filled 
 - Server-side validation and transaction locking enforce the same rules and prevent concurrent overselling.
 
 Migration: `database/migrations/014_20261004_pos_source_filled_cylinder_selection.sql`.
+
+
+## Recently Applied Business Rules — October 2026
+
+This is the consolidated business-rule reference for the recent LPG/POS changes. These rules are part of application behavior and must be enforced by both UI and server-side transaction services where applicable.
+
+### 1. Customer and Credit-Sale Rules
+
+1. **Walk-in / Cash customer is cash-only.** A walk-in customer cannot use Credit, Cheque, or Online payment. A walk-in sale must be fully paid and received amount must equal sale total.
+2. **Actual customer credit is permission-controlled.** Credit is allowed only when **Allow Credit Sale** is enabled on the customer record; it is disabled by default.
+3. **Credit limit applies to resulting outstanding.** Resulting customer outstanding must never exceed the configured **Credit Limit**. Zero limit permits no credit.
+4. **Previous OS is included in receivable.** Customer previous outstanding participates in the current receivable/settlement calculation.
+5. **Server-side enforcement is authoritative.** Direct POST bypasses must be rejected even if browser controls are bypassed.
+
+### 2. POS Source Filled-Cylinder Rules
+
+**Setting ON:**
+- Gas Sale / Refill shows a Source Filled Cylinder selector per gas line.
+- Selected source must be a filled physical cylinder at the current location and match the selected cylinder type.
+- Same physical source cylinder cannot be selected on more than one line.
+- Gas quantity cannot exceed actual gas weight in the selected source cylinder.
+- Only the selected source cylinder is consumed; when it reaches zero KG it becomes empty.
+
+**Setting OFF:**
+- Source selector is hidden.
+- System automatically allocates from filled physical cylinders of the selected type.
+- Allocation follows ascending global physical-cylinder sequence (`cylinder_units.id`).
+- One cylinder is consumed before moving to the next.
+- Requested KG cannot exceed total actual gas available for that cylinder type.
+
+**Both modes:**
+- Same cylinder type cannot appear on multiple gas-sale lines.
+- Available gas for a type is the sum of actual gas on its filled physical cylinders.
+- Transaction locking prevents concurrent overselling.
+
+### 3. Physical Cylinder Rules
+
+- Every physical cylinder has an individual `cylinder_units` record.
+- Code format is **`<CYLINDER_TYPE_CODE>-<GLOBAL_SEQUENCE>`**, for example `C11_8-000123`.
+- Global sequence is the `cylinder_units.id` AUTO_INCREMENT value and is not reset per type/location.
+- Existing IDs and inventory relationships are preserved during code migration.
+- Filled cylinder actual gas must be greater than zero and cannot exceed capacity.
+- Empty cylinder gas weight is always zero.
+- Reaching zero KG changes a filled unit to empty transactionally.
+
+### 4. Gas Inventory Rules
+
+- **Available Gas KG = sum of actual gas weight on filled physical cylinders** at the current location.
+- Gas consumption changes physical-cylinder gas weight; it does not use an unrelated bulk gas bucket.
+- Partial sales consume only the requested KG.
+- Stock validation uses the physical-cylinder-derived balance.
+- If stock validation is disabled, over-stock posting requires explicit override confirmation and branch **Allow Stock Override** permission.
+- If stock validation is enabled, insufficient gas stock blocks posting.
+- Inventory locking/transaction controls prevent concurrent overselling.
+
+### 5. Cylinder Sale and Replacement Rules
+
+- Physical-cylinder quantities must be whole numbers.
+- Filled-cylinder sale charges **actual gas KG × gas/kg rate + cylinder quantity × cylinder rate**.
+- Actual gas weight, not nominal capacity, is used for gas pricing.
+- Same-capacity replacement requires a named customer when an empty cylinder is returned.
+- Different-capacity replacement requires a named customer and a received type different from the sold type.
+- Empty-cylinder-only sale consumes empty physical-cylinder inventory and does not consume gas.
+- Filled/empty availability is revalidated during posting.
+
+### 6. Customer Custody and Security Deposit Rules
+
+- Security Deposit / Issue Cylinder requires a named customer.
+- Selected company physical cylinders move to customer custody while remaining individually tracked.
+- A cylinder already on active custody cannot be issued again.
+- Security deposit is tracked separately from ordinary sales revenue/customer OS.
+- Only the customer holding a custody record can return that cylinder.
+- A custody cylinder must be empty before return/refund.
+- Returned cylinder becomes an empty company cylinder and its recorded deposit is refundable according to the custody ledger rules.
+- Gas added to a custody cylinder cannot make it exceed capacity and must target a cylinder belonging to the selected customer.
+
+### 7. Purchase Inventory Integrity Rules
+
+- Filled-cylinder purchase lines retain **actual gas weight per line**.
+- Actual gas weight is validated against cylinder capacity.
+- Filled cylinders cannot be created with zero/negative actual gas.
+- Empty cylinders have zero gas weight.
+- Filled-cylinder purchases create individual physical-cylinder records.
+- Historical rows are not silently rewritten when the actual-gas field is introduced; unavailable historical values remain at migration default.
+- Purchase inventory and supplier/payment posting must be atomic.
+
+### 8. Transaction and Integrity Rules
+
+- POS uses one header transaction type per invoice.
+- Financial totals are recalculated server-side.
+- Payment total must equal the recalculated payable amount unless the transaction type has a specific settlement rule.
+- Invalid/inactive customers and cylinder types cannot be used.
+- Inventory availability is revalidated inside posting.
+- Financial and inventory changes commit atomically; failures roll back.
+- Sale voids reverse related inventory/cash/customer-ledger effects without duplicate reversal.
+- Audit history remains after voids.
+
+### 9. Recently Applied POS UI Rules
+
+- POS left panel uses reduced vertical padding for a more compact working area.
+- **Current Sale**, **Previous Balance**, and **Discount** are displayed on one row on desktop.
+- Unnecessary explanatory/help text was removed from the main workflow.
+- **Security Deposit Amount** is hidden unless the selected transaction type is **Security Deposit / Issue Cylinder**.
+- These UI changes do not replace server-side validation.
+
+### 10. Recent Migration Rules
+
+- `010_20261004_purchase_inventory_integrity.sql` — actual gas weight for purchase lines.
+- `012_20261004_physical_cylinder_code.sql` — standardized physical-cylinder codes.
+- `013_20261004_customer_credit_sale_control.sql` — per-customer credit-sale permission.
+- `014_20261004_pos_source_filled_cylinder_selection.sql` — POS source-cylinder selection setting.
+- Run only migrations not already applied, in sequence.
+
+**Rule precedence:** Server-side transactional validation is authoritative. UI restrictions, displayed availability and client-side checks must never be the only enforcement mechanism.
