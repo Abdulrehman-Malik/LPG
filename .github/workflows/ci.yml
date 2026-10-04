@@ -55,6 +55,7 @@ jobs:
           mysql -h 127.0.0.1 -P 3306 -u root < database/schema.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/20261003_pos_transaction_type.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/20261003_individual_cylinder_tracking.sql
+          printf "SET @lpg_refresh_transactional_data = 0;\\nSOURCE database/migrations/20261003_refresh_transactional_data.sql;\\n" | mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg
 
       - name: CodeIgniter smoke check
         env:
