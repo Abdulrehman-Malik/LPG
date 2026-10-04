@@ -26,6 +26,10 @@
     border-top:2px solid #adb5bd;
     font-size:1.15rem;
 }
+.purchase-page .purchase-tabs { margin-bottom: 1rem; }
+.purchase-page .history-table th,
+.purchase-page .history-table td { vertical-align: middle; }
+.purchase-page .history-table th { white-space: nowrap; font-size: .86rem; font-weight: 600; color: #5f6b76; }
 .purchase-page .payment-row {
     border:1px solid #e9ecef;
     border-radius:.5rem;
@@ -45,6 +49,21 @@
         <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
     <?php endif; ?>
 
+    <ul class="nav nav-tabs purchase-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link <?= ($activeTab ?? 'new') === 'new' ? 'active' : '' ?>" href="#new-purchase" data-bs-toggle="tab" role="tab" aria-controls="new-purchase" aria-selected="<?= ($activeTab ?? 'new') === 'new' ? 'true' : 'false' ?>">
+                <i class="bi bi-plus-circle me-1"></i>New Purchase
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link <?= ($activeTab ?? 'new') === 'history' ? 'active' : '' ?>" href="#purchase-history" data-bs-toggle="tab" role="tab" aria-controls="purchase-history" aria-selected="<?= ($activeTab ?? 'new') === 'history' ? 'true' : 'false' ?>">
+                <i class="bi bi-clock-history me-1"></i>Purchase History
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade <?= ($activeTab ?? 'new') === 'new' ? 'show active' : '' ?>" id="new-purchase" role="tabpanel">
     <form method="post" action="<?= site_url('purchases/save') ?>" id="purchaseForm">
         <?= csrf_field() ?>
         <input type="hidden" name="lines_json" id="lines_json">
@@ -182,7 +201,78 @@
             </div>
         </div>
     </form>
-</div>
+        </div>
+
+        <div class="tab-pane fade <?= ($activeTab ?? 'new') === 'history' ? 'show active' : '' ?>" id="purchase-history" role="tabpanel">
+            <div class="card shadow-sm">
+                <div class="card-header py-3">
+                    <div class="fw-semibold">Purchase History</div>
+                    <div class="small text-muted">View purchases posted for the selected date range.</div>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="<?= site_url('purchases') ?>" class="row g-3 align-items-end mb-4">
+                        <input type="hidden" name="tab" value="history">
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label fw-semibold">From Date</label>
+                            <input type="date" name="from_date" class="form-control" value="<?= esc($fromDate ?? date('Y-m-d')) ?>" required>
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label fw-semibold">To Date</label>
+                            <input type="date" name="to_date" class="form-control" value="<?= esc($toDate ?? date('Y-m-d')) ?>" required>
+                        </div>
+                        <div class="col-md-4 col-lg-3">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i>Search History
+                            </button>
+                        </div>
+                    </form>
+
+                    <?php if (!empty($purchaseHistory)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover datatable history-table mb-0">
+                                <thead class="border-bottom">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Purchase No.</th>
+                                        <th>Supplier</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-end">Discount</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-end">Paid</th>
+                                        <th class="text-end">Current Credit</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($purchaseHistory as $purchase): ?>
+                                        <?php
+                                        $status = (string) ($purchase['status'] ?? 'posted');
+                                        $statusClass = $status === 'posted' ? 'bg-success' : 'bg-secondary';
+                                        ?>
+                                        <tr>
+                                            <td><?= esc(date('d-M-Y h:i A', strtotime($purchase['transaction_at']))) ?></td>
+                                            <td class="fw-semibold"><?= esc($purchase['purchase_no']) ?></td>
+                                            <td><?= esc($purchase['supplier_name']) ?></td>
+                                            <td class="text-end">Rs. <?= number_format((float) $purchase['subtotal'], 2) ?></td>
+                                            <td class="text-end">Rs. <?= number_format((float) $purchase['discount_amount'], 2) ?></td>
+                                            <td class="text-end fw-semibold">Rs. <?= number_format((float) $purchase['total_amount'], 2) ?></td>
+                                            <td class="text-end">Rs. <?= number_format((float) $purchase['amount_paid'], 2) ?></td>
+                                            <td class="text-end">Rs. <?= number_format((float) $purchase['credit_amount'], 2) ?></td>
+                                            <td><span class="badge <?= $statusClass ?>"><?= esc(ucfirst($status)) ?></span></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="alert alert-light border mb-0 text-center">
+                            No purchases found between <?= esc(date('d-M-Y', strtotime($fromDate ?? date('Y-m-d')))) ?> and <?= esc(date('d-M-Y', strtotime($toDate ?? date('Y-m-d')))) ?>.
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
 const types = <?= json_encode($types) ?>;
