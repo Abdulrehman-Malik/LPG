@@ -49,3 +49,11 @@ The browser test reached the dashboard successfully after the base URL fix, but 
 - Changed the default dashboard tab to Summary (`stock_tab = ''` when no valid stock tab is requested).
 - Strengthened browser QA to verify the five Summary metrics, switch to Current Stock, verify Filled/Empty/Issued cards, return to Summary, then continue Configuration and scrollbar checks.
 - This is the only application file changed for this behavior fix: `app/Views/dashboard/index.php`.
+
+
+## Follow-up: summary-tab render exception
+
+After changing the default to Summary, the browser test exposed a second view-layer issue: the stock pane still indexed `$stock['']` while it was hidden, producing a CodeIgniter `ErrorException: Undefined array key ""`.
+
+### Fix
+Added a separate safe stock display key that falls back to `filled` for the hidden stock pane while keeping the active dashboard tab as Summary. This preserves the requested default without changing stock data behavior.
