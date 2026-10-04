@@ -31,3 +31,11 @@ Run the complete Runtime QA workflow on this branch. The loopback probe will dis
 ## Follow-up: Probe setup correction
 
 The first isolated probe attempt exposed a QA-script issue: the probe ran in a separate workflow step before the temporary Playwright directory was created. The probe step now installs Playwright/Chromium itself before testing loopback, making the diagnostic self-contained.
+
+
+## Root cause found
+
+The Chromium loopback probe passed, proving the runner and Chromium could reach localhost. The application login page then failed because the repository `env` file contains an active legacy `app.baseURL` value (`http://localhost:180/LPG/public/`). Appending a second value in the QA workflow did not override the first value. The rendered login form therefore posted to the legacy port instead of the test server.
+
+### Fix
+The QA workflow now replaces the active `app.baseURL` and `app_baseURL` values in the copied `.env` before adding database/test settings. This is QA configuration only; the repository application configuration files remain unchanged.
