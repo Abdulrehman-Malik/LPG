@@ -50,6 +50,8 @@ final class MasterDataFlowTest extends CIUnitTestCase
             'is_active' => 1,
         ])->save();
 
+        $this->assertSame(1, (int) Services::request()->getPost('allow_credit_sale'));
+
         $this->controller(Suppliers::class, [
             'id' => '',
             'code' => $supplierCode,
