@@ -16,6 +16,62 @@ class InventoryService{
   return (float)($q['q']??0)+(float)($in['q']??0)-(float)($out['q']??0);
  }
 
+ public function receivePurchase(int $locationId,string $type,?int $typeId,float $qty,float $actualGasWeight,int $purchaseId,int $userId): void
+ {
+  if($qty<=0) throw new RuntimeException('Purchase quantity must be greater than zero.');
+  if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase inventory type.');
+
+  if($type==='gas_kg'){
+   if($typeId!==null) throw new RuntimeException('Gas purchase does not use a cylinder type.');
+   $this->db->table('inventory_movements')->insert([
+    'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,
+    'quantity'=>$qty,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
+    'source_type'=>'purchase','source_id'=>$purchaseId,'created_by'=>$userId,
+    'notes'=>'Stock received through purchase'
+   ]);
+   if(!$this->db->transStatus()) throw new RuntimeException('Gas inventory posting failed.');
+   return;
+  }
+
+  if($typeId===null) throw new RuntimeException('Cylinder type is required for cylinder purchase.');
+  if(floor($qty)!==$qty) throw new RuntimeException('Cylinder purchase quantity must be a whole number.');
+
+  $ct=$this->db->table('cylinder_types')->where('id',$typeId)->get()->getRowArray();
+  if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+
+  $qtyInt=(int)$qty;
+  $status=$type==='filled_cylinder'?'filled':'empty';
+  $gasPerUnit=$type==='filled_cylinder'?$actualGasWeight:0;
+
+  if($type==='filled_cylinder' && ($gasPerUnit<=0 || $gasPerUnit>(float)$ct['capacity_kg'])){
+   throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
+  }
+
+  $unitIds=$this->cylinders->createUnits(
+   $locationId,$typeId,$qtyInt,$status,$gasPerUnit,$userId,'purchase',$purchaseId
+  );
+
+  foreach($unitIds as $unitId){
+   $this->db->table('inventory_movements')->insert([
+    'location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,
+    'quantity'=>1,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
+    'source_type'=>'purchase','source_id'=>$purchaseId,'cylinder_unit_id'=>$unitId,
+    'created_by'=>$userId,'notes'=>'Physical cylinder received through purchase'
+   ]);
+
+   if($type==='filled_cylinder'){
+    $this->db->table('inventory_movements')->insert([
+     'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,
+     'quantity'=>$gasPerUnit,'direction'=>'in','movement_at'=>date('Y-m-d H:i:s'),
+     'source_type'=>'purchase','source_id'=>$purchaseId,'cylinder_unit_id'=>$unitId,
+     'created_by'=>$userId,'notes'=>'Gas contained in purchased filled cylinder'
+    ]);
+   }
+  }
+
+  if(!$this->db->transStatus()) throw new RuntimeException('Purchase inventory posting failed.');
+ }
+
  public function adjust(int $locationId,string $type,?int $typeId,float $qty,string $direction,int $userId,string $notes='',float $actualGasWeight=0,?int $sourceCylinderUnitId=null,string $adjustmentScope='bulk'):void{
   if($qty<=0||!in_array($direction,['in','out'],true)) throw new RuntimeException('Invalid inventory adjustment.');
   if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid inventory type.');
