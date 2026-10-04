@@ -62,7 +62,6 @@
       <?php foreach($customers as $c): ?><option value="<?=$c['id']?>"><?=esc(($c['code']?$c['code'].' — ':'').$c['name'])?></option><?php endforeach; ?>
     </select>
     <div id="customerCreditStatus" class="small mt-1 text-muted text-nowrap">Walk-in / Cash: credit sale not allowed.</div>
-    <div id="customerOsBalance" class="mt-1 fw-bold text-primary">Current OS Balance: Rs. 0.00</div>
   </div>
   <div class="col-md-3">
     <label class="form-label">Transaction Time</label>
@@ -121,6 +120,7 @@
   <label class="form-label">Net Amount Receivable</label>
   <div class="form-control bg-light fw-bold">Rs. <span id="netPayable">0.00</span></div>
 </div>
+<div class="mb-3"><label class="form-label fw-semibold">Current OS Balance</label><div class="form-control bg-light fw-bold text-primary">Rs. <span id="customerOsBalanceValue">0.00</span></div></div>
 <div class="mb-3" id="refundBox" style="display:none">
   <div class="form-control bg-light text-danger fw-semibold">Customer Refund: Rs. <span id="refundAmount">0.00</span></div>
 </div>
@@ -151,8 +151,8 @@ function transactionType(){return document.getElementById('transactionType').val
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:String(creditSaleAllowed[String(id)]??'0')==='1'}:null;}
 function refreshCustomer(){
- const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalance');
- if(osBox)osBox.textContent='Current OS Balance: Rs. '+(c?Math.max(0,c.balance):0).toFixed(2);
+ const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalanceValue');
+ if(osBox)osBox.textContent=(c?Math.max(0,c.balance):0).toFixed(2);
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
  if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.';return c;}
