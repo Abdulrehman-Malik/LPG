@@ -7,7 +7,7 @@ $money = static fn(float $v): string => 'Rs. ' . number_format($v, 2);
 $qty = static fn(float $v): string => number_format($v, 2);
 $stockTab = trim((string)(service('request')->getGet('stock_tab') ?? ''));
 if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
-    $stockTab = 'filled';
+    $stockTab = '';
 }
 ?>
 
