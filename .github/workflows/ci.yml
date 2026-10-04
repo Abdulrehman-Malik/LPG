@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - qa/workflow-cleanup
+      - qa/full-business-testing
   pull_request:
     branches: [main]
 
