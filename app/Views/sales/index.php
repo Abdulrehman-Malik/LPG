@@ -57,6 +57,7 @@
       <option value="">Walk-in / Cash</option>
       <?php foreach($customers as $c): ?><option value="<?=$c['id']?>"><?=esc(($c['code']?$c['code'].' — ':'').$c['name'])?></option><?php endforeach; ?>
     </select>
+    <div id="customerCreditStatus" class="small mt-1 text-muted">Walk-in / Cash: credit sale not allowed.</div>
   </div>
   <div class="col-md-4">
     <label class="form-label">Transaction Time</label>
@@ -138,7 +139,7 @@ const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_
 const rates=<?=json_encode($cylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
 const balances=<?=json_encode($balances)?>,creditLimits=<?=json_encode($creditLimits)?>,creditSaleAllowed=<?=json_encode(array_map(static fn($customer)=>(int)($customer['allow_credit_sale']??0),$customers))?>;
-const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit=<?=json_encode((float)($shopCreditLimit??0))?>;
+const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit=<?=json_encode((float)($shopCreditLimit??0))?>,shopOutstanding=<?=json_encode((float)($shopOutstanding??0))?>;
 const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomerCustody=<?=json_encode($custodyUnits)?>;
 const allowPosSourceCylinderSelection=<?=json_encode((int)($allowPosSourceCylinderSelection??0))?>===1;
 const defaultTransactionType=<?=json_encode($defaultTransactionType??'gas_sale')?>,defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
@@ -147,7 +148,15 @@ const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementB
 function transactionType(){return document.getElementById('transactionType').value;}
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:Number(creditSaleAllowed[id]||0)===1}:null;}
-function refreshCustomer(){ return selectedCustomer(); }
+function refreshCustomer(){
+ const c=selectedCustomer(),box=document.getElementById('customerCreditStatus');
+ if(!box)return c;
+ if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
+ if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.';return c;}
+ if(creditLimitMode==='none'){box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited — Current OS: Rs. '+c.balance.toFixed(2);return c;}
+ if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);box.className='small mt-1 '+(available>0?'text-success':'text-danger');box.textContent='Credit Sale: Allowed — Shop Limit: Rs. '+shopCreditLimit.toFixed(2)+' — Shop OS: Rs. '+shopOutstanding.toFixed(2)+' — Available: Rs. '+available.toFixed(2);return c;}
+ const available=Math.max(0,c.limit-c.balance);box.className='small mt-1 '+(available>0?'text-success':'text-danger');box.textContent='Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' — Current OS: Rs. '+c.balance.toFixed(2)+' — Available: Rs. '+available.toFixed(2);return c;
+}
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
 }
@@ -322,7 +331,7 @@ document.getElementById('discount').oninput=recalc;document.getElementById('secu
 document.getElementById('saleForm').onsubmit=()=>{
  const t=transactionType(),customerId=selectedCustomerId();
  const earlyModes=[...payments.querySelectorAll('.payment .mode')].map(x=>x.value);
- if(['gas_sale','cylinder_sale'].includes(t)&&!customerId&&earlyModes.includes('credit')){alert('Credit sale is not allowed for Walk-in / Cash customer. Select an actual customer.');return false;}
+ if(['gas_sale','cylinder_sale'].includes(t)&&!customerId&&earlyModes.includes('credit')){alert('Credit sale is not allowed for Walk-in / Cash customer.');return false;}
  let lines=[];
  if(t==='gas_sale'){
    lines=[...tbody.querySelectorAll('tr')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,source_cylinder_unit_id:tr.querySelector('.sourceCyl').value,quantity:tr.querySelector('.qty').value,gas_rate:tr.querySelector('.gasRate').value,entered_amount:document.getElementById('gasEntryMode').value==='amount'?tr.querySelector('.enteredAmount').value:'',customer_cylinder_unit_id:tr.querySelector('.targetCyl').value}));
