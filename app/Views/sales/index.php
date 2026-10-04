@@ -146,7 +146,7 @@
 const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)?>;
 const rates=<?=json_encode($cylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
-const balances=<?=json_encode($balances)?>,creditLimits=<?=json_encode($creditLimits)?>;
+const balances=<?=json_encode($balances)?>,creditLimits=<?=json_encode($creditLimits)?>,creditSaleAllowed=<?=json_encode(array_map(static fn($customer)=>(int)($customer['allow_credit_sale']??0),$customers))?>;
 const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit=<?=json_encode((float)($shopCreditLimit??0))?>;
 const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomerCustody=<?=json_encode($custodyUnits)?>;
 const defaultTransactionType=<?=json_encode($defaultTransactionType??'gas_sale')?>,defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
@@ -154,11 +154,12 @@ const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementB
 
 function transactionType(){return document.getElementById('transactionType').value;}
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
-function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0)}:null;}
+function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:Number(creditSaleAllowed[id]||0)===1}:null;}
 function refreshCustomer(){
   const c=selectedCustomer(),box=document.getElementById('customerInfo');
   if(!c){box.textContent='Walk-in: cash sales are allowed. Security Deposit and Cylinder Return require a named customer.';return;}
-  if(creditLimitMode==='none'){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit limit validation: OFF';return;}
+  if(!c.allowCredit){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Sale: NOT ALLOWED — this customer is cash-only.';return;}
+  if(creditLimitMode==='none'){box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Sale: ALLOWED | Credit limit: Rs. '+c.limit.toFixed(2);return;}
   const limit=creditLimitMode==='shop'?shopCreditLimit:c.limit;
   const available=Math.max(0,limit-c.balance);
   box.textContent='Previous OS: Rs. '+c.balance.toFixed(2)+' | Credit Limit: Rs. '+limit.toFixed(2)+' | Available Additional Credit: Rs. '+available.toFixed(2)+(limit<=0?' | Full settlement required':'');
@@ -260,7 +261,7 @@ function updateRefund(){
  const refund=allCustomerCustody.filter(u=>ids.includes(Number(u.unit_id))).reduce((s,u)=>s+Number(u.deposit_amount||0),0);
  document.getElementById('refundPreview').textContent=refund.toFixed(2);document.getElementById('refundAmount').textContent=refund.toFixed(2);
 }
-function refreshPaymentModes(){const walkIn=!selectedCustomerId();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash');if(walkIn)m.value='cash';});}
+function refreshPaymentModes(){const walkIn=!selectedCustomerId(),customer=selectedCustomer();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash'||(!walkIn&&!customer?.allowCredit&&o.value==='credit'));if(walkIn||(!customer?.allowCredit&&m.value==='credit'))m.value='cash';});}
 function addPayment(){
  const div=document.createElement('div');div.className='input-group mb-2 payment';
  div.innerHTML='<select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="any" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';
@@ -361,11 +362,17 @@ document.getElementById('saleForm').onsubmit=()=>{
  if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
  if(t!=='cylinder_return'&&paymentTotal()>expected+0.01){alert('Payment cannot exceed the Net Amount Receivable of Rs. '+expected.toFixed(2)+'.');return false;}
  if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
- if(['gas_sale','cylinder_sale'].includes(t)&&customerId&&creditLimitMode!=='none'){
-   const limit=creditLimitMode==='shop'?shopCreditLimit:Number(creditLimits[customerId]||0);
+ if(customerId&&pays.some(p=>p.payment_mode==='credit')&&!selectedCustomer()?.allowCredit){alert('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');return false;}
+ if(['gas_sale','cylinder_sale'].includes(t)&&customerId){
+   const customer=selectedCustomer();
    const newOs=Math.max(0,expected-paymentTotal());
-   if(newOs>limit+0.01){alert('Credit limit exceeded. Current OS is Rs. '+previousOs.toFixed(2)+', resulting OS would be Rs. '+newOs.toFixed(2)+', and the allowed limit is Rs. '+limit.toFixed(2)+'.');return false;}
+   if(newOs>previousOs+0.01&&!customer?.allowCredit){alert('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');return false;}
+   if(customer?.allowCredit){
+     const limit=Number(customer.limit||0);
+     if(newOs>limit+0.01){alert('Credit limit exceeded. Current OS is Rs. '+previousOs.toFixed(2)+', resulting OS would be Rs. '+newOs.toFixed(2)+', and the allowed limit is Rs. '+limit.toFixed(2)+'.');return false;}
+   }
  }
+ if(!customerId&&['gas_sale','cylinder_sale'].includes(t)&&Math.abs(paymentTotal()-expected)>0.01){alert('Walk-in sale must be fully paid. Received amount must equal sale total.');return false;}
  let gasRequired=0; if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0); else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
  if((t==='gas_sale'||t==='cylinder_sale')&&gasRequired>Number(gasStock||0)+0.00001){
    if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(2)+' KG, but this transaction requires '+gasRequired.toFixed(2)+' KG. Continue?'))return false;
