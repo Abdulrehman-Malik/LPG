@@ -38,12 +38,6 @@
 </style>
 
 <div class="purchase-page">
-    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
-        <div>
-            <h4 class="mb-1">Purchase Entry</h4>
-        </div>
-    </div>
-
     <?php if (session()->getFlashdata('success')): ?>
         <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
     <?php endif; ?>
