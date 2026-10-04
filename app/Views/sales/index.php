@@ -321,6 +321,8 @@ document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=()=>{
  const t=transactionType(),customerId=selectedCustomerId();
+ const earlyModes=[...payments.querySelectorAll('.payment .mode')].map(x=>x.value);
+ if(['gas_sale','cylinder_sale'].includes(t)&&!customerId&&earlyModes.includes('credit')){alert('Credit sale is not allowed for Walk-in / Cash customer. Select an actual customer.');return false;}
  let lines=[];
  if(t==='gas_sale'){
    lines=[...tbody.querySelectorAll('tr')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,source_cylinder_unit_id:tr.querySelector('.sourceCyl').value,quantity:tr.querySelector('.qty').value,gas_rate:tr.querySelector('.gasRate').value,entered_amount:document.getElementById('gasEntryMode').value==='amount'?tr.querySelector('.enteredAmount').value:'',customer_cylinder_unit_id:tr.querySelector('.targetCyl').value}));
