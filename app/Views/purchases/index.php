@@ -36,6 +36,17 @@
     padding:.75rem;
     background:#fafbfc;
 }
+.purchase-page .history-details-table th {
+    white-space:nowrap;
+    font-size:.82rem;
+    color:#5f6b76;
+}
+.purchase-page .history-details-table td { vertical-align:middle; }
+.purchase-page .purchase-detail-summary {
+    background:#f8f9fa;
+    border:1px solid #e9ecef;
+    border-radius:.5rem;
+}
 @media (max-width: 991.98px) {
     .purchase-page .stock-table { min-width:920px; }
 }
@@ -241,6 +252,7 @@
                                         <th class="text-end">Paid</th>
                                         <th class="text-end">Current Credit</th>
                                         <th>Status</th>
+                                        <th class="text-center">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -259,11 +271,175 @@
                                             <td class="text-end">Rs. <?= number_format((float) $purchase['amount_paid'], 2) ?></td>
                                             <td class="text-end">Rs. <?= number_format((float) $purchase['credit_amount'], 2) ?></td>
                                             <td><span class="badge <?= $statusClass ?>"><?= esc(ucfirst($status)) ?></span></td>
+                                            <td class="text-center">
+                                                <button type="button"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#purchaseDetailModal<?= (int) $purchase['id'] ?>">
+                                                    <i class="bi bi-eye me-1"></i>View
+                                                </button>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
+                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <?php foreach ($purchaseHistory as $purchase): ?>
+                            <?php
+                            $detail = $purchaseDetails[(int) $purchase['id']] ?? ['items' => [], 'payments' => []];
+                            ?>
+                            <div class="modal fade" id="purchaseDetailModal<?= (int) $purchase['id'] ?>" tabindex="-1" aria-labelledby="purchaseDetailLabel<?= (int) $purchase['id'] ?>" aria-hidden="true">
+                                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <div>
+                                                <h5 class="modal-title" id="purchaseDetailLabel<?= (int) $purchase['id'] ?>">
+                                                    Purchase <?= esc($purchase['purchase_no']) ?>
+                                                </h5>
+                                                <div class="small text-muted">
+                                                    <?= esc(date('d-M-Y h:i A', strtotime($purchase['transaction_at']))) ?>
+                                                    &nbsp;•&nbsp; <?= esc($purchase['supplier_name']) ?>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-4">
+                                                    <div class="purchase-detail-summary p-3 h-100">
+                                                        <div class="small text-muted">Supplier</div>
+                                                        <div class="fw-semibold"><?= esc($purchase['supplier_name']) ?></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="purchase-detail-summary p-3 h-100">
+                                                        <div class="small text-muted">Purchase Date</div>
+                                                        <div class="fw-semibold"><?= esc(date('d-M-Y h:i A', strtotime($purchase['transaction_at']))) ?></div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="purchase-detail-summary p-3 h-100">
+                                                        <div class="small text-muted">Status</div>
+                                                        <div><span class="badge <?= $statusClass ?>"><?= esc(ucfirst($status)) ?></span></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <h6 class="fw-semibold mb-2">Stock Received</h6>
+                                            <?php if (!empty($detail['items'])): ?>
+                                                <div class="table-responsive mb-4">
+                                                    <table class="table table-sm table-bordered history-details-table mb-0">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>#</th>
+                                                                <th>Stock Type</th>
+                                                                <th>Cylinder Type</th>
+                                                                <th class="text-end">Quantity</th>
+                                                                <th class="text-end">Actual Gas / Cylinder (KG)</th>
+                                                                <th class="text-end">Unit Rate</th>
+                                                                <th class="text-end">Line Amount</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($detail['items'] as $item): ?>
+                                                                <tr>
+                                                                    <td><?= (int) $item['line_no'] ?></td>
+                                                                    <td><?= esc(ucwords(str_replace('_', ' ', $item['line_type']))) ?></td>
+                                                                    <td><?= esc(trim(($item['cylinder_code'] ?? '') . ' ' . ($item['cylinder_name'] ?? '')) ?: '—') ?></td>
+                                                                    <td class="text-end"><?= number_format((float) $item['quantity'], 3) ?></td>
+                                                                    <td class="text-end">
+                                                                        <?= $item['line_type'] === 'filled_cylinder' ? number_format((float) $item['actual_gas_weight_kg'], 3) : '—' ?>
+                                                                    </td>
+                                                                    <td class="text-end">Rs. <?= number_format((float) $item['unit_rate'], 2) ?></td>
+                                                                    <td class="text-end fw-semibold">Rs. <?= number_format((float) $item['line_total'], 2) ?></td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="alert alert-light border">No purchase line details found.</div>
+                                            <?php endif; ?>
+
+                                            <div class="row g-4">
+                                                <div class="col-lg-7">
+                                                    <h6 class="fw-semibold mb-2">Payments</h6>
+                                                    <?php if (!empty($detail['payments'])): ?>
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-bordered history-details-table mb-0">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th>Date</th>
+                                                                        <th>Payment Mode</th>
+                                                                        <th>Reference</th>
+                                                                        <th class="text-end">Amount</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <?php foreach ($detail['payments'] as $payment): ?>
+                                                                        <tr>
+                                                                            <td><?= esc(date('d-M-Y h:i A', strtotime($payment['payment_at']))) ?></td>
+                                                                            <td><?= esc(ucfirst($payment['payment_mode'])) ?></td>
+                                                                            <td><?= esc($payment['reference_no'] ?? '—') ?></td>
+                                                                            <td class="text-end">Rs. <?= number_format((float) $payment['amount'], 2) ?></td>
+                                                                        </tr>
+                                                                    <?php endforeach; ?>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="alert alert-light border mb-0">No payment was recorded for this purchase.</div>
+                                                    <?php endif; ?>
+                                                </div>
+
+                                                <div class="col-lg-5">
+                                                    <h6 class="fw-semibold mb-2">Purchase Summary</h6>
+                                                    <div class="purchase-detail-summary p-3">
+                                                        <div class="d-flex justify-content-between py-1">
+                                                            <span>Subtotal</span>
+                                                            <strong>Rs. <?= number_format((float) $purchase['subtotal'], 2) ?></strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between py-1">
+                                                            <span>Discount</span>
+                                                            <strong>Rs. <?= number_format((float) $purchase['discount_amount'], 2) ?></strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between py-1 border-top mt-2 pt-2">
+                                                            <span>Total</span>
+                                                            <strong>Rs. <?= number_format((float) $purchase['total_amount'], 2) ?></strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between py-1">
+                                                            <span>Paid</span>
+                                                            <strong>Rs. <?= number_format((float) $purchase['amount_paid'], 2) ?></strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between py-1">
+                                                            <span>Current Credit</span>
+                                                            <strong>Rs. <?= number_format((float) $purchase['credit_amount'], 2) ?></strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <?php if (trim((string) ($purchase['notes'] ?? '')) !== ''): ?>
+                                                <div class="mt-4">
+                                                    <h6 class="fw-semibold mb-2">Notes</h6>
+                                                    <div class="purchase-detail-summary p-3"><?= nl2br(esc($purchase['notes'])) ?></div>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <div class="alert alert-light border mb-0 text-center">
                             No purchases found between <?= esc(date('d-M-Y', strtotime($fromDate ?? date('Y-m-d')))) ?> and <?= esc(date('d-M-Y', strtotime($toDate ?? date('Y-m-d')))) ?>.
