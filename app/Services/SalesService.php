@@ -461,51 +461,62 @@ class SalesService
                     if((float)$target['gas_weight_kg']+(float)$row['quantity']>(float)$target['capacity_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds the remaining capacity of the selected customer cylinder.');
                 }
 
-                $saleItemNotes=($row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill').' | Source cylinder selected by user (ID '.$row['source_id'].')';
+                $sourceLabel=$allowSourceSelection?'Source cylinder selected by user':'Source cylinders auto-allocated by sequence';
                 $this->db->table('sale_items')->insert([
                     'sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>'refill_kg','cylinder_type_id'=>$row['type_id'],
                     'customer_cylinder_unit_id'=>$row['target_id'],'quantity'=>$row['quantity'],'gas_weight_kg'=>$row['gas_weight_kg'],
                     'applied_rate'=>$row['gas_rate'],'standard_rate'=>$row['standard_rate'],'custom_rate_flag'=>$row['custom_rate_flag'],
-                    'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>$saleItemNotes
+                    'empty_cylinder_received'=>0,'line_discount'=>0,'line_total'=>$row['line_total'],'notes'=>($row['target_id']?'Refilled customer custody cylinder':'Gas sale / refill').' | '.$sourceLabel
                 ]);
                 $saleItemId=(int)$this->db->insertID();
 
-                $source=$sources[$row['source_id']]??null;
-                if(!$source) throw new RuntimeException('Selected source cylinder on gas line '.$row['line_no'].' is no longer available.');
-
                 $remaining=(float)$row['quantity'];
-                if((float)$source['gas_weight_kg']+0.00001<$remaining){
-                    throw new RuntimeException('Selected source cylinder '.$source['unit_code'].' has only '.number_format((float)$source['gas_weight_kg'],2).' KG available.');
+                $allocationUnits=[];
+                if($allowSourceSelection){
+                    $source=$sources[$row['source_id']]??null;
+                    if(!$source) throw new RuntimeException('Selected source cylinder on gas line '.$row['line_no'].' is no longer available.');
+                    if((float)$source['gas_weight_kg']+0.00001<$remaining) throw new RuntimeException('Selected source cylinder '.$source['unit_code'].' has only '.number_format((float)$source['gas_weight_kg'],2).' KG available.');
+                    $allocationUnits=[['unit'=>$source,'used'=>$remaining]];
+                }else{
+                    $autoUnits=$this->db->query(
+                        "SELECT cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg
+                         FROM cylinder_units cu JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
+                         WHERE cu.location_id=? AND cu.cylinder_type_id=? AND cu.status='filled' AND cu.gas_weight_kg>0
+                         ORDER BY cu.id FOR UPDATE",
+                        [$locationId,$row['type_id']]
+                    )->getResultArray();
+                    $availableAuto=array_sum(array_map(static fn($u)=>(float)$u['gas_weight_kg'],$autoUnits));
+                    if($availableAuto+0.00001<$remaining) throw new RuntimeException('Insufficient filled gas stock for '.$row['line_no'].'. Available: '.number_format($availableAuto,2).' KG; required: '.number_format($remaining,2).' KG.');
+                    foreach($autoUnits as $unit){
+                        if($remaining<=0.00001) break;
+                        $used=min($remaining,(float)$unit['gas_weight_kg']);
+                        if($used>0) $allocationUnits[]=['unit'=>$unit,'used'=>$used];
+                        $remaining-=$used;
+                    }
                 }
 
-                $used=$remaining;
-                $before=(float)$source['gas_weight_kg'];
-                $after=$before-$used;
-                $newStatus=$after<=0.00001?'empty':'filled';
+                foreach($allocationUnits as $allocation){
+                    $source=$allocation['unit'];$used=(float)$allocation['used'];
+                    $before=(float)$source['gas_weight_kg'];
+                    if($used>$before+0.00001) throw new RuntimeException('Source cylinder '.$source['unit_code'].' stock changed while posting.');
+                    $after=$before-$used;$newStatus=$after<=0.00001?'empty':'filled';
+                    $this->db->table('cylinder_units')->where('id',(int)$source['id'])->update(['gas_weight_kg'=>max(0,$after),'status'=>$newStatus]);
 
-                $this->db->table('cylinder_units')->where('id',(int)$source['id'])->update([
-                    'gas_weight_kg'=>max(0,$after),'status'=>$newStatus
-                ]);
-
-                $movementRows=[
-                    ['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Gas sold from selected filled cylinder']
-                ];
-                if($newStatus==='empty'){
-                    $movementRows[]=['type'=>'filled_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Selected cylinder became empty after gas sale'];
-                    $movementRows[]=['type'=>'empty_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'in','unit_id'=>(int)$source['id'],'notes'=>'Selected cylinder became empty after gas sale'];
+                    $movementRows=[['type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$used,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>($allowSourceSelection?'Gas sold from selected filled cylinder':'Gas auto-allocated from filled cylinder in sequence')]];
+                    if($newStatus==='empty'){
+                        $movementRows[]=['type'=>'filled_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'out','unit_id'=>(int)$source['id'],'notes'=>'Cylinder became empty after gas sale'];
+                        $movementRows[]=['type'=>'empty_cylinder','cylinder_type_id'=>$row['type_id'],'quantity'=>1,'direction'=>'in','unit_id'=>(int)$source['id'],'notes'=>'Cylinder became empty after gas sale'];
+                    }
+                    foreach($movementRows as $m){
+                        $this->db->table('inventory_movements')->insert([
+                            'location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],
+                            'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,
+                            'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$saleItemId,
+                            'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>$m['notes']
+                        ]);
+                    }
+                    $sources[(int)$source['id']]=$source;$sources[(int)$source['id']]['gas_weight_kg']=max(0,$after);$sources[(int)$source['id']]['status']=$newStatus;
                 }
-                foreach($movementRows as $m){
-                    $this->db->table('inventory_movements')->insert([
-                        'location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],
-                        'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,
-                        'source_type'=>'sale','source_id'=>$saleId,'source_line_id'=>$saleItemId,
-                        'cylinder_unit_id'=>$m['unit_id'],'created_by'=>$userId,'notes'=>$m['notes']
-                    ]);
-                }
-
-                $sources[(int)$source['id']]=$source;
-                $sources[(int)$source['id']]['gas_weight_kg']=max(0,$after);
-                $sources[(int)$source['id']]['status']=$newStatus;
 
                 if($row['target_id']) $this->cylinders->addGasToCustody($row['target_id'],$customerId,$row['quantity']);
             }
