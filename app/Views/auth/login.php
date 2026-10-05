@@ -143,61 +143,62 @@
                     <?php endif; ?>
 
                     <?php if ($migrationReady) : ?>
+                        <?php if (session()->getFlashdata('error')) : ?>
                             <div class="alert alert-danger d-flex align-items-center" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <div><?= esc(session()->getFlashdata('error')) ?></div>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if (session()->getFlashdata('success')) : ?>
-                        <div class="alert alert-success d-flex align-items-center" role="alert">
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            <div><?= esc(session()->getFlashdata('success')) ?></div>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if (session()->getFlashdata('errors')) : ?>
-                        <div class="alert alert-danger">
-                            <ul class="mb-0 ps-3">
-                                <?php foreach (session()->getFlashdata('errors') as $error) : ?>
-                                    <li><?= esc($error) ?></li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
-                    <?php endif; ?>
-
-                    <form action="<?= site_url('login') ?>" method="post" novalidate>
-                        <?= csrf_field() ?>
-
-                        <div class="mb-3">
-                            <label for="login" class="form-label">Username or Email</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                                <input type="text" class="form-control" id="login" name="login"
-                                       value="<?= esc(old('login')) ?>" placeholder="e.g. admin" required autofocus>
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div><?= esc(session()->getFlashdata('error')) ?></div>
                             </div>
-                        </div>
+                        <?php endif; ?>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
-                                <input type="password" class="form-control" id="password" name="password"
-                                       placeholder="••••••••" required>
+                        <?php if (session()->getFlashdata('success')) : ?>
+                            <div class="alert alert-success d-flex align-items-center" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <div><?= esc(session()->getFlashdata('success')) ?></div>
                             </div>
-                        </div>
+                        <?php endif; ?>
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="remember" name="remember" value="1">
-                                <label class="form-check-label" for="remember">Remember me</label>
+                        <?php if (session()->getFlashdata('errors')) : ?>
+                            <div class="alert alert-danger">
+                                <ul class="mb-0 ps-3">
+                                    <?php foreach (session()->getFlashdata('errors') as $error) : ?>
+                                        <li><?= esc($error) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
                             </div>
-                        </div>
+                        <?php endif; ?>
 
-                        <button type="submit" class="btn btn-brand w-100 py-2 fw-semibold">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
-                        </button>
-                    </form>
+                        <form action="<?= site_url('login') ?>" method="post" novalidate>
+                            <?= csrf_field() ?>
+
+                            <div class="mb-3">
+                                <label for="login" class="form-label">Username or Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control" id="login" name="login"
+                                           value="<?= esc(old('login')) ?>" placeholder="e.g. admin" required autofocus>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password"
+                                           placeholder="••••••••" required>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="remember" name="remember" value="1">
+                                    <label class="form-check-label" for="remember">Remember me</label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-brand w-100 py-2 fw-semibold">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                            </button>
+                        </form>
                     <?php endif; ?>
                 </div>
             </div>
