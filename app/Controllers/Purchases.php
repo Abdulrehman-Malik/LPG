@@ -48,8 +48,9 @@ class Purchases extends Controller
         $purchaseDetails = [];
         if ($activeTab === 'history') {
             $history = $db->table('purchases p')
-                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, p.notes, s.name AS supplier_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
+                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, p.voided_at, p.void_reason, p.notes, s.name AS supplier_name, vu.full_name AS voided_by_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
                 ->join('suppliers s', 's.id = p.supplier_id')
+                ->join('users vu', 'vu.id = p.voided_by', 'left')
                 ->join('purchase_payments pp', 'pp.purchase_id = p.id', 'left')
                 ->where('p.location_id', (int) session()->get('location_id'))
                 ->where('p.transaction_at >=', $fromDate . ' 00:00:00')
@@ -106,6 +107,7 @@ class Purchases extends Controller
             'purchaseDetails'  => $purchaseDetails,
             'suppliers'        => $suppliers,
             'supplierBalances' => $supplierBalances,
+            'canVoidPurchases' => \App\Services\PermissionService::allows('PURCHASE_MANAGE'),
             'types'            => $db->table('cylinder_types')
                 ->where('is_active', 1)
                 ->orderBy('sort_order')
@@ -153,6 +155,27 @@ class Purchases extends Controller
             );
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    public function void(int $id)
+    {
+        if ($r = $this->guard()) {
+            return $r;
+        }
+
+        try {
+            $no = (new PurchaseService())->void(
+                $id,
+                (int) session()->get('user_id'),
+                (int) session()->get('location_id'),
+                trim((string) $this->request->getPost('void_reason'))
+            );
+
+            return redirect()->to('/purchases?tab=history')
+                ->with('success', 'Purchase ' . $no . ' voided successfully. Stock, cash and supplier ledger effects were reversed.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }
