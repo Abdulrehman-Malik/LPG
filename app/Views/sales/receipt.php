@@ -36,7 +36,7 @@ $typeLabel=$typeLabels[$sale['transaction_type']]??ucwords(str_replace('_',' ',$
 <?php if($items): ?>
 <table><thead><tr><th class="item">Item</th><th class="qty">Qty</th><th class="gas">Gas</th><th class="rate">Rate</th><th class="amount">Amount</th></tr></thead><tbody>
 <?php foreach($items as $i): ?><tr>
-<td class="item"><?=esc(match($i['line_type']){'refill_kg'=>'Gas / Refill','filled_cylinder'=>'Filled Cylinder','empty_cylinder'=>'Empty Cylinder',default=>$i['line_type']})?><?php if(!empty($i['notes'])):?><br><span class="small"><?=esc($i['notes'])?></span><?php endif;?></td>
+<td class="item"><?=esc(match($i['line_type']){'refill_kg'=>'Gas / Refill','filled_cylinder'=>'Filled Cylinder','empty_cylinder'=>'Empty Cylinder',default=>$i['line_type']})?><?php if($sale['transaction_type']==='cylinder_sale'): ?><br><span class="small"><?php if($i['line_type']==='filled_cylinder'): ?>Gas Rate: Rs. <?=number_format((float)($i['gas_rate']??0),2)?> | Cylinder: Rs. <?=number_format((float)($i['cylinder_price']??0),2)?><?php else: ?>Cylinder Price: Rs. <?=number_format((float)($i['cylinder_price']??0),2)?><?php endif;?></span><?php endif;?><?php if(!empty($i['notes'])):?><br><span class="small"><?=esc($i['notes'])?></span><?php endif;?></td>
 <td class="qty"><?=number_format((float)$i['quantity'],2)?></td><td class="gas"><?=number_format((float)$i['gas_weight_kg'],2)?></td><td class="rate"><?=number_format((float)$i['applied_rate'],2)?></td><td class="amount"><?=number_format((float)$i['line_total'],2)?></td>
 </tr><?php endforeach;?></tbody></table><div class="rule"></div><?php endif;?>
 
