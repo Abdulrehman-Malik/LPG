@@ -638,7 +638,6 @@ class SalesService
                 if(!$customer||!(int)$customer['is_active']) throw new RuntimeException('Customer is unavailable.');
             }
 
-            $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,0);
             $lockRows=[];
             foreach($prepared as $row){
                 $lockRows[]=['type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>$row['type_id']];
