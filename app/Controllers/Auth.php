@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Models\UserModel;
+use App\Services\MigrationRunnerService;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RedirectResponse;
 
@@ -19,11 +20,35 @@ class Auth extends Controller
     public function showLogin()
     {
         if(session()->get('isLoggedIn')) return redirect()->to(site_url('dashboard'));
-        return view('auth/login',['title'=>'Login — Perfect LPG (Pvt.) LTD']);
+
+        try {
+            $migrationGate=(new MigrationRunnerService())->status();
+            return view('auth/login',['title'=>'Login — Perfect LPG (Pvt.) LTD','migrationGate'=>$migrationGate]);
+        } catch (\Throwable $e) {
+            return view('auth/login',[
+                'title'=>'Login — Perfect LPG (Pvt.) LTD',
+                'migrationGate'=>[
+                    'ready'=>false,
+                    'blocked_message'=>'Database migration status could not be checked.',
+                    'system_error'=>$e->getMessage(),
+                    'migrations'=>[],
+                    'total'=>0,
+                    'completed'=>0,
+                ],
+            ]);
+        }
     }
 
     public function attemptLogin(): RedirectResponse
     {
+        try {
+            $migrationGate=(new MigrationRunnerService())->status();
+            if(!$migrationGate['ready']) {
+                return redirect()->to(site_url('login'))->with('migration_error',$migrationGate['blocked_message'] ?? 'Database migrations are pending. Execute them before signing in.');
+            }
+        } catch (\Throwable $e) {
+            return redirect()->to(site_url('login'))->with('migration_error','Database migration status could not be checked: '.$e->getMessage());
+        }
         $rules=['login'=>'required|min_length[3]','password'=>'required|min_length[4]'];
         if(!$this->validate($rules)){
             return redirect()->back()->withInput()->with('errors',$this->validator->getErrors());
