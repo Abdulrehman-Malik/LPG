@@ -734,15 +734,18 @@ class SalesService
             $lineIds=[];
             foreach($this->db->table('sale_items')->select('id,line_no')->where('sale_id',$saleId)->get()->getResultArray() as $row) $lineIds[(int)$row['line_no']]=(int)$row['id'];
 
+            $soldUnitIds=[];
             foreach($inventory as $m){
                 $this->db->table('inventory_movements')->insert([
                     'location_id'=>$locationId,'inventory_type'=>$m['type'],'cylinder_type_id'=>$m['cylinder_type_id'],
-                    'quantity'=>$m['quantity'],'direction'=>'out','movement_at'=>$transactionAt,'source_type'=>'sale',
+                    'quantity'=>$m['quantity'],'direction'=>$m['direction'],'movement_at'=>$transactionAt,'source_type'=>'sale',
                     'source_id'=>$saleId,'source_line_id'=>$lineIds[(int)$m['line_no']]??null,'cylinder_unit_id'=>$m['unit_id'],
                     'created_by'=>$userId,'notes'=>$m['notes']
                 ]);
-                $this->cylinders->markSold((int)$m['unit_id']);
+                $unitId=(int)($m['unit_id']??0);
+                if($unitId>0) $soldUnitIds[$unitId]=true;
             }
+            foreach(array_keys($soldUnitIds) as $unitId) $this->cylinders->markSold((int)$unitId);
 
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId);
             $this->postCustomerSettlement($paymentPlan['settlements'],$locationId,$saleId,$customerId,$transactionAt,$userId);
