@@ -253,13 +253,14 @@
                                         <th class="text-end">Current Credit</th>
                                         <th>Status</th>
                                         <th class="text-center">Details</th>
+                                        <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($purchaseHistory as $purchase): ?>
                                         <?php
                                         $status = (string) ($purchase['status'] ?? 'posted');
-                                        $statusClass = $status === 'posted' ? 'bg-success' : 'bg-secondary';
+                                        $statusClass = $status === 'posted' ? 'bg-success' : 'bg-danger';
                                         ?>
                                         <tr>
                                             <td><?= esc(date('d-M-Y h:i A', strtotime($purchase['transaction_at']))) ?></td>
@@ -279,6 +280,15 @@
                                                     <i class="bi bi-eye me-1"></i>View
                                                 </button>
                                             </td>
+                                            <td class="text-center">
+                                                <?php if (($canVoidPurchases ?? false) && $status === 'posted'): ?>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        onclick="voidPurchase(<?= (int) $purchase['id'] ?>, <?= json_encode($purchase['purchase_no']) ?>)">
+                                                        <i class="bi bi-x-circle me-1"></i>Void
+                                                    </button>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -288,7 +298,7 @@
                             <?php
                             $detail = $purchaseDetails[(int) $purchase['id']] ?? ['items' => [], 'payments' => []];
                             $detailStatus = (string) ($purchase['status'] ?? 'posted');
-                            $detailStatusClass = $detailStatus === 'posted' ? 'bg-success' : 'bg-secondary';
+                            $detailStatusClass = $detailStatus === 'posted' ? 'bg-success' : 'bg-danger';
                             ?>
                             <div class="modal fade" id="purchaseDetailModal<?= (int) $purchase['id'] ?>" tabindex="-1" aria-labelledby="purchaseDetailLabel<?= (int) $purchase['id'] ?>" aria-hidden="true">
                                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
@@ -307,6 +317,16 @@
                                         </div>
 
                                         <div class="modal-body">
+                                            <?php if ($detailStatus === 'voided'): ?>
+                                                <div class="alert alert-danger py-2">
+                                                    <strong>VOID</strong>
+                                                    — <?= esc($purchase['voided_at'] ?? '') ?>
+                                                    by <?= esc($purchase['voided_by_name'] ?? '-') ?>
+                                                    <br>
+                                                    Reason: <?= esc($purchase['void_reason'] ?? '-') ?>
+                                                </div>
+                                            <?php endif; ?>
+
                                             <div class="row g-3 mb-4">
                                                 <div class="col-md-4">
                                                     <div class="purchase-detail-summary p-3 h-100">
@@ -432,6 +452,13 @@
 
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            <?php if (($canVoidPurchases ?? false) && $detailStatus === 'posted'): ?>
+                                                <button type="button"
+                                                    class="btn btn-danger"
+                                                    onclick="voidPurchase(<?= (int) $purchase['id'] ?>, <?= json_encode($purchase['purchase_no']) ?>)">
+                                                    <i class="bi bi-x-circle me-1"></i>Void Purchase
+                                                </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
@@ -448,8 +475,51 @@
     </div>
 
 <script>
+const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
+
+function voidPurchase(id, no) {
+    if (!canVoidPurchases) {
+        return;
+    }
+
+    if (!confirm(
+        'Void purchase ' + no + '? This will reverse all stock impact, cash impact and supplier ledger impact. ' +
+        'The original purchase will remain in history as VOID.'
+    )) {
+        return;
+    }
+
+    const reason = prompt('Enter void reason for ' + no + ':', '');
+    if (reason === null) {
+        return;
+    }
+
+    if (!reason.trim()) {
+        alert('Void reason is required.');
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '<?= site_url('purchases/void') ?>/' + id;
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '<?= csrf_token() ?>';
+    csrf.value = '<?= csrf_hash() ?>';
+    form.appendChild(csrf);
+
+    const reasonInput = document.createElement('input');
+    reasonInput.type = 'hidden';
+    reasonInput.name = 'void_reason';
+    reasonInput.value = reason.trim();
+    form.appendChild(reasonInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
 
 const money = value => Number(value || 0).toFixed(2);
 
