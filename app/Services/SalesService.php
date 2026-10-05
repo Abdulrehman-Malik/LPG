@@ -32,6 +32,20 @@ class SalesService
         $this->cylinders=new CylinderUnitService();
     }
 
+    protected function nextSaleNo(string $transactionAt,int $locationId): string
+    {
+        $date=date('Ymd',strtotime($transactionAt));
+        $prefix='S'.$date.'-';
+        $row=$this->db->query(
+            "SELECT MAX(CAST(SUBSTRING(sale_no,10) AS UNSIGNED)) AS max_seq
+             FROM sales
+             WHERE location_id=? AND sale_no LIKE ?",
+            [$locationId,$prefix.'%']
+        )->getRowArray();
+        $next=((int)($row['max_seq']??0))+1;
+        return $prefix.str_pad((string)$next,5,'0',STR_PAD_LEFT);
+    }
+
     public function post(array $payload,int $userId,int $locationId): array
     {
         $customerId=!empty($payload['customer_id'])?(int)$payload['customer_id']:null;
@@ -282,7 +296,7 @@ class SalesService
                 if($newBalance>(float)$customer['credit_limit']+0.01) throw new RuntimeException('Customer credit limit exceeded.');
             }
 
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $saleNo=$this->nextSaleNo($transactionAt,$locationId);
             $scenarioTypes=array_values(array_unique(array_column($prepared,'sale_mode')));
             $transactionType=count($scenarioTypes)>1?'mixed':match($scenarioTypes[0]){
                 'sell_gas_only'=>'refill_service','replace_same'=>'cylinder_exchange','sell_filled'=>'filled_cylinder',
@@ -464,7 +478,7 @@ class SalesService
                 }
             }
 
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $saleNo=$this->nextSaleNo($transactionAt,$locationId);
             $this->db->table('sales')->insert([
                 'sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'gas_sale',
                 'status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,
@@ -613,7 +627,7 @@ class SalesService
         try{
             if($customerId){$locked=$this->db->query("SELECT * FROM customers WHERE id=? FOR UPDATE",[$customerId])->getRowArray();if(!$locked||!(int)$locked['is_active'])throw new RuntimeException('Customer is unavailable.');$customer=$locked;}
             $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$total);
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $saleNo=$this->nextSaleNo($transactionAt,$locationId);
             $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_sale','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
                 'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>$paymentPlan['payment_total'],
                 'net_receivable_amount'=>$paymentPlan['net_receivable'],'os_balance'=>$paymentPlan['remaining_os'],
@@ -641,7 +655,7 @@ class SalesService
         $this->db->transBegin();
         try{
             $this->acquireInventoryLocks($locationId,array_map(static fn($row)=>['type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>(int)$row['cylinder_type_id']],$rows));
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $saleNo=$this->nextSaleNo($transactionAt,$locationId);
             $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'security_deposit','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>0,'subtotal'=>0,'discount_amount'=>0,'total_amount'=>0,'security_deposit_amount'=>$deposit,'security_deposit_refund_amount'=>0,'credit_amount'=>0,'custom_rate_flag'=>0,'notes'=>$notes,'created_by'=>$userId]);
             $saleId=(int)$this->db->insertID();
             $perUnit=round($deposit/count($rows),2);$assigned=0;$lineNo=0;
@@ -673,7 +687,7 @@ class SalesService
         if($refund<=0)throw new RuntimeException('No refundable security deposit is linked to the selected cylinders.');
         $this->db->transBegin();
         try{
-            $saleNo='S'.date('YmdHis').'-'.random_int(100,999);
+            $saleNo=$this->nextSaleNo($transactionAt,$locationId);
             $this->db->table('sales')->insert(['sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'cylinder_return','status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>0,'subtotal'=>0,'discount_amount'=>0,'total_amount'=>0,'security_deposit_amount'=>0,'security_deposit_refund_amount'=>$refund,'credit_amount'=>0,'custom_rate_flag'=>0,'notes'=>$notes,'created_by'=>$userId]);
             $saleId=(int)$this->db->insertID();$lineNo=0;
             foreach($rows as $row){
