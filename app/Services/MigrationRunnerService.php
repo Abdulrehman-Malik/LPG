@@ -107,6 +107,7 @@ class MigrationRunnerService
             15 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME IN ('previous_os_balance','receipt_amount','net_receivable_amount','os_balance')",
             16 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_types' AND COLUMN_NAME='empty_cylinder_price'",
             17 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sale_items' AND COLUMN_NAME IN ('gas_rate','cylinder_price')",
+            19 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_adjustments',
         ];
 
         if (!isset($checks[$migration['seq']])) {
