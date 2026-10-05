@@ -82,17 +82,14 @@ class PurchaseService{
  {
   $locationId=$locationId ?? (int)(session()->get('location_id') ?? 0);
 
+  // credit_amount is already the unpaid portion of each posted purchase,
+  // so purchase payments must NOT be subtracted again here.
   $s=$this->db->table('purchases')->selectSum('credit_amount','credit')
    ->where('supplier_id',$supplierId)->where('status','posted');
   if($locationId>0) $s->where('location_id',$locationId);
   $s=$s->get()->getRowArray();
 
-  $p=$this->db->table('purchase_payments pp')->selectSum('pp.amount','paid')
-   ->join('purchases p','p.id=pp.purchase_id')
-   ->where('p.supplier_id',$supplierId)->where('p.status','posted');
-  if($locationId>0) $p->where('p.location_id',$locationId);
-  $p=$p->get()->getRowArray();
-
+  // These are only payments made against an older supplier payable.
   $ap=$this->db->table('supplier_payments')->selectSum('amount','account_paid')
    ->where('supplier_id',$supplierId)->where('status','posted');
   if($locationId>0) $ap->where('location_id',$locationId);
@@ -101,7 +98,6 @@ class PurchaseService{
   $supplier=$this->db->table('suppliers')->where('id',$supplierId)->get()->getRowArray();
   return (float)($supplier['opening_balance']??0)
       +(float)($s['credit']??0)
-      -(float)($p['paid']??0)
       -(float)($ap['account_paid']??0);
  }
 
