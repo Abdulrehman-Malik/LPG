@@ -11,7 +11,7 @@ class ShopSettingsModel extends Model
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'location_id','default_sale_mode','default_transaction_type','individual_cylinder_tracking','allow_pos_source_cylinder_selection','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
+        'location_id','default_sale_mode','default_transaction_type','pos_visible_transaction_types','individual_cylinder_tracking','allow_pos_source_cylinder_selection','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
         'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit','purchase_void_enabled',
         'backup_enabled','db_backup_url','backup_notes',
         'receipt_title','receipt_footer','show_address_on_receipt',
@@ -37,6 +37,22 @@ class ShopSettingsModel extends Model
 
     public const PAYMENT_MODES = ['cash','cheque','online','credit'];
 
+    public function visibleTransactionTypes(array $settings): array
+    {
+        $raw = $settings['pos_visible_transaction_types'] ?? null;
+        $types = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (!is_array($types)) {
+            $types = self::TRANSACTION_TYPES;
+        }
+        $types = array_values(array_unique(array_intersect(array_map('strval', $types), self::TRANSACTION_TYPES)));
+        return $types ?: self::TRANSACTION_TYPES;
+    }
+
+    public function isTransactionTypeVisible(array $settings, string $transactionType): bool
+    {
+        return in_array($transactionType, $this->visibleTransactionTypes($settings), true);
+    }
+
     public function forLocation(int $locationId): array
     {
         $defaults = [
@@ -44,6 +60,7 @@ class ShopSettingsModel extends Model
             'location_id' => $locationId,
             'default_sale_mode' => 'sell_gas_only',
             'default_transaction_type' => 'gas_sale',
+            'pos_visible_transaction_types' => json_encode(self::TRANSACTION_TYPES),
             'individual_cylinder_tracking' => 0,
             'allow_pos_source_cylinder_selection' => 0,
             'default_payment_mode' => 'cash',
