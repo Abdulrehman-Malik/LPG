@@ -960,18 +960,48 @@ class SalesService
 
             $movements=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->get()->getResultArray();
             $this->acquireInventoryLocks($locationId,$movements);
+
+            // A single physical filled-cylinder sale/refill can have two OUT movements:
+            // gas_kg and filled_cylinder. Restore the physical cylinder only once.
+            // When a gas sale empties a filled cylinder, it also has an empty_cylinder IN
+            // movement. In both cases restoreFilled() must handle the gas exactly once.
+            $soldFilledUnitIds=[];
+            foreach($movements as $m){
+                $unitId=(int)($m['cylinder_unit_id']??0);
+                if($unitId && $m['inventory_type']==='filled_cylinder' && $m['direction']==='out'){
+                    $soldFilledUnitIds[$unitId]=true;
+                }
+            }
+
             foreach($movements as $m){
                 $reverse=$m['direction']==='in'?'out':'in';
-                $this->db->table('inventory_movements')->insert(['location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,'cylinder_unit_id'=>$m['cylinder_unit_id']??null,'created_by'=>$userId,'notes'=>'Reversal of sale '.$sale['sale_no']]);
+                $this->db->table('inventory_movements')->insert([
+                    'location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],'cylinder_type_id'=>$m['cylinder_type_id'],
+                    'quantity'=>$m['quantity'],'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),
+                    'source_type'=>'sale_void','source_id'=>$saleId,'source_line_id'=>$m['source_line_id']??null,
+                    'cylinder_unit_id'=>$m['cylinder_unit_id']??null,'created_by'=>$userId,
+                    'notes'=>'Reversal of sale '.$sale['sale_no']
+                ]);
+
                 $unitId=(int)($m['cylinder_unit_id']??0);
-                if($unitId && $m['inventory_type']==='gas_kg' && $m['direction']==='out'){
-                    $this->cylinders->restoreGas($unitId,(float)$m['quantity']);
-                }elseif($unitId && $m['inventory_type']==='filled_cylinder' && $m['direction']==='out'){
-                    $gasRow=$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->where('inventory_type','gas_kg')->where('direction','out')->where('cylinder_unit_id',$unitId)->orderBy('id')->get()->getRowArray();
+                if(!$unitId) continue;
+
+                if($m['inventory_type']==='gas_kg' && $m['direction']==='out'){
+                    // For a physical filled-cylinder OUT in this same sale, defer gas
+                    // restoration to the filled_cylinder branch below to avoid double restore.
+                    if(!isset($soldFilledUnitIds[$unitId])) $this->cylinders->restoreGas($unitId,(float)$m['quantity']);
+                }elseif($m['inventory_type']==='filled_cylinder' && $m['direction']==='out'){
+                    $gasRow=$this->db->table('inventory_movements')
+                        ->where('source_type','sale')->where('source_id',$saleId)
+                        ->where('inventory_type','gas_kg')->where('direction','out')
+                        ->where('cylinder_unit_id',$unitId)->orderBy('id')->get()->getRowArray();
                     $this->cylinders->restoreFilled($unitId,(float)($gasRow['quantity']??0));
-                }elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='out') $this->cylinders->restoreEmpty($unitId);
-                elseif($unitId && $m['inventory_type']==='empty_cylinder' && $m['direction']==='in') {
-                    $converted=(int)$this->db->table('inventory_movements')->where('source_type','sale')->where('source_id',$saleId)->where('inventory_type','filled_cylinder')->where('direction','out')->where('cylinder_unit_id',$unitId)->countAllResults()>0;
+                }elseif($m['inventory_type']==='empty_cylinder' && $m['direction']==='out'){
+                    $this->cylinders->restoreEmpty($unitId);
+                }elseif($m['inventory_type']==='empty_cylinder' && $m['direction']==='in'){
+                    // This represents a cylinder that became empty during a gas sale.
+                    // restoreFilled() above already restores it to its original filled state.
+                    $converted=isset($soldFilledUnitIds[$unitId]);
                     if(!$converted) $this->cylinders->markSold($unitId);
                 }
             }
