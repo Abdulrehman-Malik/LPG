@@ -39,7 +39,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 017**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 019**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
@@ -78,6 +78,7 @@ Use:
 Never reuse an existing sequence number.
 
 - `014_20261004_pos_source_filled_cylinder_selection.sql` — adds the branch-level POS setting controlling manual source filled-cylinder selection versus automatic sequential allocation.
+- `019_20261005_stock_adjustment_history.sql` — adds dedicated stock-adjustment transaction headers, references, reasons, and before/after snapshots.
 
 
 ## Credit Sale / OS Rules
