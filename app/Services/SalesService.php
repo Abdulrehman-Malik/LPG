@@ -725,7 +725,7 @@ class SalesService
                 $this->db->table('sale_items')->insert([
                     'sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder',
                     'cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],
-                    'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$appliedRate,'standard_rate'=>$standardRate,
+                    'gas_weight_kg'=>$row['gas_kg'],'applied_rate'=>$appliedRate,'gas_rate'=>$row['gas_rate'],'cylinder_price'=>$row['cyl_rate'],'standard_rate'=>$standardRate,
                     'custom_rate_flag'=>$row['custom_rate'],'empty_cylinder_received'=>0,'line_discount'=>0,
                     'line_total'=>$row['line_total'],'notes'=>'Cylinder sale | '.$row['status'].' | '.implode(', ',$row['selected_codes'])
                 ]);
