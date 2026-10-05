@@ -254,3 +254,17 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 - Run only migrations not already applied, in sequence.
 
 **Rule precedence:** Server-side transactional validation is authoritative. UI restrictions, displayed availability and client-side checks must never be the only enforcement mechanism.
+
+## Cylinder Sale — October 2026
+
+- **Cylinder Sale** supports empty, filled/partially-filled, or mixed cylinder sales.
+- Empty-cylinder sales reduce only empty physical-cylinder stock; gas stock is unchanged.
+- Empty-cylinder price is configured per cylinder type and can be overridden at sale time.
+- Filled-cylinder sales require explicit physical-cylinder checkbox selection.
+- Gas KG and cylinder quantity for filled-cylinder sales are **read-only** and derived from the selected physical cylinders.
+- Gas rate and cylinder price remain editable for filled-cylinder sales.
+- Partially-filled cylinders use their actual current gas quantity.
+- Empty + filled cylinder lines can be posted together.
+- Server-side posting locks and revalidates the selected physical cylinders.
+- Existing **Gas Sale / Refill** behavior is unchanged.
+- Migration `016_20261004_empty_cylinder_sale_price.sql` adds the configurable empty-cylinder sale price.
