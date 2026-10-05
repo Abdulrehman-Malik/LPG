@@ -49,6 +49,11 @@ class Sales extends Controller
     {
         if($r=$this->guard()) return $r;
         try{
+            $transactionType=trim((string)$this->request->getPost('transaction_type'));
+            $shopSettings=(new ShopSettingsModel())->forLocation((int)session()->get('location_id'));
+            if (!(new ShopSettingsModel())->isTransactionTypeVisible($shopSettings, $transactionType)) {
+                throw new \RuntimeException('This POS transaction type is not enabled for the current shop.');
+            }
             $lines=json_decode((string)$this->request->getPost('lines_json'),true);
             $payments=json_decode((string)$this->request->getPost('payments_json'),true);
             if(!is_array($lines)||!is_array($payments)) throw new \RuntimeException('Invalid POS line or payment data.');
