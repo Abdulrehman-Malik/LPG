@@ -40,14 +40,35 @@
             <div class="tab-pane fade" id="appearance"><div class="row g-3"><div class="col-md-4"><label class="form-label">Theme</label><select name="theme_mode" class="form-select"><option value="light" <?= ($settings['theme_mode'] ?? 'light') === 'light' ? 'selected' : '' ?>>Light</option><option value="dark" <?= ($settings['theme_mode'] ?? 'light') === 'dark' ? 'selected' : '' ?>>Dark</option></select></div><div class="col-md-4"><label class="form-label">Application Font Size (px)</label><input name="pos_font_size_px" type="number" class="form-control" min="10" max="24" step="0.5" value="<?= esc($settings['pos_font_size_px'] ?? 14) ?>"></div><div class="col-md-4"><label class="form-label">Font Style</label><select name="font_family" class="form-select"><?php foreach(['system'=>'System Default','arial'=>'Arial','verdana'=>'Verdana','tahoma'=>'Tahoma','trebuchet'=>'Trebuchet MS','georgia'=>'Georgia','times'=>'Times New Roman'] as $value=>$label): ?><option value="<?= esc($value) ?>" <?= ($settings['font_family'] ?? 'system') === $value ? 'selected' : '' ?>><?= esc($label) ?></option><?php endforeach; ?></select></div><div class="col-md-4"><label class="form-label">Primary Color</label><input name="primary_color" type="color" class="form-control form-control-color" value="<?= esc($settings['primary_color'] ?? '#1b2a3a') ?>"></div><div class="col-md-4"><label class="form-label">Accent Color</label><input name="accent_color" type="color" class="form-control form-control-color" value="<?= esc($settings['accent_color'] ?? '#ff7a1a') ?>"></div><div class="col-12"><div class="alert alert-light border mb-0">These appearance settings apply to the whole application for this branch. Font size is also used by POS; there is no separate POS-only font setting.</div></div></div></div>
             <div class="tab-pane fade" id="pos">
                 <div class="row g-3">
-                    <div class="col-md-7">
+                    <div class="col-md-5">
                         <label class="form-label">Default POS Transaction Type</label>
                         <select name="default_transaction_type" class="form-select">
                             <?php foreach(\App\Models\ShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
                                 <option value="<?= esc($value) ?>" <?= ($settings['default_transaction_type'] ?? 'gas_sale') === $value ? 'selected' : '' ?>><?= esc($label) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <div class="form-text">This value is selected automatically when the POS opens. The cashier can still change the transaction type for the current invoice.</div>
+                        <div class="form-text">This value is selected automatically when the POS opens. It must be one of the visible transaction types.</div>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label">POS Transaction Type Visibility</label>
+                        <?php $visibleTypes = (new \App\Models\ShopSettingsModel())->visibleTransactionTypes($settings); ?>
+                        <div class="border rounded p-3">
+                            <div class="row g-2">
+                                <?php foreach(\App\Models\ShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                name="pos_visible_transaction_types[]"
+                                                id="posVisible<?= esc($value) ?>"
+                                                value="<?= esc($value) ?>"
+                                                <?= in_array($value, $visibleTypes, true) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="posVisible<?= esc($value) ?>"><?= esc($label) ?></label>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <div class="form-text">Only transaction types enabled here will appear in the POS Transaction Type dropdown for this shop. At least one type must remain visible.</div>
                     </div>
                     <div class="col-md-5">
                         <label class="form-label">Source Filled Cylinder Selection on POS</label>
@@ -80,7 +101,7 @@
                         <div class="form-text">Used only when Credit Limit Validation is set to Shop Level.</div>
                     </div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Partial payment is allowed. Any unpaid amount becomes Customer OS and is carried into the next sale. Credit-limit validation applies to the resulting outstanding balance.</div></div>
-                    <div class="col-12"><div class="alert alert-info border mb-0"><strong>POS transaction types:</strong> Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return / Refund Deposit. The selected default is used when opening a new POS invoice.</div></div>
+                    <div class="col-12"><div class="alert alert-info border mb-0"><strong>POS transaction types:</strong> Visibility is configurable above per shop.  Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return / Refund Deposit. The selected default is used when opening a new POS invoice.</div></div>
                 </div>
             </div>
 
