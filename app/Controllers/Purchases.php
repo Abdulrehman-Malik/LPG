@@ -45,6 +45,12 @@ class Purchases extends Controller
         }
 
         $history = [];
+        $purchaseService = new PurchaseService();
+        $canVoidPurchases = $purchaseService->canVoidPurchase(
+            (int) session()->get('user_id'),
+            (int) session()->get('location_id')
+        );
+
         $purchaseDetails = [];
         if ($activeTab === 'history') {
             $history = $db->table('purchases p')
@@ -107,7 +113,7 @@ class Purchases extends Controller
             'purchaseDetails'  => $purchaseDetails,
             'suppliers'        => $suppliers,
             'supplierBalances' => $supplierBalances,
-            'canVoidPurchases' => \App\Services\PermissionService::allows('PURCHASE_MANAGE'),
+            'canVoidPurchases' => $canVoidPurchases,
             'types'            => $db->table('cylinder_types')
                 ->where('is_active', 1)
                 ->orderBy('sort_order')
@@ -165,6 +171,14 @@ class Purchases extends Controller
         }
 
         try {
+            $purchaseService = new PurchaseService();
+            if (!$purchaseService->canVoidPurchase(
+                (int) session()->get('user_id'),
+                (int) session()->get('location_id')
+            )) {
+                throw new \RuntimeException('You are not authorized to void purchases. Purchase Void must be enabled in Shop Settings and your user must be assigned to this function.');
+            }
+
             $reason = trim((string) $this->request->getPost('void_reason'));
             if ($reason === '') {
                 $reason = 'Voided from Purchase History';
