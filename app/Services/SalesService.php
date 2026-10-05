@@ -605,8 +605,9 @@ class SalesService
             if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on line '.$n.'.');
 
             $gasKg=0;$gasRate=0;$stdGas=null;
-            $stdCylinderRate=$status==='empty'?(float)($type['empty_cylinder_price']??0):$this->rates->currentCylinderRate($typeId,$transactionAt);
-            if($stdCylinderRate===null) throw new RuntimeException('No effective cylinder price exists for '.$type['name'].'.');
+            // Cylinder Sale uses the Cylinder Type master Empty Cylinder Price as the physical cylinder price.
+            // This applies to both empty and filled/partially-filled cylinder sales; gas price is separate.
+            $stdCylinderRate=(float)($type['empty_cylinder_price']??0);
             if($stdCylinderRate<0) throw new RuntimeException('Configured cylinder price cannot be negative.');
             $cylRate=$cylRateInput??$stdCylinderRate;
             if($cylRate<0) throw new RuntimeException('Cylinder price cannot be negative on line '.$n.'.');
