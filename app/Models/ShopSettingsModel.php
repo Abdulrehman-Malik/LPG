@@ -12,7 +12,7 @@ class ShopSettingsModel extends Model
     protected $useTimestamps = true;
     protected $allowedFields = [
         'location_id','default_sale_mode','default_transaction_type','individual_cylinder_tracking','allow_pos_source_cylinder_selection','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
-        'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit',
+        'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit','purchase_void_enabled',
         'backup_enabled','db_backup_url','backup_notes',
         'receipt_title','receipt_footer','show_address_on_receipt',
         'settings_note'
@@ -56,6 +56,7 @@ class ShopSettingsModel extends Model
             'allow_stock_override' => 1,
             'credit_limit_validation_mode' => 'none',
             'shop_credit_limit' => 0,
+            'purchase_void_enabled' => 0,
             'backup_enabled' => 0,
             'db_backup_url' => '',
             'backup_notes' => '',
