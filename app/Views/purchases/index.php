@@ -282,12 +282,16 @@
                                             </td>
                                             <td class="text-center">
                                                 <?php if (($canVoidPurchases ?? false) && $status === 'posted'): ?>
-                                                    <button type="button"
-                                                        class="btn btn-sm btn-outline-danger void-purchase"
-                                                        data-id="<?= (int) $purchase['id'] ?>"
-                                                        data-no="<?= esc($purchase['purchase_no'], 'attr') ?>">
-                                                        <i class="bi bi-x-circle me-1"></i>Void
-                                                    </button>
+                                                    <form method="post"
+                                                        action="<?= site_url('purchases/void/' . (int) $purchase['id']) ?>"
+                                                        class="d-inline"
+                                                        onsubmit="return confirm('Void purchase <?= esc($purchase['purchase_no'], 'js') ?>? Stock, cash and supplier ledger effects will be reversed.');">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="void_reason" value="Voided from Purchase History">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-x-circle me-1"></i>Void
+                                                        </button>
+                                                    </form>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
@@ -454,12 +458,16 @@
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             <?php if (($canVoidPurchases ?? false) && $detailStatus === 'posted'): ?>
-                                                <button type="button"
-                                                    class="btn btn-danger void-purchase"
-                                                    data-id="<?= (int) $purchase['id'] ?>"
-                                                    data-no="<?= esc($purchase['purchase_no'], 'attr') ?>">
-                                                    <i class="bi bi-x-circle me-1"></i>Void Purchase
-                                                </button>
+                                                <form method="post"
+                                                    action="<?= site_url('purchases/void/' . (int) $purchase['id']) ?>"
+                                                    class="d-flex align-items-center gap-2"
+                                                    onsubmit="return confirm('Void purchase <?= esc($purchase['purchase_no'], 'js') ?>? Stock, cash and supplier ledger effects will be reversed.');">
+                                                    <?= csrf_field() ?>
+                                                    <input type="text" name="void_reason" class="form-control form-control-sm" style="width:240px" value="Voided from Purchase Details" aria-label="Void reason">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-x-circle me-1"></i>Void Purchase
+                                                    </button>
+                                                </form>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -480,59 +488,6 @@
 const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
-
-document.querySelectorAll('.void-purchase').forEach(button => {
-    button.addEventListener('click', event => {
-        event.stopPropagation();
-
-        if (!canVoidPurchases) {
-            return;
-        }
-
-        const id = Number(button.dataset.id || 0);
-        const no = button.dataset.no || '';
-        if (!id || !no) {
-            alert('Invalid purchase selected.');
-            return;
-        }
-
-        if (!confirm(
-            'Void purchase ' + no + '? This will reverse all stock impact, cash impact and supplier ledger impact. ' +
-            'The original purchase will remain in history as VOID.'
-        )) {
-            return;
-        }
-
-        const reason = prompt('Enter void reason for ' + no + ':', '');
-        if (reason === null) {
-            return;
-        }
-
-        if (!reason.trim()) {
-            alert('Void reason is required.');
-            return;
-        }
-
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.action = '<?= site_url('purchases/void') ?>/' + id;
-
-        const csrf = document.createElement('input');
-        csrf.type = 'hidden';
-        csrf.name = '<?= csrf_token() ?>';
-        csrf.value = '<?= csrf_hash() ?>';
-        form.appendChild(csrf);
-
-        const reasonInput = document.createElement('input');
-        reasonInput.type = 'hidden';
-        reasonInput.name = 'void_reason';
-        reasonInput.value = reason.trim();
-        form.appendChild(reasonInput);
-
-        document.body.appendChild(form);
-        form.submit();
-    });
-});
 
 const money = value => Number(value || 0).toFixed(2);
 
