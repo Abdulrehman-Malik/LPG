@@ -231,7 +231,10 @@ class MigrationRunnerService
                     continue;
                 }
 
-                $baselineReason = $history === null ? $this->migrationAlreadyApplied($migration) : null;
+                // Re-check the live schema on retries as well. A previous attempt may have
+                // completed some DDL statements before failing; a fully-applied migration can then
+                // be safely baselined instead of executing duplicate ALTER statements.
+                $baselineReason = $this->migrationAlreadyApplied($migration);
                 if ($baselineReason !== null) {
                     $now = date('Y-m-d H:i:s');
                     $this->db->table($this->historyTable)->insert([
