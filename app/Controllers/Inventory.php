@@ -288,7 +288,7 @@ class Inventory extends Controller
     {
         if($r=$this->guard()) return $r;
         $db=Database::connect(); $locationId=$this->locationId();
-        $types=$db->table('cylinder_types')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
+        $types=$db->table('cylinder_types')->select('id,code,name,capacity_kg,is_active,sort_order')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
         $inv=new \App\Services\InventoryService();
         $rows=[['type'=>'gas_kg','id'=>'','name'=>'Gas (KG)','stock'=>$inv->stock($locationId,'gas_kg')]];
         foreach($types as $t){$rows[]=['type'=>'filled_cylinder','id'=>$t['id'],'name'=>'Filled '.$t['name'],'stock'=>$inv->stock($locationId,'filled_cylinder',(int)$t['id'])];$rows[]=['type'=>'empty_cylinder','id'=>$t['id'],'name'=>'Empty '.$t['name'],'stock'=>$inv->stock($locationId,'empty_cylinder',(int)$t['id'])];}
