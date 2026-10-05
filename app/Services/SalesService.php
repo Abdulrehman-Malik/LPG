@@ -589,7 +589,7 @@ class SalesService
         if(!$lines) throw new RuntimeException('At least one cylinder sale line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
 
-        $prepared=[];$subtotal=0;$customRate=false;
+        $prepared=[];$subtotal=0;$customRate=false;$selectedAcrossLines=[];
         foreach($lines as $i=>$line){
             $n=$i+1;
             $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
@@ -613,6 +613,10 @@ class SalesService
 
             if($status==='filled'){
                 if(count($selectedIds)!==(int)$qty) throw new RuntimeException('Filled cylinder line '.$n.' must select exactly '.(int)$qty.' physical cylinder(s).');
+                foreach($selectedIds as $selectedId){
+                    if(isset($selectedAcrossLines[$selectedId])) throw new RuntimeException('Physical cylinder '.$selectedId.' is selected more than once in this sale.');
+                    $selectedAcrossLines[$selectedId]=$n;
+                }
                 $stdGas=$this->rates->currentKgRate($transactionAt);
                 if($stdGas===null) throw new RuntimeException('No effective gas/kg rate exists.');
                 $gasRate=$gasRateInput??$stdGas;
