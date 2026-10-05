@@ -202,9 +202,9 @@ class MigrationRunnerService
         return [
             'ready' => $ready,
             'blocked_message' => $blockedMessage,
-            'migrations' => $results,
+            'migrations' => array_values(array_filter($results, static fn(array $r): bool => !in_array($r['status'], ['success','skipped'], true))),
             'total' => count($migrations),
-            'completed' => count(array_filter($results, static fn(array $r): bool => in_array($r['status'], ['success','skipped'], true))),
+            'completed' => count($migrations) - count(array_filter($results, static fn(array $r): bool => !in_array($r['status'], ['success','skipped'], true))),
         ];
     }
 
