@@ -46,6 +46,22 @@
             border-color: var(--lpg-accent);
             box-shadow: 0 0 0 .2rem rgba(255, 122, 26, .15);
         }
+        .migration-list {
+            max-height: 280px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid #dee2e6;
+            border-radius: .375rem;
+        }
+        .migration-list table {
+            margin-bottom: 0;
+        }
+        .migration-list thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -94,7 +110,7 @@
                         </div>
 
                         <?php if ($migrationRows) : ?>
-                            <div class="table-responsive mb-3">
+                            <div class="table-responsive migration-list mb-3">
                                 <table class="table table-sm table-bordered align-middle">
                                     <thead class="table-light">
                                     <tr>
