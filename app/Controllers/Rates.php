@@ -25,7 +25,7 @@ class Rates extends Controller
     {
         if($r=$this->guard()) return $r;
         $locationId=(int)(session()->get('location_id') ?? 0);
-        return view('rates/index',['title'=>'LPG Rates','types'=>$this->types->where('is_active',1)->orderBy('sort_order')->findAll(),'rates'=>$this->rates->history($locationId)]);
+        $allTypes=$this->types->orderBy('sort_order')->findAll(); $activeTypes=array_values(array_filter($allTypes,static fn($t)=>(int)$t['is_active']===1)); $rateCylinderTypes=[]; foreach($allTypes as $t) $rateCylinderTypes[(string)$t['id']]=$t; return view('rates/index',['title'=>'LPG Rates','types'=>$activeTypes,'rates'=>$this->rates->history($locationId),'rateCylinderTypes'=>$rateCylinderTypes]);
     }
 
     public function save()
