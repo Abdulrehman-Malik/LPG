@@ -178,8 +178,8 @@ class InventoryService{
    return $adjustmentNo;
   }
 
-  if($type!=='gas_kg' && floor($qty)!==$qty) throw new RuntimeException('Cylinder quantity must be a whole number.');
-  if($type!=='gas_kg' && (int)$qty!==1) throw new RuntimeException('A specific-cylinder adjustment can affect only one cylinder at a time.');
+  if($type!=='gas_kg' && (floor($qty*100)!==$qty*100)) throw new RuntimeException('Cylinder quantity can have up to 2 decimal places.');
+  if($adjustmentScope==='specific' && $type!=='gas_kg' && abs($qty-1)>0.00001) throw new RuntimeException('A specific-cylinder adjustment can affect only one cylinder at a time.');
 
   $this->db->transBegin();
   try{
