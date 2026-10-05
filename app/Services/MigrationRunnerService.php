@@ -23,7 +23,7 @@ class MigrationRunnerService
             migration_seq INT UNSIGNED NOT NULL,
             migration_file VARCHAR(255) NOT NULL,
             checksum CHAR(64) NOT NULL,
-            status ENUM('running','success','failed') NOT NULL,
+            status ENUM('running','success','failed','skipped') NOT NULL,
             started_at DATETIME NOT NULL,
             finished_at DATETIME NULL,
             duration_ms INT UNSIGNED NULL,
@@ -84,6 +84,53 @@ class MigrationRunnerService
         return $map;
     }
 
+    protected function migrationAlreadyApplied(array $migration): ?string
+    {
+        if ($migration['seq'] === 11) {
+            return 'Manual / opt-in staging refresh migration; automatic login runner does not perform the destructive refresh.';
+        }
+
+        $checks = [
+            1 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings'",
+            2 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_policies' AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_wastage_logs')",
+            3 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_units') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_movements' AND COLUMN_NAME='cylinder_unit_id')) ok",
+            4 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME IN ('credit_limit_validation_mode','shop_credit_limit')",
+            5 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_opening_balances' AND COLUMN_NAME='comments'",
+            6 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_custody') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='customer_security_deposits') AND (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME IN ('security_deposit_amount','security_deposit_refund_amount'))=2) ok",
+            7 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='default_transaction_type'",
+            8 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='individual_cylinder_tracking'",
+            9 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_SALE'",
+            10 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='purchase_items' AND COLUMN_NAME='actual_gas_weight_kg'",
+            12 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_units'",
+            13 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='customers' AND COLUMN_NAME='allow_credit_sale'",
+            14 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='allow_pos_source_cylinder_selection'",
+            15 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME IN ('previous_os_balance','receipt_amount','net_receivable_amount','os_balance')",
+            16 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_types' AND COLUMN_NAME='empty_cylinder_price'",
+            17 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sale_items' AND COLUMN_NAME IN ('gas_rate','cylinder_price')",
+        ];
+
+        if (!isset($checks[$migration['seq']])) {
+            return null;
+        }
+
+        $row = $this->db->query($checks[$migration['seq']])->getRowArray();
+        $ok = (int)($row['ok'] ?? 0);
+
+        if ($migration['seq'] === 4 || $migration['seq'] === 6 || $migration['seq'] === 15 || $migration['seq'] === 17) {
+            $expected = [
+                4 => 2,
+                6 => 2,
+                15 => 4,
+                17 => 2,
+            ][$migration['seq']];
+            $ok = $ok === $expected ? 1 : 0;
+        }
+
+        return $ok === 1
+            ? 'Already present in the database; recorded as baseline without re-executing.'
+            : null;
+    }
+
     public function status(): array
     {
         $this->ensureHistoryTable();
@@ -96,7 +143,7 @@ class MigrationRunnerService
         foreach ($migrations as $migration) {
             $history = $latest[$migration['file']] ?? null;
 
-            if ($history && $history['status'] === 'success') {
+            if ($history && in_array($history['status'], ['success','skipped'], true)) {
                 if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
                     $ready = false;
                     $blockedMessage = 'Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.';
@@ -115,8 +162,8 @@ class MigrationRunnerService
                 $results[] = [
                     'seq' => $migration['seq'],
                     'file' => $migration['file'],
-                    'status' => 'success',
-                    'message' => 'Applied successfully.',
+                    'status' => $history['status'],
+                    'message' => $history['status'] === 'skipped' ? ((string) ($history['error_message'] ?? 'Skipped.')) : 'Applied successfully.',
                     'finished_at' => $history['finished_at'],
                     'duration_ms' => $history['duration_ms'],
                     'executed_statements' => $history['executed_statements'],
@@ -156,7 +203,7 @@ class MigrationRunnerService
             'blocked_message' => $blockedMessage,
             'migrations' => $results,
             'total' => count($migrations),
-            'completed' => count(array_filter($results, static fn(array $r): bool => $r['status'] === 'success')),
+            'completed' => count(array_filter($results, static fn(array $r): bool => in_array($r['status'], ['success','skipped'], true))),
         ];
     }
 
@@ -181,6 +228,32 @@ class MigrationRunnerService
                     if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
                         throw new RuntimeException('Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.');
                     }
+                    continue;
+                }
+
+                $baselineReason = $history === null ? $this->migrationAlreadyApplied($migration) : null;
+                if ($baselineReason !== null) {
+                    $now = date('Y-m-d H:i:s');
+                    $this->db->table($this->historyTable)->insert([
+                        'migration_seq' => $migration['seq'],
+                        'migration_file' => $migration['file'],
+                        'checksum' => $migration['checksum'],
+                        'status' => 'skipped',
+                        'started_at' => $now,
+                        'finished_at' => $now,
+                        'duration_ms' => 0,
+                        'executed_statements' => 0,
+                        'error_message' => $baselineReason,
+                    ]);
+
+                    $executed[] = [
+                        'seq' => $migration['seq'],
+                        'file' => $migration['file'],
+                        'status' => 'skipped',
+                        'message' => $baselineReason,
+                        'executed_statements' => 0,
+                        'duration_ms' => 0,
+                    ];
                     continue;
                 }
 
