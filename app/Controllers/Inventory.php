@@ -148,7 +148,7 @@ class Inventory extends Controller
         }
 
         $historyQuery = $db->table('inventory_movements im')
-            ->select("im.*,s.sale_no,p.purchase_no,c.name customer_name,u.full_name")
+            ->select("im.*,s.sale_no,p.purchase_no,ia.adjustment_no,c.name customer_name,u.full_name")
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('customers c','c.id=s.customer_id','left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
@@ -210,7 +210,7 @@ class Inventory extends Controller
         }
 
         $movementsQuery = $db->table('inventory_movements im')
-            ->select('im.*,cu.unit_code,s.sale_no,p.purchase_no')
+            ->select('im.*,cu.unit_code,s.sale_no,p.purchase_no,ia.adjustment_no')
             ->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
