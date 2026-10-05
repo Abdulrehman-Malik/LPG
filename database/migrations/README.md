@@ -26,12 +26,20 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 012 | `012_20261004_physical_cylinder_code.sql` | Global physical-cylinder code format |
 | 013 | `013_20261004_customer_credit_sale_control.sql` | Per-customer credit-sale permission; disabled by default |
 | 014 | `014_20261004_pos_source_filled_cylinder_selection.sql` | Branch-level POS source-cylinder selection setting |
+| 015 | `015_20261004_pos_os_receipt_snapshot.sql` | POS OS / receipt snapshot fields |
+| 016 | `016_20261004_empty_cylinder_sale_price.sql` | Cylinder Type empty-cylinder sale price |
+| 017 | `017_20261004_cylinder_sale_rate_components.sql` | Cylinder sale gas-rate and cylinder-price components |
 
 ## Deployment rules
 
+The application now checks this directory on the login page. A pending migration is shown there with an **Execute Pending Migrations** button. Migrations are executed strictly by numeric sequence, one at a time. If one migration fails, execution stops immediately and later migrations remain pending.
+
+Execution results are recorded in `lpg_migration_history`, including status, checksum, start/end time, duration, executed statement count, and the error message for failures. Login is blocked until every migration is successfully applied. An already-applied migration file may not be changed; create a new sequence instead.
+
+
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 014**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 017**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
