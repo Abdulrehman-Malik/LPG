@@ -15,6 +15,11 @@
 .pos-summary-metric .form-label { font-size:.8rem; margin-bottom:.25rem; white-space:nowrap; }
 .pos-summary-metric .form-control { padding:.35rem .5rem; min-height:36px; }
 #lines .remove { min-width:38px; min-height:38px; }
+.cylinderPickerRow td { background:#f8f9fa; }
+.cylinder-option { cursor:pointer; background:#fff; transition:.15s ease; }
+.cylinder-option:hover { box-shadow:0 .125rem .25rem rgba(0,0,0,.08); }
+.cylinder-option:has(input:checked) { border-color:#0d6efd !important; background:#eef5ff; }
+.cylinderPicker { max-height:300px; overflow:auto; }
 .custody-list { max-height:250px; overflow:auto; }
 .custody-list option { padding:4px; }
 @media (max-width:1199.98px){
@@ -74,7 +79,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   </div>
   <div class="col-md-3">
     <label class="form-label fw-semibold">Gas Entry</label>
-    <select id="gasEntryMode" class="form-select"><option value="quantity">KG</option><option value="amount"></option></select>
+    <select id="gasEntryMode" class="form-select"><option value="quantity">KG</option><option value="amount">Amount</option></select>
   </div>
   <div class="col-md-3">
     <label class="form-label">Customer</label>
@@ -331,7 +336,7 @@ function recalc(){
 }
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
- document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'block';
+ document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
