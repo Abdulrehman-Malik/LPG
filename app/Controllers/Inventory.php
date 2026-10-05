@@ -291,9 +291,26 @@ class Inventory extends Controller
         $rows=[['type'=>'gas_kg','id'=>'','name'=>'Gas (KG)','stock'=>$inv->stock($locationId,'gas_kg')]];
         foreach($types as $t){$rows[]=['type'=>'filled_cylinder','id'=>$t['id'],'name'=>'Filled '.$t['name'],'stock'=>$inv->stock($locationId,'filled_cylinder',(int)$t['id'])];$rows[]=['type'=>'empty_cylinder','id'=>$t['id'],'name'=>'Empty '.$t['name'],'stock'=>$inv->stock($locationId,'empty_cylinder',(int)$t['id'])];}
         $units=$db->table('cylinder_units cu')->select('cu.id,cu.unit_code,cu.status,cu.gas_weight_kg,cu.cylinder_type_id,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where('cu.location_id',$locationId)->whereIn('cu.status',['filled','empty'])->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
-        $history=$db->table('inventory_movements im')->select("im.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code source_unit_code,u.full_name,s.sale_no,p.purchase_no")->join('cylinder_types ct','ct.id=im.cylinder_type_id','left')->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')->join('users u','u.id=im.created_by','left')->join('sales s','s.id=im.source_id','left')->join('purchases p','p.id=im.source_id','left')->where('im.location_id',$locationId)->orderBy('im.movement_at','DESC')->orderBy('im.id','DESC')->limit(500)->get()->getResultArray();
+        $history=$db->table('inventory_movements im')->select("im.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code source_unit_code,u.full_name,s.sale_no,p.purchase_no,ia.adjustment_no")->join('cylinder_types ct','ct.id=im.cylinder_type_id','left')->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')->join('users u','u.id=im.created_by','left')->join('sales s','s.id=im.source_id','left')->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')->join('inventory_adjustments ia',"ia.id=im.source_id AND im.source_type='adjustment'",'left')->where('im.location_id',$locationId)->orderBy('im.movement_at','DESC')->orderBy('im.id','DESC')->limit(500)->get()->getResultArray();
         return view('inventory/adjustments',['title'=>'Stock Adjustment & History','rows'=>$rows,'types'=>$types,'units'=>$units,'history'=>$history]);
     }
 
-    public function adjust(){if($r=$this->guard())return $r;try{$sourceRaw=$this->request->getPost('source_cylinder_unit_id');$sourceId=$sourceRaw!==null&&$sourceRaw!==''?(int)$sourceRaw:null;(new \App\Services\InventoryService())->adjust((int)session()->get('location_id'),(string)$this->request->getPost('inventory_type'),$this->request->getPost('cylinder_type_id')!==''?(int)$this->request->getPost('cylinder_type_id'):null,(float)$this->request->getPost('quantity'),(string)$this->request->getPost('direction'),(int)session()->get('user_id'),$this->request->getPost('notes'),(float)$this->request->getPost('actual_gas_weight_kg'),$sourceId,(string)($this->request->getPost('adjustment_scope')??'bulk'));return redirect()->to('/inventory/adjustments')->with('success','Inventory adjustment posted.');}catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}}
+    public function adjustmentDetails(int $adjustmentId)
+    {
+        if($r=$this->guard()) return $r;
+        $db=Database::connect(); $locationId=$this->locationId();
+        $adjustment=$db->table('inventory_adjustments ia')
+            ->select('ia.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code,u.full_name')
+            ->join('cylinder_types ct','ct.id=ia.cylinder_type_id','left')
+            ->join('cylinder_units cu','cu.id=ia.source_cylinder_unit_id','left')
+            ->join('users u','u.id=ia.created_by','left')
+            ->where('ia.id',$adjustmentId)->where('ia.location_id',$locationId)->get()->getRowArray();
+        if(!$adjustment) return $this->response->setStatusCode(404)->setBody('Stock adjustment not found.');
+        $movements=$db->table('inventory_movements im')->select('im.*,cu.unit_code,u.full_name')->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')->join('users u','u.id=im.created_by','left')->where('im.source_type','adjustment')->where('im.source_id',$adjustmentId)->where('im.location_id',$locationId)->orderBy('im.id')->get()->getResultArray();
+        $adjustment['before_state']=json_decode((string)$adjustment['before_state'],true)?:[];
+        $adjustment['after_state']=json_decode((string)$adjustment['after_state'],true)?:[];
+        return view('inventory/adjustment_details',['title'=>'Adjustment Details','adjustment'=>$adjustment,'movements'=>$movements]);
+    }
+
+    public function adjust(){if($r=$this->guard())return $r;try{$sourceRaw=$this->request->getPost('source_cylinder_unit_id');$sourceId=$sourceRaw!==null&&$sourceRaw!==''?(int)$sourceRaw:null;$adjustmentNo=(new \App\Services\InventoryService())->adjust((int)session()->get('location_id'),(string)$this->request->getPost('inventory_type'),$this->request->getPost('cylinder_type_id')!==''?(int)$this->request->getPost('cylinder_type_id'):null,(float)$this->request->getPost('quantity'),(string)$this->request->getPost('direction'),(int)session()->get('user_id'),$this->request->getPost('notes'),(float)$this->request->getPost('actual_gas_weight_kg'),$sourceId,(string)($this->request->getPost('adjustment_scope')??'bulk'),(string)$this->request->getPost('reason'));return redirect()->to('/inventory/adjustments')->with('success','Inventory adjustment '.$adjustmentNo.' posted successfully.');}catch(\Throwable $e){return redirect()->back()->withInput()->with('error',$e->getMessage());}}
 }
