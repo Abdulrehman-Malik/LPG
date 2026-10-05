@@ -113,6 +113,7 @@
                                             'failed'=>'danger',
                                             'running'=>'warning',
                                             'changed'=>'danger',
+                                            'skipped'=>'warning',
                                             'pending'=>'secondary',
                                         ][$status] ?? 'secondary';
                                         ?>
