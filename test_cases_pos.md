@@ -252,3 +252,27 @@ Use this file as the manual POS regression checklist. Execute the steps and mark
 __________________________________________________________________  
 __________________________________________________________________  
 __________________________________________________________________
+
+
+## Cylinder Sale — Physical Cylinder Selection Regression
+
+| ID | Test Case | Expected Result |
+|---|---|---|
+| POS-115 | Cylinder Sale → Empty cylinder, select type and enter quantity | Empty Cylinder Price defaults from Cylinder Type Setup; Gas Rate/Gas KG are not used; amount = quantity × empty-cylinder price. |
+| POS-116 | Empty Cylinder Sale posting | Only selected/allocated empty physical-cylinder stock decreases; gas stock remains unchanged. |
+| POS-117 | Cylinder Sale → Filled cylinder, select type | Available filled and partially-filled physical cylinders appear in a checkbox grid showing physical code, type/capacity, gas KG and status. |
+| POS-118 | Select one filled physical cylinder | Cylinder Qty becomes 1 read-only; Gas KG becomes the selected cylinder's current gas quantity read-only. |
+| POS-119 | Select multiple filled physical cylinders | Cylinder Qty and Gas KG are calculated automatically from the selected physical cylinders; neither can be manually edited. |
+| POS-120 | Change Gas Rate on filled-cylinder sale | Gas KG remains unchanged/read-only; line amount recalculates using the changed gas rate. |
+| POS-121 | Change Cylinder Price on filled-cylinder sale | Gas KG remains unchanged; line amount recalculates using the changed cylinder price. |
+| POS-122 | Try to manually edit Gas KG on filled-cylinder sale | Field cannot be edited; server ignores any client-supplied gas quantity and derives gas from locked physical cylinders. |
+| POS-123 | Try to manually change filled-cylinder quantity | Quantity is read-only and remains equal to selected physical-cylinder count. |
+| POS-124 | Same physical cylinder selected in two lines | UI/server rejects duplicate physical-cylinder selection; transaction is not posted. |
+| POS-125 | Physical cylinder becomes unavailable before posting | Server revalidates/locks the selected physical cylinders and rejects the sale with a clear retry message; no partial posting occurs. |
+| POS-126 | Partially-filled cylinder selected | Gas KG equals the cylinder's actual current gas quantity; cylinder is sold and gas stock is reduced by that exact quantity. |
+| POS-127 | Empty + Filled cylinders in one Cylinder Sale | Both lines can coexist; empty line affects cylinder stock only, filled line affects physical cylinder and gas stock. |
+| POS-128 | Discount on mixed Cylinder Sale | Existing discount/Net Receivable/Receipt/OS calculations remain correct. |
+| POS-129 | Existing customer credit rules on Cylinder Sale | Existing customer Allow Credit Sale, OS and credit-limit rules remain unchanged. |
+| POS-130 | Walk-in Cylinder Sale with unpaid balance | Existing Walk-in cash/full-payment rule remains enforced. |
+| POS-131 | Void posted Cylinder Sale | Gas and physical-cylinder inventory movements are fully reversed and the original sale remains visible as VOID. |
+| POS-132 | Gas Sale / Refill regression after Cylinder Sale changes | Existing Gas Sale / Refill UI, KG/Rs mode, source-cylinder logic and posting behavior remain unchanged. |
