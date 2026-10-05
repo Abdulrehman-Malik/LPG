@@ -133,7 +133,7 @@ class InventoryService{
      if($type==='filled_cylinder'){
       if($gasPerUnit<=0 || $gasPerUnit>(float)$ct['capacity_kg']) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
      }
-     $unitIds=$this->cylinders->createUnits($locationId,$typeId,$qtyInt,$type==='filled_cylinder'?'filled':'empty',$gasPerUnit,$userId,'adjustment',0);
+     $unitIds=$this->cylinders->createUnits($locationId,$typeId,$qtyInt,$type==='filled_cylinder'?'filled':'empty',$gasPerUnit,$userId,'adjustment',$adjustmentId);
      foreach($unitIds as $unitId){
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in',
