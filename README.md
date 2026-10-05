@@ -83,6 +83,12 @@ All manual SQL deployment scripts use a numeric sequence prefix. Run only migrat
 11. `011_20261003_refresh_transactional_data.sql` — **manual staging/test-data refresh only; never run automatically in production**
 12. `012_20261004_physical_cylinder_code.sql` — physical cylinder code migration
 13. `013_20261004_customer_credit_sale_control.sql` — per-customer credit-sale permission
+14. `014_20261004_pos_source_filled_cylinder_selection.sql` — POS source-cylinder selection setting
+15. `015_20261004_pos_os_receipt_snapshot.sql` — POS OS/receipt snapshot
+16. `016_20261004_empty_cylinder_sale_price.sql` — configurable empty-cylinder sale price
+17. `017_20261004_cylinder_sale_rate_components.sql` — cylinder-sale rate components
+18. `018_20261005_purchase_void_authorization.sql` — purchase void authorization
+19. `019_20261005_stock_adjustment_history.sql` — stock adjustment transaction history
 
 See `database/migrations/README.md` for the deployment procedure and safety rules.
 
