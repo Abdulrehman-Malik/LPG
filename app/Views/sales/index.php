@@ -440,6 +440,10 @@ document.getElementById('saleForm').onsubmit=()=>{
    const units=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));if(!customerId){alert('Select a customer for Cylinder Return.');return false;}if(!units.length){alert('Select at least one customer custody cylinder to return.');return false;}
  }
  const pays=t==='cylinder_return'?[]:[...payments.querySelectorAll('.payment')].map(p=>({payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
+ // Serialize immediately after building the two payload arrays. This keeps the server
+ // payload valid even if a later client-side validation check throws unexpectedly.
+ document.getElementById('lines_json').value=JSON.stringify(lines);
+ document.getElementById('payments_json').value=JSON.stringify(pays);
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),previousOs=customerId?Number(document.getElementById('previousOs').textContent||0):0,deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0;
  const expected=t==='security_deposit'?deposit:(t==='cylinder_return'?0:saleTotal+previousOs);
  if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
@@ -461,8 +465,6 @@ document.getElementById('saleForm').onsubmit=()=>{
    if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(2)+' KG, but this transaction requires '+gasRequired.toFixed(2)+' KG. Continue?'))return false;
    document.getElementById('stock_override_confirmed').value='1';
  }
- document.getElementById('lines_json').value=JSON.stringify(lines);
- document.getElementById('payments_json').value=JSON.stringify(pays);
  return true;
 };
 addPayment();document.getElementById('transactionType').value=defaultTransactionType;refreshCustomer();refreshForm();
