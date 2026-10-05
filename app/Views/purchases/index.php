@@ -283,8 +283,9 @@
                                             <td class="text-center">
                                                 <?php if (($canVoidPurchases ?? false) && $status === 'posted'): ?>
                                                     <button type="button"
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        onclick="voidPurchase(<?= (int) $purchase['id'] ?>, <?= json_encode($purchase['purchase_no']) ?>)">
+                                                        class="btn btn-sm btn-outline-danger void-purchase"
+                                                        data-id="<?= (int) $purchase['id'] ?>"
+                                                        data-no="<?= esc($purchase['purchase_no'], 'attr') ?>">
                                                         <i class="bi bi-x-circle me-1"></i>Void
                                                     </button>
                                                 <?php endif; ?>
@@ -454,8 +455,9 @@
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             <?php if (($canVoidPurchases ?? false) && $detailStatus === 'posted'): ?>
                                                 <button type="button"
-                                                    class="btn btn-danger"
-                                                    onclick="voidPurchase(<?= (int) $purchase['id'] ?>, <?= json_encode($purchase['purchase_no']) ?>)">
+                                                    class="btn btn-danger void-purchase"
+                                                    data-id="<?= (int) $purchase['id'] ?>"
+                                                    data-no="<?= esc($purchase['purchase_no'], 'attr') ?>">
                                                     <i class="bi bi-x-circle me-1"></i>Void Purchase
                                                 </button>
                                             <?php endif; ?>
@@ -479,47 +481,58 @@ const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
 
-function voidPurchase(id, no) {
-    if (!canVoidPurchases) {
-        return;
-    }
+document.querySelectorAll('.void-purchase').forEach(button => {
+    button.addEventListener('click', event => {
+        event.stopPropagation();
 
-    if (!confirm(
-        'Void purchase ' + no + '? This will reverse all stock impact, cash impact and supplier ledger impact. ' +
-        'The original purchase will remain in history as VOID.'
-    )) {
-        return;
-    }
+        if (!canVoidPurchases) {
+            return;
+        }
 
-    const reason = prompt('Enter void reason for ' + no + ':', '');
-    if (reason === null) {
-        return;
-    }
+        const id = Number(button.dataset.id || 0);
+        const no = button.dataset.no || '';
+        if (!id || !no) {
+            alert('Invalid purchase selected.');
+            return;
+        }
 
-    if (!reason.trim()) {
-        alert('Void reason is required.');
-        return;
-    }
+        if (!confirm(
+            'Void purchase ' + no + '? This will reverse all stock impact, cash impact and supplier ledger impact. ' +
+            'The original purchase will remain in history as VOID.'
+        )) {
+            return;
+        }
 
-    const form = document.createElement('form');
-    form.method = 'post';
-    form.action = '<?= site_url('purchases/void') ?>/' + id;
+        const reason = prompt('Enter void reason for ' + no + ':', '');
+        if (reason === null) {
+            return;
+        }
 
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = '<?= csrf_token() ?>';
-    csrf.value = '<?= csrf_hash() ?>';
-    form.appendChild(csrf);
+        if (!reason.trim()) {
+            alert('Void reason is required.');
+            return;
+        }
 
-    const reasonInput = document.createElement('input');
-    reasonInput.type = 'hidden';
-    reasonInput.name = 'void_reason';
-    reasonInput.value = reason.trim();
-    form.appendChild(reasonInput);
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = '<?= site_url('purchases/void') ?>/' + id;
 
-    document.body.appendChild(form);
-    form.submit();
-}
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '<?= csrf_token() ?>';
+        csrf.value = '<?= csrf_hash() ?>';
+        form.appendChild(csrf);
+
+        const reasonInput = document.createElement('input');
+        reasonInput.type = 'hidden';
+        reasonInput.name = 'void_reason';
+        reasonInput.value = reason.trim();
+        form.appendChild(reasonInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    });
+});
 
 const money = value => Number(value || 0).toFixed(2);
 
