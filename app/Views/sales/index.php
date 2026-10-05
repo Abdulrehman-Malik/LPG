@@ -402,9 +402,9 @@ document.getElementById('saleForm').onsubmit=()=>{
      }
    }
  }else if(t==='cylinder_sale'){
-   lines=[...tbody.querySelectorAll('tr')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,cylinder_status:tr.querySelector('.cylStatus').value,quantity:tr.querySelector('.qty').value,gas_rate:tr.querySelector('.gasRate').value,cylinder_rate:tr.querySelector('.cylRate').value}));
+   lines=[...tbody.querySelectorAll('tr:not(.cylinderPickerRow)')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,cylinder_status:tr.querySelector('.cylStatus').value,quantity:tr.querySelector('.qty').value,gas_weight_kg:tr.querySelector('.gasQty').value,gas_rate:tr.querySelector('.gasRate').value,cylinder_rate:tr.querySelector('.cylRate').value,selected_cylinder_unit_ids:tr._selectedUnitIds||[]}));
    if(!lines.length){alert('Add at least one cylinder sale line.');return false;}
-   for(const [i,l] of lines.entries()){const q=Number(l.quantity||0);if(!l.cylinder_type_id||q<=0||q!==Math.floor(q)){alert('Cylinder sale line '+(i+1)+' requires a whole-number quantity.');return false;}}
+   for(const [i,l] of lines.entries()){const q=Number(l.quantity||0);if(!l.cylinder_type_id||q<=0||q!==Math.floor(q)){alert('Cylinder sale line '+(i+1)+' requires a whole-number quantity.');return false;}if(l.cylinder_status==='filled'&&(!Array.isArray(l.selected_cylinder_unit_ids)||l.selected_cylinder_unit_ids.length!==q)){alert('Cylinder sale line '+(i+1)+' requires selecting exactly '+q+' physical cylinder(s).');return false;}}
  }else if(t==='security_deposit'){
    const units=[...document.getElementById('custodyUnits').selectedOptions].map(o=>Number(o.value));if(!customerId){alert('Select a customer for Security Deposit.');return false;}if(!units.length){alert('Select at least one cylinder to issue on custody.');return false;}if(Number(document.getElementById('securityDeposit').value||0)<=0){alert('Enter a Security Deposit Amount.');return false;}
  }else if(t==='cylinder_return'){
