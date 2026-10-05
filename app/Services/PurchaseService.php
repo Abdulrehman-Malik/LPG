@@ -70,7 +70,7 @@ class PurchaseService{
    $remainingCurrent=$currentPayable;$cashPurchase=0;
    foreach($normalizedPayments as $pay){$applyCurrent=min((float)$pay['amount'],$remainingCurrent);$applyPrior=max(0,(float)$pay['amount']-$applyCurrent);
     if($applyCurrent>0){$this->db->table('purchase_payments')->insert(['purchase_id'=>$id,'payment_mode'=>$pay['payment_mode'],'amount'=>$applyCurrent,'reference_no'=>$pay['reference_no'],'payment_at'=>date('Y-m-d H:i:s'),'paid_by'=>$userId]);if($pay['payment_mode']==='cash')$cashPurchase+=$applyCurrent;}
-    if($applyPrior>0){$paymentNo='SP'.date('YmdHis').'-'.random_int(100,999);$this->db->table('supplier_payments')->insert(['payment_no'=>$paymentNo,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','amount'=>$applyPrior,'payment_mode'=>$pay['payment_mode'],'payment_at'=>date('Y-m-d H:i:s'),'reference_no'=>$pay['reference_no'],'notes'=>'Applied to previous supplier payable during purchase '.$no,'created_by'=>$userId]);if($pay['payment_mode']==='cash'){ $session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'supplier_payment','out',$applyPrior,'supplier_payment',0,$userId,'Supplier payable settlement during purchase '.$no);}}
+    if($applyPrior>0){$paymentNo='SP'.date('YmdHis').'-'.random_int(100,999);$this->db->table('supplier_payments')->insert(['payment_no'=>$paymentNo,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','amount'=>$applyPrior,'payment_mode'=>$pay['payment_mode'],'payment_at'=>date('Y-m-d H:i:s'),'reference_no'=>$pay['reference_no'],'notes'=>'Applied to previous supplier payable during purchase '.$no,'created_by'=>$userId]);$supplierPaymentId=(int)$this->db->insertID();if($pay['payment_mode']==='cash'){ $session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'supplier_payment','out',$applyPrior,'supplier_payment',$supplierPaymentId,$userId,'Supplier payable settlement during purchase '.$no);}}
     $remainingCurrent=max(0,$remainingCurrent-(float)$pay['amount']);
    }
    if($cashPurchase>0){$session=$this->cash->openSessionForLocation($locationId);if(!$session)throw new RuntimeException('Open the counter cash session before posting a cash purchase.');$this->cash->postGeneric((int)$session['id'],'purchase_cash','out',$cashPurchase,'purchase',$id,$userId,'Purchase cash');}
@@ -81,14 +81,212 @@ class PurchaseService{
  public function supplierBalance(int $supplierId, ?int $locationId=null): float
  {
   $locationId=$locationId ?? (int)(session()->get('location_id') ?? 0);
-  $s=$this->db->table('purchases')->selectSum('credit_amount','credit')->where('supplier_id',$supplierId)->where('status','posted');
+
+  $s=$this->db->table('purchases')->selectSum('credit_amount','credit')
+   ->where('supplier_id',$supplierId)->where('status','posted');
   if($locationId>0) $s->where('location_id',$locationId);
   $s=$s->get()->getRowArray();
-  $p=$this->db->table('supplier_payments')->selectSum('amount','paid')->where('supplier_id',$supplierId)->where('status','posted');
-  if($locationId>0) $p->where('location_id',$locationId);
+
+  $p=$this->db->table('purchase_payments pp')->selectSum('pp.amount','paid')
+   ->join('purchases p','p.id=pp.purchase_id')
+   ->where('p.supplier_id',$supplierId)->where('p.status','posted');
+  if($locationId>0) $p->where('p.location_id',$locationId);
   $p=$p->get()->getRowArray();
+
+  $ap=$this->db->table('supplier_payments')->selectSum('amount','account_paid')
+   ->where('supplier_id',$supplierId)->where('status','posted');
+  if($locationId>0) $ap->where('location_id',$locationId);
+  $ap=$ap->get()->getRowArray();
+
   $supplier=$this->db->table('suppliers')->where('id',$supplierId)->get()->getRowArray();
-  return (float)($supplier['opening_balance']??0)+(float)($s['credit']??0)-(float)($p['paid']??0);
+  return (float)($supplier['opening_balance']??0)
+      +(float)($s['credit']??0)
+      -(float)($p['paid']??0)
+      -(float)($ap['account_paid']??0);
+ }
+
+ public function void(int $purchaseId,int $userId,int $locationId,string $reason): string
+ {
+  $reason=trim($reason);
+  if($reason==='') throw new RuntimeException('Void reason is required.');
+
+  $this->db->transBegin();
+  try{
+   $purchase=$this->db->query(
+    'SELECT * FROM purchases WHERE id=? AND location_id=? FOR UPDATE',
+    [$purchaseId,$locationId]
+   )->getRowArray();
+   if(!$purchase) throw new RuntimeException('Purchase not found.');
+   if($purchase['status']!=='posted') throw new RuntimeException('Only posted purchases can be voided.');
+
+   $supplier=$this->db->query(
+    'SELECT * FROM suppliers WHERE id=? FOR UPDATE',
+    [(int)$purchase['supplier_id']]
+   )->getRowArray();
+   if(!$supplier) throw new RuntimeException('Purchase supplier not found.');
+
+   $movements=$this->db->table('inventory_movements')
+    ->where('source_type','purchase')->where('source_id',$purchaseId)
+    ->orderBy('id','ASC')->get()->getResultArray();
+
+   $physicalUnits=[];
+   foreach($movements as $m){
+    $unitId=(int)($m['cylinder_unit_id']??0);
+    if($unitId>0) $physicalUnits[$unitId]=true;
+   }
+
+   $units=[];
+   foreach(array_keys($physicalUnits) as $unitId){
+    $unit=$this->db->query(
+     'SELECT cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg
+      FROM cylinder_units cu
+      JOIN cylinder_types ct ON ct.id=cu.cylinder_type_id
+      WHERE cu.id=? AND cu.location_id=? FOR UPDATE',
+     [$unitId,$locationId]
+    )->getRowArray();
+    if(!$unit) throw new RuntimeException('Purchased physical cylinder '.$unitId.' could not be found.');
+
+    if((string)$unit['source_type']!=='purchase' || (int)$unit['source_id']!==$purchaseId){
+     throw new RuntimeException('Physical cylinder '.$unit['unit_code'].' does not belong exclusively to purchase '.$purchase['purchase_no'].'.');
+    }
+
+    $laterMovement=(int)$this->db->table('inventory_movements')
+     ->where('cylinder_unit_id',$unitId)
+     ->groupStart()
+      ->where('source_type !=','purchase')
+      ->orWhere('source_id !=',$purchaseId)
+     ->groupEnd()
+     ->countAllResults();
+    if($laterMovement>0){
+     throw new RuntimeException('Purchase '.$purchase['purchase_no'].' cannot be voided because physical cylinder '.$unit['unit_code'].' has already been used in another stock transaction.');
+    }
+
+    $custodyCount=(int)$this->db->table('cylinder_custody')
+     ->where('cylinder_unit_id',$unitId)->countAllResults();
+    if($custodyCount>0){
+     throw new RuntimeException('Purchase '.$purchase['purchase_no'].' cannot be voided because physical cylinder '.$unit['unit_code'].' has already entered customer custody.');
+    }
+
+    $saleReferenceCount=(int)$this->db->table('sale_items')
+     ->where('customer_cylinder_unit_id',$unitId)->countAllResults();
+    if($saleReferenceCount>0){
+     throw new RuntimeException('Purchase '.$purchase['purchase_no'].' cannot be voided because physical cylinder '.$unit['unit_code'].' is already referenced by a sale.');
+    }
+
+    $units[$unitId]=$unit;
+   }
+
+   foreach($movements as $m){
+    $unitId=(int)($m['cylinder_unit_id']??0);
+    $note='Reversal of purchase '.$purchase['purchase_no'];
+    if($unitId>0 && isset($units[$unitId])) $note.=' — physical cylinder '.$units[$unitId]['unit_code'];
+    $reverse=$m['direction']==='in'?'out':'in';
+
+    $this->db->table('inventory_movements')->insert([
+     'location_id'=>$m['location_id'],'inventory_type'=>$m['inventory_type'],
+     'cylinder_type_id'=>$m['cylinder_type_id'],'quantity'=>$m['quantity'],
+     'direction'=>$reverse,'movement_at'=>date('Y-m-d H:i:s'),
+     'source_type'=>'purchase_void','source_id'=>$purchaseId,
+     'source_line_id'=>$m['source_line_id']??null,
+     'cylinder_unit_id'=>$unitId>0?$unitId:null,'created_by'=>$userId,'notes'=>$note
+    ]);
+   }
+
+   $cashRows=$this->db->table('cash_transactions')
+    ->where([
+     'reference_type'=>'purchase',
+     'reference_id'=>$purchaseId,
+     'transaction_type'=>'purchase_cash',
+     'direction'=>'out'
+    ])->get()->getResultArray();
+
+   foreach($cashRows as $cash){
+    $already=(int)$this->db->table('cash_transactions')
+     ->where([
+      'reference_type'=>'purchase_void',
+      'reference_id'=>$purchaseId,
+      'transaction_type'=>'purchase_cash',
+      'direction'=>'in',
+      'cash_session_id'=>$cash['cash_session_id']
+     ])->countAllResults();
+    if($already>0) continue;
+
+    $this->db->table('cash_transactions')->insert([
+     'cash_session_id'=>$cash['cash_session_id'],'transaction_type'=>'purchase_cash','direction'=>'in',
+     'amount'=>$cash['amount'],'transaction_at'=>date('Y-m-d H:i:s'),
+     'reference_type'=>'purchase_void','reference_id'=>$purchaseId,'created_by'=>$userId,
+     'notes'=>'Cash reversal of purchase '.$purchase['purchase_no']
+    ]);
+   }
+
+   $settlementNote='Applied to previous supplier payable during purchase '.$purchase['purchase_no'];
+   $settlements=$this->db->table('supplier_payments')
+    ->where([
+     'location_id'=>$locationId,
+     'supplier_id'=>(int)$purchase['supplier_id'],
+     'status'=>'posted',
+     'notes'=>$settlementNote
+    ])->get()->getResultArray();
+
+   foreach($settlements as $settlement){
+    $settlementId=(int)$settlement['id'];
+    $this->db->table('supplier_payments')->where('id',$settlementId)->update(['status'=>'voided']);
+
+    if((string)$settlement['payment_mode']==='cash'){
+     $cashBuilder=$this->db->table('cash_transactions')
+      ->where('transaction_type','supplier_payment')
+      ->where('direction','out')
+      ->where('reference_type','supplier_payment')
+      ->groupStart()
+       ->where('reference_id',$settlementId)
+       ->orGroupStart()
+        ->where('reference_id',0)
+        ->where('notes',$settlementNote)
+       ->groupEnd()
+      ->groupEnd();
+     $settlementCashRows=$cashBuilder->get()->getResultArray();
+
+     foreach($settlementCashRows as $cash){
+      $already=(int)$this->db->table('cash_transactions')
+       ->where([
+        'reference_type'=>'purchase_void','reference_id'=>$purchaseId,
+        'transaction_type'=>'supplier_payment','direction'=>'in',
+        'cash_session_id'=>$cash['cash_session_id']
+       ])->where('amount',$cash['amount'])->countAllResults();
+      if($already>0) continue;
+
+      $this->db->table('cash_transactions')->insert([
+       'cash_session_id'=>$cash['cash_session_id'],'transaction_type'=>'supplier_payment','direction'=>'in',
+       'amount'=>$cash['amount'],'transaction_at'=>date('Y-m-d H:i:s'),
+       'reference_type'=>'purchase_void','reference_id'=>$purchaseId,'created_by'=>$userId,
+       'notes'=>'Cash reversal of supplier payment '.$settlement['payment_no'].' from voided purchase '.$purchase['purchase_no']
+      ]);
+     }
+    }
+   }
+
+   $this->db->table('purchases')->where('id',$purchaseId)->update([
+    'status'=>'voided','voided_by'=>$userId,'voided_at'=>date('Y-m-d H:i:s'),'void_reason'=>$reason
+   ]);
+
+   foreach($units as $unitId=>$unit){
+    $this->db->table('cylinder_units')->where('id',$unitId)->delete();
+   }
+
+   if(!$this->db->transStatus()) throw new RuntimeException('Purchase void failed.');
+   $this->db->transCommit();
+
+   AuditService::log('VOID','purchase',$purchaseId,
+    ['purchase_no'=>$purchase['purchase_no'],'status'=>'posted'],
+    ['purchase_no'=>$purchase['purchase_no'],'status'=>'voided','void_reason'=>$reason],
+    $userId,$locationId
+   );
+
+   return $purchase['purchase_no'];
+  }catch(\Throwable $e){
+   $this->db->transRollback();
+   throw $e;
+  }
  }
 
 }
