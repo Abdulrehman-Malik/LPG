@@ -152,6 +152,7 @@ class Inventory extends Controller
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('customers c','c.id=s.customer_id','left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
+            ->join('inventory_adjustments ia',"ia.id=im.source_id AND im.source_type='adjustment'",'left')
             ->join('users u','u.id=im.created_by','left')
             ->where('im.location_id',$locationId)
             ->where('im.cylinder_unit_id',$unitId);
@@ -213,6 +214,7 @@ class Inventory extends Controller
             ->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')
             ->join('sales s',"s.id=im.source_id AND im.source_type IN ('sale','sale_void','security_deposit','cylinder_return')",'left')
             ->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')
+            ->join('inventory_adjustments ia',"ia.id=im.source_id AND im.source_type='adjustment'",'left')
             ->where('im.location_id',$locationId)
             ->groupStart()
                 ->where('im.cylinder_type_id',$typeId)
@@ -268,7 +270,7 @@ class Inventory extends Controller
         $source=(string)($movement['source_type']??'');
         if(!empty($movement['sale_no'])) return 'Sale '.$movement['sale_no'];
         if(!empty($movement['purchase_no'])) return 'Purchase '.$movement['purchase_no'];
-        if($source==='adjustment') return 'Stock Adjustment';
+        if($source==='adjustment') return !empty($movement['adjustment_no']) ? 'Stock Adjustment '.$movement['adjustment_no'] : 'Stock Adjustment';
         if($source==='sale_void') return 'Sale Void / Reversal';
         if($source==='security_deposit') return 'Security Deposit';
         if($source==='cylinder_return') return 'Cylinder Return';
