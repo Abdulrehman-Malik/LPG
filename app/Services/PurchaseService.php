@@ -101,8 +101,33 @@ class PurchaseService{
       -(float)($ap['account_paid']??0);
  }
 
+ public function canVoidPurchase(int $userId,int $locationId): bool
+ {
+  if($userId<=0 || $locationId<=0) return false;
+
+  try{
+   $settings=$this->db->table('shop_settings')
+    ->select('purchase_void_enabled')
+    ->where('location_id',$locationId)
+    ->get()->getRowArray();
+
+   if(!$settings || (int)($settings['purchase_void_enabled']??0)!==1) return false;
+
+   return (int)$this->db->table('shop_purchase_void_users')
+    ->where('location_id',$locationId)
+    ->where('user_id',$userId)
+    ->countAllResults()>0;
+  }catch(\Throwable $e){
+   return false;
+  }
+ }
+
  public function void(int $purchaseId,int $userId,int $locationId,string $reason): string
  {
+  if(!$this->canVoidPurchase($userId,$locationId)){
+   throw new RuntimeException('You are not authorized to void purchases. Purchase Void must be enabled in Shop Settings and your user must be assigned to this function.');
+  }
+
   $reason=trim($reason);
   if($reason==='') throw new RuntimeException('Void reason is required.');
 
