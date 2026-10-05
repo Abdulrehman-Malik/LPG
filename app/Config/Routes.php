@@ -1,7 +1,7 @@
 <?php
 use CodeIgniter\Router\RouteCollection;
 /** @var RouteCollection $routes */
-$routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $routes->post('login','Auth::attemptLogin'); $routes->get('logout','Auth::logout');
+$routes->get('/','Auth::showLogin'); $routes->get('login','Auth::showLogin'); $routes->post('login','Auth::attemptLogin'); $routes->post('migrations/run','Migrations::run'); $routes->get('logout','Auth::logout');
 $routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
     $routes->get('dashboard','Dashboard::index');
     $routes->get('shop-settings','ShopSettings::index'); $routes->post('shop-settings/save','ShopSettings::save');
