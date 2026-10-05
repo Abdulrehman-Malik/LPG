@@ -18,6 +18,7 @@
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#appearance" type="button">Appearance</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pos" type="button">POS & Sales</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventory" type="button">Inventory Control</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cash" type="button">Cash & Payments</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#security" type="button">Security & Void</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#receipt" type="button">Receipt & Printing</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#backup" type="button">Backup & Maintenance</button></li>
         </ul>
@@ -102,6 +103,35 @@
                         <div class="form-text">The confirmation is recorded with the sale request. Keep this disabled for strict stock control.</div>
                     </div>
                     <div class="col-12"><div class="alert alert-info mb-0"><strong>Important:</strong> Cylinder-type overrides are managed separately in Inventory Controls so branch defaults and per-cylinder exceptions remain clear.</div></div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="security">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Purchase Void</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="purchase_void_enabled" id="purchaseVoidEnabled" <?= !empty($settings['purchase_void_enabled']) ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="purchaseVoidEnabled">Enable Purchase Void for this branch</label>
+                        </div>
+                        <div class="form-text">When OFF, nobody can void a posted purchase. When ON, only the users selected below can use Purchase Void.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Users Allowed to Void Purchases</label>
+                        <select name="purchase_void_user_ids[]" id="purchaseVoidUsers" class="form-select" multiple size="6">
+                            <?php foreach (($assignableUsers ?? []) as $u): ?>
+                                <option value="<?= (int) $u['id'] ?>" <?= in_array((int) $u['id'], ($assignedPurchaseVoidUsers ?? []), true) ? 'selected' : '' ?>>
+                                    <?= esc($u['full_name'] . ' (' . $u['username'] . ')') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">Explicit user assignment. Having a role such as ADMIN or MANAGER does not automatically grant Purchase Void access.</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="alert alert-warning mb-0">
+                            <strong>Important:</strong> Purchase Void reverses stock, cash and supplier-ledger effects. Assign this function only to trusted users.
+                        </div>
+                    </div>
                 </div>
             </div>
 
