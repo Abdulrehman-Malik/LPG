@@ -155,14 +155,14 @@ class InventoryService{
       $unitId=(int)$unit['id'];
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-       'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$unitId,
+       'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$unitId,
        'created_by'=>$userId,'notes'=>$notes?:'Manual cylinder stock adjustment'
       ]);
       if($type==='filled_cylinder'){
        $gas=(float)$unit['gas_weight_kg'];
        if($gas>0) $this->db->table('inventory_movements')->insert([
         'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gas,'direction'=>'out',
-        'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$unitId,
+        'movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$unitId,
         'created_by'=>$userId,'notes'=>'Gas removed with adjusted filled cylinder'.($notes?' — '.$notes:'')
        ]);
       }
@@ -212,12 +212,12 @@ class InventoryService{
      if($remaining<=0.00001){
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
        'created_by'=>$userId,'notes'=>'Selected cylinder became empty after gas adjustment: '.$note
       ]);
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in',
-       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
        'created_by'=>$userId,'notes'=>'Selected cylinder moved to empty after gas adjustment: '.$note
       ]);
       $this->db->table('cylinder_units')->where('id',$sourceCylinderUnitId)->update(['status'=>'empty','gas_weight_kg'=>0]);
@@ -230,18 +230,18 @@ class InventoryService{
      if($after>$capacity+0.00001) throw new RuntimeException('Gas quantity exceeds the selected cylinder capacity. Available capacity: '.number_format(max(0,$capacity-$current),3).' KG.');
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$qty,'direction'=>'in',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>$note
      ]);
      if($unit['status']==='empty'){
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
        'created_by'=>$userId,'notes'=>'Selected empty cylinder filled by gas adjustment: '.$note
       ]);
       $this->db->table('inventory_movements')->insert([
        'location_id'=>$locationId,'inventory_type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in',
-       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
        'created_by'=>$userId,'notes'=>'Selected cylinder became filled after gas adjustment: '.$note
       ]);
       $this->db->table('cylinder_units')->where('id',$sourceCylinderUnitId)->update(['status'=>'filled','gas_weight_kg'=>$after]);
@@ -255,17 +255,17 @@ class InventoryService{
      if($actualGasWeight<=0 || $actualGasWeight>(float)$unit['capacity_kg']) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>'Selected empty cylinder refilled: '.$note
      ]);
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'in',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>'Selected cylinder became filled after refill adjustment: '.$note
      ]);
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$actualGasWeight,'direction'=>'in',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>'Gas added to selected filled cylinder: '.$note
      ]);
      $this->db->table('cylinder_units')->where('id',$sourceCylinderUnitId)->update(['status'=>'filled','gas_weight_kg'=>$actualGasWeight]);
@@ -274,12 +274,12 @@ class InventoryService{
      $gas=(float)$unit['gas_weight_kg'];
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'filled_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>$note
      ]);
      if($gas>0) $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gas,'direction'=>'out',
-      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+      'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
       'created_by'=>$userId,'notes'=>'Gas removed with selected filled cylinder: '.$note
      ]);
      $this->cylinders->markSold($sourceCylinderUnitId);
@@ -289,7 +289,7 @@ class InventoryService{
     if($unit['status']!=='empty') throw new RuntimeException('Empty-cylinder decrease requires an empty source cylinder.');
     $this->db->table('inventory_movements')->insert([
      'location_id'=>$locationId,'inventory_type'=>'empty_cylinder','cylinder_type_id'=>$typeId,'quantity'=>1,'direction'=>'out',
-     'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>0,'cylinder_unit_id'=>$sourceCylinderUnitId,
+     'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,
      'created_by'=>$userId,'notes'=>$note
     ]);
     $this->cylinders->markSold($sourceCylinderUnitId);
