@@ -296,7 +296,12 @@ class InventoryService{
    }
 
    if(!$this->db->transStatus()) throw new RuntimeException('Specific inventory adjustment failed.');
-   $afterUnit=$this->db->table('cylinder_units')->where('id',$sourceCylinderUnitId)->get()->getRowArray();
+   $afterUnit=$this->db->table('cylinder_units cu')
+    ->select('cu.unit_code,cu.status,cu.gas_weight_kg,ct.capacity_kg')
+    ->join('cylinder_types ct','ct.id=cu.cylinder_type_id')
+    ->where('cu.id',$sourceCylinderUnitId)
+    ->get()->getRowArray();
+   if(!$afterUnit) throw new RuntimeException('Selected source cylinder could not be read after the adjustment.');
    $afterState=['unit_code'=>$afterUnit['unit_code'],'status'=>$afterUnit['status'],'gas_weight_kg'=>(float)$afterUnit['gas_weight_kg'],'capacity_kg'=>(float)$afterUnit['capacity_kg']];
    $this->db->table('inventory_adjustments')->where('id',$adjustmentId)->update(['after_state'=>json_encode($afterState)]);
    $this->db->transCommit();
