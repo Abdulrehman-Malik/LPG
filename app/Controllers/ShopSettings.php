@@ -24,11 +24,26 @@ class ShopSettings extends Controller
         $locationId = (int) session()->get('location_id');
         $settings = (new ShopSettingsModel())->forLocation($locationId);
         $location = $db->table('locations')->where('id', $locationId)->get()->getRowArray() ?: [];
+        $assignableUsers = $db->table('users')
+            ->select('id, full_name, username')
+            ->where('is_active', 1)
+            ->groupStart()
+                ->where('location_id', $locationId)
+                ->orWhere('location_id IS NULL', null, false)
+            ->groupEnd()
+            ->orderBy('full_name', 'ASC')
+            ->get()->getResultArray();
+        $assignedPurchaseVoidUsers = array_map('intval', array_column(
+            $db->table('shop_purchase_void_users')->select('user_id')->where('location_id', $locationId)->get()->getResultArray(),
+            'user_id'
+        ));
 
         return view('shop-settings/index', [
             'title' => 'Shop Settings',
             'settings' => $settings,
             'location' => $location,
+            'assignableUsers' => $assignableUsers,
+            'assignedPurchaseVoidUsers' => $assignedPurchaseVoidUsers,
         ]);
     }
 
@@ -73,11 +88,19 @@ class ShopSettings extends Controller
         }
         $creditMode = trim((string) $this->request->getPost('credit_limit_validation_mode'));
         $shopCreditLimit = (float) $this->request->getPost('shop_credit_limit');
+        $purchaseVoidEnabled = $this->request->getPost('purchase_void_enabled') ? 1 : 0;
+        $purchaseVoidUserIds = array_values(array_unique(array_filter(
+            array_map('intval', (array) $this->request->getPost('purchase_void_user_ids')),
+            static fn(int $id): bool => $id > 0
+        )));
         if (!in_array($creditMode, ['none','customer','shop'], true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid credit limit validation mode.');
         }
         if ($shopCreditLimit < 0) {
             return redirect()->back()->withInput()->with('error', 'Shop credit limit cannot be negative.');
+        }
+        if ($purchaseVoidEnabled && !$purchaseVoidUserIds) {
+            return redirect()->back()->withInput()->with('error', 'Select at least one user allowed to void purchases, or disable Purchase Void.');
         }
 
         $db = Database::connect();
@@ -109,6 +132,7 @@ class ShopSettings extends Controller
                 'allow_stock_override' => $this->request->getPost('allow_stock_override') ? 1 : 0,
                 'credit_limit_validation_mode' => $creditMode,
                 'shop_credit_limit' => $shopCreditLimit,
+                'purchase_void_enabled' => $purchaseVoidEnabled,
                 'backup_enabled' => $this->request->getPost('backup_enabled') ? 1 : 0,
                 'db_backup_url' => trim((string) $this->request->getPost('db_backup_url')) ?: null,
                 'backup_notes' => trim((string) $this->request->getPost('backup_notes')) ?: null,
@@ -122,6 +146,27 @@ class ShopSettings extends Controller
                 $model->update((int) $settings['id'], $data);
             } else {
                 $model->insert($data);
+            }
+
+            $assignableIds = array_map('intval', array_column(
+                $db->table('users')
+                    ->select('id')
+                    ->where('is_active', 1)
+                    ->groupStart()
+                        ->where('location_id', $locationId)
+                        ->orWhere('location_id IS NULL', null, false)
+                    ->groupEnd()
+                    ->get()->getResultArray(),
+                'id'
+            ));
+            $purchaseVoidUserIds = array_values(array_intersect($purchaseVoidUserIds, $assignableIds));
+
+            $db->table('shop_purchase_void_users')->where('location_id', $locationId)->delete();
+            foreach ($purchaseVoidUserIds as $voidUserId) {
+                $db->table('shop_purchase_void_users')->insert([
+                    'location_id' => $locationId,
+                    'user_id' => $voidUserId,
+                ]);
             }
 
             $inventory = new InventoryControlService();
