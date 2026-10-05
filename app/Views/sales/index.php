@@ -5,8 +5,14 @@
 .pos-workspace > .pos-summary-panel { flex: 0 0 25%; max-width: 25%; }
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
-#lines th:nth-child(1){width:27%} #lines th:nth-child(2){width:14%} #lines th:nth-child(3){width:16%}
-#lines th:nth-child(4){width:16%} #lines th:nth-child(5){width:16%} #lines th:nth-child(6){width:11%}
+/* Gas Sale: 7 columns */
+#lines.gas-sale-mode th:nth-child(1){width:27%} #lines.gas-sale-mode th:nth-child(2){width:20%} #lines.gas-sale-mode th:nth-child(3){width:14%}
+#lines.gas-sale-mode th:nth-child(4){width:13%} #lines.gas-sale-mode th:nth-child(5){width:15%} #lines.gas-sale-mode th:nth-child(6){width:8%} #lines.gas-sale-mode th:nth-child(7){width:3%}
+/* Cylinder Sale: 8 columns — keep every field readable */
+#lines.cylinder-sale-mode th:nth-child(1){width:22%} #lines.cylinder-sale-mode th:nth-child(2){width:14%} #lines.cylinder-sale-mode th:nth-child(3){width:8%}
+#lines.cylinder-sale-mode th:nth-child(4){width:10%} #lines.cylinder-sale-mode th:nth-child(5){width:14%} #lines.cylinder-sale-mode th:nth-child(6){width:14%} #lines.cylinder-sale-mode th:nth-child(7){width:11%} #lines.cylinder-sale-mode th:nth-child(8){width:7%}
+#lines.cylinder-sale-mode .cylStatus { min-width:0; }
+#lines.cylinder-sale-mode select { min-width:0; width:100%; }
 #lines .form-select,#lines .form-control { min-height:42px; }
 #lines .lineTotal { font-size:1.05rem; white-space:nowrap; }
 .pos-lines-panel > .card > .card-body { padding: .6rem; }
@@ -288,9 +294,9 @@ function addGasLine(){
  tr.querySelector('.sourceCell').style.display=allowPosSourceCylinderSelection?'':'none';refreshGasSourceLine(tr,true);refreshDuplicateTypeOptions();
 }
 function rebuildLines(){
- clearLines();const t=transactionType();lineHead.innerHTML='';
- if(t==='gas_sale'){lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
- else if(t==='cylinder_sale'){lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
+ clearLines();const t=transactionType();lineHead.innerHTML='';document.getElementById('lines').classList.remove('gas-sale-mode','cylinder-sale-mode');
+ if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
+ else if(t==='cylinder_sale'){document.getElementById('lines').classList.add('cylinder-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
 function setCustodyLists(){
