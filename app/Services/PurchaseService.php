@@ -265,8 +265,15 @@ class PurchaseService{
     'status'=>'voided','voided_by'=>$userId,'voided_at'=>date('Y-m-d H:i:s'),'void_reason'=>$reason
    ]);
 
+   // A purchased physical cylinder did not exist before this purchase.
+   // Keep its record for audit/history, but remove it from current stock exactly as
+   // a sold physical cylinder. This also avoids breaking historical references.
    foreach($units as $unitId=>$unit){
-    $this->db->table('cylinder_units')->where('id',$unitId)->delete();
+    $this->db->table('cylinder_units')->where('id',$unitId)->update([
+     'status'=>'sold',
+     'custody_customer_id'=>null,
+     'gas_weight_kg'=>0
+    ]);
    }
 
    if(!$this->db->transStatus()) throw new RuntimeException('Purchase void failed.');
