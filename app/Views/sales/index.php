@@ -14,8 +14,13 @@
 .pos-header-row { margin-bottom:.5rem !important; row-gap:.45rem !important; }
 .pos-header-row .form-label { margin-bottom:.25rem; }
 .pos-header-row .credit-status-row { margin-top:-.15rem; }
-#standardTransaction { margin-top:0; }
-#lines { margin-top:0; }
+#standardTransaction { margin-top:0 !important; padding-top:0 !important; }
+#standardTransaction .table-responsive { margin:0 !important; padding:0 !important; }
+#lines { margin-top:0 !important; margin-bottom:.25rem !important; }
+#lines thead { margin:0 !important; }
+#lines thead th { padding-top:.2rem !important; padding-bottom:.2rem !important; }
+#lines tbody tr:first-child td { padding-top:.2rem !important; }
+.pos-header-row + #standardTransaction { margin-top:-.2rem !important; }
 #lines thead th { padding:.35rem .4rem; line-height:1.15; font-size:.82rem; }
 #lines tbody td { padding:.4rem .35rem; }
 #lines .form-select,#lines .form-control { min-height:38px; }
