@@ -605,10 +605,14 @@ class SalesService
             if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on line '.$n.'.');
 
             $gasKg=0;$gasRate=0;$stdGas=null;
-            // Cylinder Sale uses the Cylinder Type master Empty Cylinder Price as the physical cylinder price.
-            // This applies to both empty and filled/partially-filled cylinder sales; gas price is separate.
-            $stdCylinderRate=(float)($type['empty_cylinder_price']??0);
-            if($stdCylinderRate<0) throw new RuntimeException('Configured cylinder price cannot be negative.');
+            // Cylinder Sale pricing priority: a positive rate configured against this cylinder type
+            // overrides the Cylinder Type master price. A zero/negative configured rate means
+            // no rate is defined there, so fall back to the Cylinder Type empty-cylinder price.
+            $configuredCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
+            $configuredCylinderRate=($configuredCylinderRate!==null && $configuredCylinderRate>0)?$configuredCylinderRate:null;
+            $masterCylinderRate=(float)($type['empty_cylinder_price']??0);
+            if($masterCylinderRate<=0 && $configuredCylinderRate===null) throw new RuntimeException('No valid empty-cylinder price is defined for '.$type['name'].'. Configure a positive rate on Rates or Cylinder Types.');
+            $stdCylinderRate=$configuredCylinderRate??$masterCylinderRate;
             $cylRate=$cylRateInput??$stdCylinderRate;
             if($cylRate<0) throw new RuntimeException('Cylinder price cannot be negative on line '.$n.'.');
 
