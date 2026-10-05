@@ -284,15 +284,24 @@ class Inventory extends Controller
 
     public function adjustments()
     {
-        if($r=$this->guard())return $r;
-        $db=Database::connect();$locationId=$this->locationId();
+        if($r=$this->guard()) return $r;
+        $db=Database::connect(); $locationId=$this->locationId();
         $types=$db->table('cylinder_types')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
         $inv=new \App\Services\InventoryService();
         $rows=[['type'=>'gas_kg','id'=>'','name'=>'Gas (KG)','stock'=>$inv->stock($locationId,'gas_kg')]];
         foreach($types as $t){$rows[]=['type'=>'filled_cylinder','id'=>$t['id'],'name'=>'Filled '.$t['name'],'stock'=>$inv->stock($locationId,'filled_cylinder',(int)$t['id'])];$rows[]=['type'=>'empty_cylinder','id'=>$t['id'],'name'=>'Empty '.$t['name'],'stock'=>$inv->stock($locationId,'empty_cylinder',(int)$t['id'])];}
         $units=$db->table('cylinder_units cu')->select('cu.id,cu.unit_code,cu.status,cu.gas_weight_kg,cu.cylinder_type_id,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where('cu.location_id',$locationId)->whereIn('cu.status',['filled','empty'])->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
-        $history=$db->table('inventory_movements im')->select("im.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code source_unit_code,u.full_name,s.sale_no,p.purchase_no,ia.adjustment_no")->join('cylinder_types ct','ct.id=im.cylinder_type_id','left')->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')->join('users u','u.id=im.created_by','left')->join('sales s','s.id=im.source_id','left')->join('purchases p',"p.id=im.source_id AND im.source_type='purchase'",'left')->join('inventory_adjustments ia',"ia.id=im.source_id AND im.source_type='adjustment'",'left')->where('im.location_id',$locationId)->orderBy('im.movement_at','DESC')->orderBy('im.id','DESC')->limit(500)->get()->getResultArray();
-        return view('inventory/adjustments',['title'=>'Stock Adjustment & History','rows'=>$rows,'types'=>$types,'units'=>$units,'history'=>$history]);
+        $from=$this->validDate($this->request->getGet('from_date'),date('Y-m-d',strtotime('-30 days'))); $to=$this->validDate($this->request->getGet('to_date'),date('Y-m-d')); if($from>$to)[$from,$to]=[$to,$from];
+        $filterType=trim((string)$this->request->getGet('inventory_type')); $filterDirection=trim((string)$this->request->getGet('direction')); $filterScope=trim((string)$this->request->getGet('adjustment_scope')); $filterCylinder=(int)$this->request->getGet('cylinder_type_id'); $filterUnit=trim((string)$this->request->getGet('unit_code')); $search=trim((string)$this->request->getGet('q'));
+        $historyQuery=$db->table('inventory_adjustments ia')->select('ia.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code source_unit_code,u.full_name')->join('cylinder_types ct','ct.id=ia.cylinder_type_id','left')->join('cylinder_units cu','cu.id=ia.source_cylinder_unit_id','left')->join('users u','u.id=ia.created_by','left')->where('ia.location_id',$locationId)->where('ia.created_at>=',$from.' 00:00:00')->where('ia.created_at<=',$to.' 23:59:59');
+        if(in_array($filterType,['gas_kg','filled_cylinder','empty_cylinder'],true))$historyQuery->where('ia.inventory_type',$filterType);
+        if(in_array($filterDirection,['in','out'],true))$historyQuery->where('ia.direction',$filterDirection);
+        if(in_array($filterScope,['bulk','specific'],true))$historyQuery->where('ia.adjustment_scope',$filterScope);
+        if($filterCylinder>0)$historyQuery->where('ia.cylinder_type_id',$filterCylinder);
+        if($search!=='')$historyQuery->groupStart()->like('ia.adjustment_no',$search)->orLike('ia.reason',$search)->orLike('ia.notes',$search)->orLike('cu.unit_code',$search)->groupEnd();
+        $history=$historyQuery->orderBy('ia.created_at','DESC')->orderBy('ia.id','DESC')->limit(500)->get()->getResultArray();
+        foreach($history as &$h){$h['before_state']=json_decode((string)$h['before_state'],true)?:[];$h['after_state']=json_decode((string)$h['after_state'],true)?:[];} unset($h);
+        return view('inventory/adjustments',['title'=>'Stock Adjustment & History','rows'=>$rows,'types'=>$types,'units'=>$units,'history'=>$history,'fromDate'=>$from,'toDate'=>$to,'filterType'=>$filterType,'filterDirection'=>$filterDirection,'filterScope'=>$filterScope,'filterCylinder'=>$filterCylinder,'filterUnit'=>$filterUnit,'search'=>$search]);
     }
 
     public function adjustmentDetails(int $adjustmentId)
