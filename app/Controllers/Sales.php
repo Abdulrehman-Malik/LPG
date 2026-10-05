@@ -80,7 +80,7 @@ class Sales extends Controller
         if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/',$from)) $from=date('Y-m-d');
         if(!preg_match('/^\\d{4}-\\d{2}-\\d{2}$/',$to)) $to=$from;
         if($from>$to) [$from,$to]=[$to,$from];
-        $b=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,u.name created_by_name,vu.name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where('s.location_id',(int)session()->get('location_id'))->where('s.transaction_at >=',$from.' 00:00:00')->where('s.transaction_at <=',$to.' 23:59:59')->orderBy('s.transaction_at','DESC')->orderBy('s.id','DESC');
+        $b=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,u.full_name created_by_name,vu.full_name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where('s.location_id',(int)session()->get('location_id'))->where('s.transaction_at >=',$from.' 00:00:00')->where('s.transaction_at <=',$to.' 23:59:59')->orderBy('s.transaction_at','DESC')->orderBy('s.id','DESC');
         $status=trim((string)$this->request->getGet('status')); if(in_array($status,['posted','voided'],true)) $b->where('s.status',$status);
         $customer=trim((string)$this->request->getGet('customer')); if($customer!=='') $b->groupStart()->like('c.name',$customer)->orLike('c.code',$customer)->groupEnd();
         $type=trim((string)$this->request->getGet('transaction_type')); if($type!=='') $b->where('s.transaction_type',$type);
@@ -91,7 +91,7 @@ class Sales extends Controller
     {
         if($r=$this->guard()) return $r;
         $db=\Config\Database::connect(); $locationId=(int)session()->get('location_id');
-        $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone,u.name created_by_name,vu.name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where(['s.id'=>$id,'s.location_id'=>$locationId])->get()->getRowArray();
+        $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone,u.full_name created_by_name,vu.full_name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where(['s.id'=>$id,'s.location_id'=>$locationId])->get()->getRowArray();
         if(!$sale) return $this->response->setStatusCode(404)->setJSON(['error'=>'Sale not found.']);
         $items=$db->table('sale_items si')->select('si.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg,cu.unit_code customer_unit_code')->join('cylinder_types ct','ct.id=si.cylinder_type_id','left')->join('cylinder_units cu','cu.id=si.customer_cylinder_unit_id','left')->where('si.sale_id',$id)->orderBy('si.line_no')->get()->getResultArray();
         $movements=$db->table('inventory_movements im')->select('im.*,cu.unit_code,ct.code cylinder_code,ct.name cylinder_name')->join('cylinder_units cu','cu.id=im.cylinder_unit_id','left')->join('cylinder_types ct','ct.id=im.cylinder_type_id','left')->where('im.source_id',$id)->whereIn('im.source_type',['sale','sale_void'])->orderBy('im.id')->get()->getResultArray();
