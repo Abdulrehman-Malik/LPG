@@ -55,6 +55,13 @@ class ShopSettings extends Controller
         $saleMode = trim((string) $this->request->getPost('default_sale_mode'));
         $transactionType = trim((string) $this->request->getPost('default_transaction_type'));
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
+        $visibleTransactionTypes = array_values(array_unique(array_intersect(
+            array_map('strval', (array) $this->request->getPost('pos_visible_transaction_types')),
+            ShopSettingsModel::TRANSACTION_TYPES
+        )));
+        if (!$visibleTransactionTypes) {
+            return redirect()->back()->withInput()->with('error', 'Select at least one POS transaction type.');
+        }
         $individualCylinderTracking = $this->request->getPost('individual_cylinder_tracking') ? 1 : 0;
         $allowPosSourceCylinderSelection = $this->request->getPost('allow_pos_source_cylinder_selection') ? 1 : 0;
         $posFontSize = (float) $this->request->getPost('pos_font_size_px');
@@ -82,6 +89,9 @@ class ShopSettings extends Controller
         }
         if (!in_array($transactionType, ShopSettingsModel::TRANSACTION_TYPES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default POS transaction type.');
+        }
+        if (!in_array($transactionType, $visibleTransactionTypes, true)) {
+            $transactionType = $visibleTransactionTypes[0];
         }
         if (!in_array($paymentMode, ShopSettingsModel::PAYMENT_MODES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default payment mode.');
@@ -120,6 +130,7 @@ class ShopSettings extends Controller
                 'location_id' => $locationId,
                 'default_sale_mode' => $saleMode,
                 'default_transaction_type' => $transactionType,
+                'pos_visible_transaction_types' => json_encode($visibleTransactionTypes, JSON_UNESCAPED_UNICODE),
                 'individual_cylinder_tracking' => $individualCylinderTracking,
                 'allow_pos_source_cylinder_selection' => $allowPosSourceCylinderSelection,
                 'default_payment_mode' => $paymentMode,
