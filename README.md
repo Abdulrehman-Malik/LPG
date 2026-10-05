@@ -268,3 +268,10 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 - Server-side posting locks and revalidates the selected physical cylinders.
 - Existing **Gas Sale / Refill** behavior is unchanged.
 - Migration `016_20261004_empty_cylinder_sale_price.sql` adds the configurable empty-cylinder sale price.
+
+
+## Stock Adjustment History
+
+Stock adjustments are recorded as dedicated transactions with references such as `ADJ-000123`. The adjustment header stores the branch, item, scope, direction, quantity, reason, user, and before/after stock state. All related `inventory_movements` rows point to the adjustment reference, so a multi-row physical-cylinder change can be reviewed as one transaction.
+
+The Stock Adjustment screen provides guided item/scope selection, current-stock preview, required adjustment reason, date/type/direction filters, search, and an adjustment detail page showing before/after state and all linked inventory movements. Historical movements remain append-only; corrections should be posted as new adjustments rather than editing old movement history.
