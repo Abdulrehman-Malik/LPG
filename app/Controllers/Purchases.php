@@ -165,11 +165,16 @@ class Purchases extends Controller
         }
 
         try {
+            $reason = trim((string) $this->request->getPost('void_reason'));
+            if ($reason === '') {
+                $reason = 'Voided from Purchase History';
+            }
+
             $no = (new PurchaseService())->void(
                 $id,
                 (int) session()->get('user_id'),
                 (int) session()->get('location_id'),
-                trim((string) $this->request->getPost('void_reason'))
+                $reason
             );
 
             return redirect()->to('/purchases?tab=history')
