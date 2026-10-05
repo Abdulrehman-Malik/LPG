@@ -108,10 +108,11 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <div class="col-md-3">
     <label class="form-label fw-semibold">Transaction Type</label>
     <select name="transaction_type" id="transactionType" class="form-select">
-      <option value="gas_sale">Gas Sale / Refill</option>
-      <option value="cylinder_sale">Cylinder Sale</option>
-      <option value="security_deposit">Security Deposit / Issue Cylinder</option>
-      <option value="cylinder_return">Cylinder Return / Refund Deposit</option>
+      <?php foreach(\App\Models\ShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
+        <?php if (in_array($value, (new \App\Models\ShopSettingsModel())->visibleTransactionTypes($shopSettings), true)): ?>
+          <option value="<?= esc($value) ?>"><?= esc($label) ?></option>
+        <?php endif; ?>
+      <?php endforeach; ?>
     </select>
   </div>
   <div class="col-md-3">
