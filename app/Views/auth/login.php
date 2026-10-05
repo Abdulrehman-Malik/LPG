@@ -59,9 +59,91 @@
                     <small class="opacity-75">Distribution &amp; Cylinder Inventory System</small>
                 </div>
                 <div class="card-body p-4 p-md-5">
+                    <?php
+                    $migrationGate=$migrationGate ?? ['ready'=>true,'blocked_message'=>null,'migrations'=>[],'total'=>0,'completed'=>0];
+                    $migrationReady=(bool)($migrationGate['ready'] ?? false);
+                    $migrationRows=$migrationGate['migrations'] ?? [];
+                    ?>
 
-                    <?php if (session()->getFlashdata('error')) : ?>
-                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                    <?php if (session()->getFlashdata('migration_success')) : ?>
+                        <div class="alert alert-success d-flex align-items-center" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <div><?= esc(session()->getFlashdata('migration_success')) ?></div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (session()->getFlashdata('migration_error')) : ?>
+                        <div class="alert alert-danger d-flex align-items-start" role="alert">
+                            <i class="bi bi-exclamation-octagon-fill me-2 mt-1"></i>
+                            <div><?= esc(session()->getFlashdata('migration_error')) ?></div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!$migrationReady) : ?>
+                        <div class="alert alert-warning d-flex align-items-start" role="alert">
+                            <i class="bi bi-database-exclamation me-2 mt-1"></i>
+                            <div>
+                                <strong>Database update required before login.</strong>
+                                <div class="small mt-1">
+                                    <?= esc($migrationGate['blocked_message'] ?? 'Pending database migrations must be executed before users can sign in.') ?>
+                                </div>
+                                <?php if (!empty($migrationGate['system_error'])) : ?>
+                                    <div class="small mt-1 text-danger"><?= esc($migrationGate['system_error']) ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <?php if ($migrationRows) : ?>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th style="width:70px">Seq</th>
+                                        <th>Migration</th>
+                                        <th style="width:120px">Status</th>
+                                        <th>Result</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($migrationRows as $m) : ?>
+                                        <?php
+                                        $status=(string)($m['status'] ?? 'pending');
+                                        $badge=[
+                                            'success'=>'success',
+                                            'failed'=>'danger',
+                                            'running'=>'warning',
+                                            'changed'=>'danger',
+                                            'pending'=>'secondary',
+                                        ][$status] ?? 'secondary';
+                                        ?>
+                                        <tr>
+                                            <td><?= (int)$m['seq'] ?></td>
+                                            <td class="small"><?= esc($m['file']) ?></td>
+                                            <td><span class="badge text-bg-<?= $badge ?>"><?= esc(strtoupper($status)) ?></span></td>
+                                            <td class="small"><?= esc($m['message'] ?? '') ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
+
+                        <form action="<?= site_url('migrations/run') ?>" method="post" onsubmit="this.querySelector('button[type=submit]').disabled=true;this.querySelector('button[type=submit]').innerHTML='<span class=&quot;spinner-border spinner-border-sm me-1&quot;></span> Executing...';">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-brand w-100 py-2 fw-semibold">
+                                <i class="bi bi-database-up me-1"></i>
+                                Execute Pending Migrations
+                            </button>
+                        </form>
+
+                        <div class="text-center text-muted small mt-3">
+                            <?= (int)($migrationGate['completed'] ?? 0) ?> of <?= (int)($migrationGate['total'] ?? 0) ?> migrations completed.
+                            The next migration is executed only after the previous one succeeds.
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($migrationReady) : ?>
+                            <div class="alert alert-danger d-flex align-items-center" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             <div><?= esc(session()->getFlashdata('error')) ?></div>
                         </div>
@@ -116,6 +198,7 @@
                             <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
                         </button>
                     </form>
+                    <?php endif; ?>
                 </div>
             </div>
             <p class="text-center text-white-50 mt-3 small mb-0">
