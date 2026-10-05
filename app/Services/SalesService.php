@@ -37,7 +37,7 @@ class SalesService
         $date=date('Ymd',strtotime($transactionAt));
         $prefix='S'.$date.'-';
         $row=$this->db->query(
-            "SELECT MAX(CAST(SUBSTRING(sale_no,10) AS UNSIGNED)) AS max_seq
+            "SELECT MAX(CAST(SUBSTRING(sale_no,11) AS UNSIGNED)) AS max_seq
              FROM sales
              WHERE location_id=? AND sale_no LIKE ?",
             [$locationId,$prefix.'%']
