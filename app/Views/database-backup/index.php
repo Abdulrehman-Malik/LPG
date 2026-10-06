@@ -196,26 +196,113 @@
 </div>
 
 <div class="card shadow-sm mt-3">
-    <div class="card-header bg-white fw-semibold">Local Backup Files</div>
+    <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+        <span>Local Backup Files</span>
+        <?php if ($backups): ?>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllBackups(true)">Select All</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllBackups(false)">Clear Selection</button>
+        </div>
+        <?php endif; ?>
+    </div>
     <div class="card-body p-0">
         <?php if (!$backups): ?>
             <div class="p-3 text-muted">No local SQL backups found.</div>
         <?php else: ?>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                    <thead><tr><th>Backup File</th><th>Size</th><th>Created</th></tr></thead>
-                    <tbody>
-                    <?php foreach ($backups as $backup): ?>
-                        <tr>
-                            <td><code><?= esc($backup['name']) ?></code></td>
-                            <td><?= esc(number_format($backup['size'] / 1048576, 2)) ?> MB</td>
-                            <td><?= esc(date('Y-m-d H:i:s', $backup['modified'])) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+            <form method="post" id="backupActionsForm">
+                <?= csrf_field() ?>
+                <div class="d-flex flex-wrap gap-2 align-items-center p-3 border-bottom">
+                    <input type="hidden" name="email_recipient" id="selectedBackupEmail">
+                    <button type="submit" class="btn btn-outline-danger"
+                            formaction="<?= site_url('database-backup/delete-selected') ?>"
+                            onclick="return confirmSelectedBackups('delete');">
+                        <i class="bi bi-trash me-1"></i>Delete Selected
+                    </button>
+                    <button type="submit" class="btn btn-outline-primary"
+                            formaction="<?= site_url('database-backup/email-selected') ?>"
+                            onclick="return emailSelectedBackups();">
+                        <i class="bi bi-envelope me-1"></i>Send Selected via Email
+                    </button>
+                    <span class="text-muted small" id="selectedBackupCount">0 selected</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">
+                                    <input class="form-check-input" type="checkbox" id="selectAllBackups"
+                                           onchange="toggleAllBackups(this.checked)">
+                                </th>
+                                <th>Backup File</th>
+                                <th>Size</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($backups as $backup): ?>
+                            <tr>
+                                <td>
+                                    <input class="form-check-input backup-select" type="checkbox"
+                                           name="backup_files[]" value="<?= esc($backup['name']) ?>"
+                                           onchange="updateBackupSelection()">
+                                </td>
+                                <td><code><?= esc($backup['name']) ?></code></td>
+                                <td><?= esc(number_format($backup['size'] / 1048576, 2)) ?> MB</td>
+                                <td><?= esc(date('Y-m-d H:i:s', $backup['modified'])) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+function getBackupChecks() {
+    return Array.from(document.querySelectorAll('.backup-select'));
+}
+function updateBackupSelection() {
+    const checks = getBackupChecks();
+    const selected = checks.filter(c => c.checked).length;
+    const all = checks.length > 0 && selected === checks.length;
+    const master = document.getElementById('selectAllBackups');
+    if (master) {
+        master.checked = all;
+        master.indeterminate = selected > 0 && !all;
+    }
+    const count = document.getElementById('selectedBackupCount');
+    if (count) count.textContent = selected + ' selected';
+}
+function toggleAllBackups(checked) {
+    getBackupChecks().forEach(c => c.checked = checked);
+    updateBackupSelection();
+}
+function confirmSelectedBackups(action) {
+    const selected = getBackupChecks().filter(c => c.checked).length;
+    if (!selected) {
+        alert('Please select at least one backup file.');
+        return false;
+    }
+    return action !== 'delete' || confirm('Delete ' + selected + ' selected backup file(s)? This action cannot be undone.');
+}
+function emailSelectedBackups() {
+    const selected = getBackupChecks().filter(c => c.checked).length;
+    if (!selected) {
+        alert('Please select at least one backup file.');
+        return false;
+    }
+    const recipient = document.getElementById('emailRecipient');
+    if (!recipient || !recipient.value.trim()) {
+        alert('Please enter an email address in the Backup tab first.');
+        return false;
+    }
+    document.getElementById('selectedBackupEmail').value = recipient.value.trim();
+    return confirm('Send ' + selected + ' selected backup file(s) to ' + recipient.value.trim() + '?');
+}
+updateBackupSelection();
+</script>
+
 <?= $this->endSection() ?>
