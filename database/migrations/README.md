@@ -45,7 +45,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
 3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 022**.
-4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
+4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases. Its refresh list is authoritative for transactional/test state: whenever a later migration introduces a new transactional table, update the controlled refresh script/rule so that table is reset too, while master/configuration data remains preserved.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
 7. Keep migration files idempotent where practical so a partially completed deployment can be safely retried.
