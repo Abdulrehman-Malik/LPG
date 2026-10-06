@@ -37,14 +37,14 @@
 .cylinderPicker { padding:.35rem !important; max-height:230px; overflow:auto; }
 .cylinder-picker-title { font-size:.82rem; margin-bottom:.3rem !important; }
 .cylinder-options { gap:.35rem !important; }
-.cylinder-option { width:150px; min-width:150px !important; max-width:150px; min-height:76px; padding:.35rem .45rem !important; border-radius:.55rem !important; display:flex; align-items:center; gap:.4rem; }
+.cylinder-option { width:118px; min-width:118px !important; max-width:118px; min-height:44px; padding:.2rem .3rem !important; border-radius:.4rem !important; display:flex; align-items:center; gap:.25rem; }
 .cylinder-option:hover { transform:translateY(-1px); }
-.cylinder-option .cylinder-art { flex:0 0 34px; width:34px; height:42px; }
+.cylinder-option .cylinder-art { flex:0 0 24px; width:24px; height:30px; }
 .cylinder-option .cylinder-copy { min-width:0; line-height:1.08; }
-.cylinder-option .cylinder-code { display:block; font-size:.86rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cylinder-option .cylinder-name { display:block; font-size:.68rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cylinder-option .cylinder-gas { display:block; font-size:.67rem; margin-top:.15rem; white-space:nowrap; }
-.cylinder-option .cylinder-status { font-size:.62rem; font-weight:700; }
+.cylinder-option .cylinder-code { display:block; font-size:.72rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cylinder-option .cylinder-name { display:block; font-size:.58rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cylinder-option .cylinder-gas { display:block; font-size:.56rem; margin-top:.15rem; white-space:nowrap; }
+.cylinder-option .cylinder-status { font-size:.55rem; font-weight:700; }
 .cylinder-option .filledUnitCheck { position:absolute; opacity:0; pointer-events:none; }
 .cylinder-option:has(input:checked) { border-width:2px !important; }
 
@@ -74,8 +74,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   </div>
   <span class="badge text-bg-secondary">POS</span>
 </div>
-<?php if(session()->getFlashdata('success')): ?><div class="alert alert-success"><?= session()->getFlashdata('success') ?></div><?php endif; ?>
-<?php if(session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
+<div id="posValidationAlert" class="alert alert-danger d-none mb-3" role="alert"></div>
 
 <div class="d-flex gap-2 mb-3">
   <button type="button" class="btn btn-primary" id="newSaleTab">New Sale</button>
@@ -198,6 +197,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 </div>
 
 <textarea name="notes" class="form-control mb-3" placeholder="Notes"></textarea>
+<div id="posSubmitError" class="alert alert-danger d-none py-2 mb-2" role="alert"></div>
 <button class="btn btn-primary w-100" id="saveBtn">Post Transaction</button>
 </div></div></div>
 </div>
@@ -411,70 +411,78 @@ document.getElementById('customer_id').onchange=()=>{
 };
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
-document.getElementById('saleForm').onsubmit=()=>{
+document.getElementById('saleForm').onsubmit=async(e)=>{
+ e.preventDefault();
+ const errorBox=document.getElementById('posSubmitError'),topError=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
+ const showError=(message)=>{const msg=String(message||'Validation failed.');[errorBox,topError].forEach(el=>{el.textContent=msg;el.classList.remove('d-none');});errorBox.scrollIntoView({behavior:'smooth',block:'nearest'});};
+ const clearError=()=>{[errorBox,topError].forEach(el=>{el.textContent='';el.classList.add('d-none');});};
+ clearError();
  const t=transactionType(),customerId=selectedCustomerId();
+ const fail=(msg)=>{showError(msg);return false;};
  const earlyModes=[...payments.querySelectorAll('.payment .mode')].map(x=>x.value);
- if(['gas_sale','cylinder_sale'].includes(t)&&!customerId&&earlyModes.includes('credit')){alert('Credit sale is not allowed for Walk-in / Cash customer.');return false;}
+ if(['gas_sale','cylinder_sale'].includes(t)&&!customerId&&earlyModes.includes('credit'))return fail('Credit sale is not allowed for Walk-in / Cash customer.');
  let lines=[];
  if(t==='gas_sale'){
    lines=[...tbody.querySelectorAll('tr')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,source_cylinder_unit_id:tr.querySelector('.sourceCyl').value,quantity:tr.querySelector('.qty').value,gas_rate:tr.querySelector('.gasRate').value,entered_amount:document.getElementById('gasEntryMode').value==='amount'?tr.querySelector('.enteredAmount').value:'',customer_cylinder_unit_id:tr.querySelector('.targetCyl').value}));
-   if(!lines.length){alert('Add at least one gas line.');return false;}
+   if(!lines.length)return fail('Add at least one gas line.');
    const seenTypes=new Set(),seenSources=new Set();
    for(const [i,l] of lines.entries()){
      const q=Number(l.quantity||0),a=Number(l.entered_amount||0);
-     if(!l.cylinder_type_id || (document.getElementById('gasEntryMode').value==='amount' ? a<=0 : q<=0)){alert('Gas line '+(i+1)+' is invalid. Enter a valid '+(document.getElementById('gasEntryMode').value==='amount'?'amount':'quantity')+'.');return false;}
-     if(seenTypes.has(String(l.cylinder_type_id))){alert('Cylinder type cannot be used on multiple gas sale lines. Combine the quantity into one line.');return false;}
+     if(!l.cylinder_type_id || (document.getElementById('gasEntryMode').value==='amount' ? a<=0 : q<=0))return fail('Gas line '+(i+1)+' is invalid. Enter a valid '+(document.getElementById('gasEntryMode').value==='amount'?'amount':'quantity')+'.');
+     if(seenTypes.has(String(l.cylinder_type_id)))return fail('Cylinder type cannot be used on multiple gas sale lines. Combine the quantity into one line.');
      seenTypes.add(String(l.cylinder_type_id));
      if(allowPosSourceCylinderSelection){
-       if(!l.source_cylinder_unit_id){alert('Gas line '+(i+1)+' requires a source filled cylinder.');return false;}
-       if(seenSources.has(String(l.source_cylinder_unit_id))){alert('The same source filled cylinder cannot be selected on multiple gas sale lines.');return false;}
+       if(!l.source_cylinder_unit_id)return fail('Gas line '+(i+1)+' requires a source filled cylinder.');
+       if(seenSources.has(String(l.source_cylinder_unit_id)))return fail('The same source filled cylinder cannot be selected on multiple gas sale lines.');
        seenSources.add(String(l.source_cylinder_unit_id));
        const src=(filledUnits[l.cylinder_type_id]||[]).find(u=>String(u.id)===String(l.source_cylinder_unit_id));
-       if(!src){alert('Gas line '+(i+1)+' source cylinder is no longer available.');return false;}
-       if(q>Number(src.gas_weight_kg||0)+0.00001){alert('Gas line '+(i+1)+' cannot exceed the selected source cylinder gas stock of '+Number(src.gas_weight_kg||0).toFixed(2)+' KG.');return false;}
+       if(!src)return fail('Gas line '+(i+1)+' source cylinder is no longer available.');
+       if(q>Number(src.gas_weight_kg||0)+0.00001)return fail('Gas line '+(i+1)+' cannot exceed the selected source cylinder gas stock of '+Number(src.gas_weight_kg||0).toFixed(2)+' KG.');
      }else{
        l.source_cylinder_unit_id='';
        const available=(filledUnits[l.cylinder_type_id]||[]).reduce((s,u)=>s+Number(u.gas_weight_kg||0),0);
-       if(q>available+0.00001){alert('Gas line '+(i+1)+' cannot exceed available stock of this cylinder type: '+available.toFixed(2)+' KG.');return false;}
+       if(q>available+0.00001)return fail('Gas line '+(i+1)+' cannot exceed available stock of this cylinder type: '+available.toFixed(2)+' KG.');
      }
    }
  }else if(t==='cylinder_sale'){
    lines=[...tbody.querySelectorAll('tr:not(.cylinderPickerRow)')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,cylinder_status:tr.querySelector('.cylStatus').value,quantity:tr.querySelector('.qty').value,gas_weight_kg:tr.querySelector('.gasQty').value,gas_rate:tr.querySelector('.gasRate').value,cylinder_rate:tr.querySelector('.cylRate').value,selected_cylinder_unit_ids:tr._selectedUnitIds||[]}));
-   if(!lines.length){alert('Add at least one cylinder sale line.');return false;}
-   for(const [i,l] of lines.entries()){const q=Number(l.quantity||0);if(!l.cylinder_type_id||q<=0||q!==Math.floor(q)){alert('Cylinder sale line '+(i+1)+' requires a whole-number quantity.');return false;}if(l.cylinder_status==='filled'&&(!Array.isArray(l.selected_cylinder_unit_ids)||l.selected_cylinder_unit_ids.length!==q)){alert('Cylinder sale line '+(i+1)+' requires selecting exactly '+q+' physical cylinder(s).');return false;}}
+   if(!lines.length)return fail('Add at least one cylinder sale line.');
+   for(const [i,l] of lines.entries()){const q=Number(l.quantity||0);if(!l.cylinder_type_id||q<=0||q!==Math.floor(q))return fail('Cylinder sale line '+(i+1)+' requires a whole-number quantity.');if(l.cylinder_status==='filled'&&(!Array.isArray(l.selected_cylinder_unit_ids)||l.selected_cylinder_unit_ids.length!==q))return fail('Cylinder sale line '+(i+1)+' requires selecting exactly '+q+' physical cylinder(s).');}
  }else if(t==='security_deposit'){
-   const units=[...document.getElementById('custodyUnits').selectedOptions].map(o=>Number(o.value));if(!customerId){alert('Select a customer for Security Deposit.');return false;}if(!units.length){alert('Select at least one cylinder to issue on custody.');return false;}if(Number(document.getElementById('securityDeposit').value||0)<=0){alert('Enter a Security Deposit Amount.');return false;}
+   const units=[...document.getElementById('custodyUnits').selectedOptions].map(o=>Number(o.value));if(!customerId)return fail('Select a customer for Security Deposit.');if(!units.length)return fail('Select at least one cylinder to issue on custody.');if(Number(document.getElementById('securityDeposit').value||0)<=0)return fail('Enter a Security Deposit Amount.');
  }else if(t==='cylinder_return'){
-   const units=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));if(!customerId){alert('Select a customer for Cylinder Return.');return false;}if(!units.length){alert('Select at least one customer custody cylinder to return.');return false;}
+   const units=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));if(!customerId)return fail('Select a customer for Cylinder Return.');if(!units.length)return fail('Select at least one customer custody cylinder to return.');
  }
  const pays=t==='cylinder_return'?[]:[...payments.querySelectorAll('.payment')].map(p=>({payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
- // Serialize immediately after building the two payload arrays. This keeps the server
- // payload valid even if a later client-side validation check throws unexpectedly.
  document.getElementById('lines_json').value=JSON.stringify(lines);
  document.getElementById('payments_json').value=JSON.stringify(pays);
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),previousOs=customerId?Number(document.getElementById('previousOs').textContent||0):0,deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0;
  const expected=t==='security_deposit'?deposit:(t==='cylinder_return'?0:saleTotal+previousOs);
- if(t!=='cylinder_return'&&!pays.length){alert('Add at least one payment.');return false;}
- if(t!=='cylinder_return'&&paymentTotal()>expected+0.01){alert('Payment cannot exceed the Net Amount Receivable of '+expected.toFixed(2)+'.');return false;}
- if(!customerId&&pays.some(p=>p.payment_mode!=='cash')){alert('Walk-in transactions are cash only.');return false;}
- if(customerId&&pays.some(p=>p.payment_mode==='credit')&&!selectedCustomer()?.allowCredit){alert('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');return false;}
+ if(t!=='cylinder_return'&&!pays.length)return fail('Add at least one payment.');
+ if(t!=='cylinder_return'&&paymentTotal()>expected+0.01)return fail('Payment cannot exceed the Net Amount Receivable of '+expected.toFixed(2)+'.');
+ if(!customerId&&pays.some(p=>p.payment_mode!=='cash'))return fail('Walk-in transactions are cash only.');
+ if(customerId&&pays.some(p=>p.payment_mode==='credit')&&!selectedCustomer()?.allowCredit)return fail('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');
  if(['gas_sale','cylinder_sale'].includes(t)&&customerId){
-   const customer=selectedCustomer();
-   const newOs=Math.max(0,expected-paymentTotal());
-   if(newOs>previousOs+0.01&&!customer?.allowCredit){alert('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');return false;}
-   if(customer?.allowCredit){
-     const limit=Number(customer.limit||0);
-     if(newOs>limit+0.01){alert('Credit limit exceeded. Current OS is '+previousOs.toFixed(2)+', resulting OS would be '+newOs.toFixed(2)+', and the allowed limit is '+limit.toFixed(2)+'.');return false;}
-   }
+   const customer=selectedCustomer(),newOs=Math.max(0,expected-paymentTotal());
+   if(newOs>previousOs+0.01&&!customer?.allowCredit)return fail('Credit sale is not allowed for this customer. Enable Allow Credit Sale on the customer record.');
+   if(customer?.allowCredit){const limit=Number(customer.limit||0);if(limit>0&&newOs>limit+0.01)return fail('Credit limit exceeded. Current OS is '+previousOs.toFixed(2)+', resulting OS would be '+newOs.toFixed(2)+', and the allowed limit is '+limit.toFixed(2)+'.');}
  }
- if(!customerId&&['gas_sale','cylinder_sale'].includes(t)&&Math.abs(paymentTotal()-expected)>0.01){alert('Walk-in sale must be fully paid. Received amount must equal sale total.');return false;}
- let gasRequired=0; if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0); else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
+ if(!customerId&&['gas_sale','cylinder_sale'].includes(t)&&Math.abs(paymentTotal()-expected)>0.01)return fail('Walk-in sale must be fully paid. Received amount must equal sale total.');
+ let gasRequired=0;if(t==='gas_sale')gasRequired=lines.reduce((s,l)=>s+Number(l.quantity||0),0);else if(t==='cylinder_sale')tbody.querySelectorAll('tr').forEach(tr=>{gasRequired+=gasForCylinderSale(tr);});
  if((t==='gas_sale'||t==='cylinder_sale')&&gasRequired>Number(gasStock||0)+0.00001){
    if(!confirm('Available gas stock is '+Number(gasStock||0).toFixed(2)+' KG, but this transaction requires '+gasRequired.toFixed(2)+' KG. Continue?'))return false;
    document.getElementById('stock_override_confirmed').value='1';
+ }else document.getElementById('stock_override_confirmed').value='0';
+ saveBtn.disabled=true;const originalText=saveBtn.textContent;saveBtn.textContent='Posting...';
+ try{
+   const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||data.success!==true)throw new Error(data.error||'Unable to post transaction.');
+   window.location.href=data.redirect||'<?=site_url('sales')?>';
+ }catch(err){
+   saveBtn.disabled=false;saveBtn.textContent=originalText;showError(err.message);
  }
- return true;
-};
+ return false;
 addPayment();document.getElementById('transactionType').value=defaultTransactionType;refreshCustomer();refreshForm();
 </script>
 <?= $this->endSection() ?>
