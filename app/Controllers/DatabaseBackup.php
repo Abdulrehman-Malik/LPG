@@ -144,6 +144,83 @@ class DatabaseBackup extends Controller
         }
     }
 
+    public function deleteSelected()
+    {
+        if ($r = $this->guard()) return $r;
+
+        $names = $this->request->getPost('backup_files');
+        $names = is_array($names) ? $names : [];
+        if (!$names) {
+            return redirect()->back()->with('error', 'Select at least one backup file to delete.');
+        }
+
+        $service = new DatabaseBackupService();
+        $allowed = [];
+        foreach ($service->listBackups() as $backup) {
+            $allowed[basename($backup['name'])] = $backup['path'];
+        }
+
+        $deleted = 0;
+        foreach ($names as $name) {
+            $name = basename((string) $name);
+            if (isset($allowed[$name]) && @unlink($allowed[$name])) {
+                $deleted++;
+            }
+        }
+
+        return redirect()->to('/database-backup')->with(
+            $deleted ? 'success' : 'error',
+            $deleted ? $deleted . ' backup file(s) deleted successfully.' : 'No selected backup files could be deleted.'
+        );
+    }
+
+    public function emailSelected()
+    {
+        if ($r = $this->guard()) return $r;
+
+        $names = $this->request->getPost('backup_files');
+        $names = is_array($names) ? $names : [];
+        $recipient = trim((string) $this->request->getPost('email_recipient'));
+
+        if (!$names) {
+            return redirect()->back()->with('error', 'Select at least one backup file to email.');
+        }
+        if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->with('error', 'Enter a valid email address.');
+        }
+
+        $service = new DatabaseBackupService();
+        $allowed = [];
+        foreach ($service->listBackups() as $backup) {
+            $allowed[basename($backup['name'])] = $backup['path'];
+        }
+
+        $emailMethod = new \ReflectionMethod($service, 'emailBackup');
+        $emailMethod->setAccessible(true);
+        $sent = 0;
+
+        try {
+            foreach ($names as $name) {
+                $name = basename((string) $name);
+                if (!isset($allowed[$name])) {
+                    continue;
+                }
+                $emailMethod->invoke($service, $allowed[$name], $recipient);
+                $sent++;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Selected backup email failed: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+
+        if ($sent === 0) {
+            return redirect()->back()->with('error', 'No valid selected backup files were found.');
+        }
+
+        session()->set('database_backup_email', $recipient);
+        return redirect()->to('/database-backup')->with('success', $sent . ' selected backup file(s) emailed successfully.');
+    }
+
     public function restore()
     {
         if ($r = $this->guard()) return $r;
