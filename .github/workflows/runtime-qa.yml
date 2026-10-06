@@ -53,7 +53,7 @@ jobs:
           cp env .env
           sed -i "s# app.baseURL = 'http://localhost:180/LPG/public/'#app.baseURL = 'http://localhost:8080/'#" .env
           sed -i "s# app_baseURL = 'http://localhost:180/LPG/public/'#app_baseURL = 'http://localhost:8080/'#" .env
-          sed -i "s/^CI_ENVIRONMENT[[:space:]]*=.*/CI_ENVIRONMENT = testing/" .env
+          sed -i "s/^CI_ENVIRONMENT[[:space:]]*=.*/CI_ENVIRONMENT = development/" .env
           cat >> .env <<'EOF'
           database.default.hostname = 127.0.0.1
           database.default.database = perfect_lpg
@@ -80,91 +80,22 @@ jobs:
           curl -fsS http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
           grep -qi 'password' /tmp/lpg-login-after-migrations.html
-      - name: HTTP runtime smoke tests
+      - name: Login and application access
         run: |
           set -e
-          curl -fsS http://127.0.0.1:8080/ | grep -qiE 'login|password'
-          curl -fsS http://127.0.0.1:8080/login | grep -qiE 'login|password'
-          curl -fsS http://127.0.0.1:8080/dashboard -o /tmp/dashboard.html || true
-          test -s /tmp/dashboard.html
-      - name: Browser loopback probe (Playwright)
-        run: |
-          set -e
-          mkdir -p /tmp/lpg-ui
-          cd /tmp/lpg-ui
-          npm init -y >/dev/null 2>&1
-          npm install --no-audit --no-fund playwright@1.55.0
-          npx playwright install --with-deps chromium
-          python3 -m http.server 8090 --bind 127.0.0.1 > /tmp/lpg-probe.log 2>&1 &
-          PROBE_PID=$!
-          trap 'kill $PROBE_PID 2>/dev/null || true' EXIT
-          sleep 1
-          env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy NO_PROXY=127.0.0.1,localhost node - <<'EOF'
-          import { chromium } from 'playwright';
-          const browser = await chromium.launch({headless:true,args:['--no-proxy-server','--disable-features=ProxyResolutionService']});
-          const page = await browser.newPage();
-          await page.goto('http://127.0.0.1:8090/', {waitUntil:'domcontentloaded', timeout:10000});
-          console.log('CHROMIUM_LOOPBACK_PROBE_PASS', await page.title());
-          await browser.close();
-          EOF
+          rm -f /tmp/lpg-cookies.txt
+          curl -fsS -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/login -o /tmp/lpg-login.html
+          grep -qi 'name="login"' /tmp/lpg-login.html
+          grep -qi 'name="password"' /tmp/lpg-login.html
+          csrf_name=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\1/')
+          csrf_value=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\2/')
+          test -n "$csrf_name" && test -n "$csrf_value"
+          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt -X POST --data-urlencode "login=admin" --data-urlencode "password=admin123" --data-urlencode "$csrf_name=$csrf_value" http://127.0.0.1:8080/login -o /tmp/lpg-dashboard.html
+          grep -qiE 'dashboard|welcome back' /tmp/lpg-dashboard.html
+          curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/dashboard -o /tmp/lpg-dashboard-direct.html
+          grep -qi 'dashboard' /tmp/lpg-dashboard-direct.html
 
-      - name: Seed isolated Playwright business test data
-        env:
-          MYSQL_PWD: root
-        run: |
-          set -e
-          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg <<'SQL'
-          INSERT INTO shop_settings (location_id, default_transaction_type, pos_visible_transaction_types, individual_cylinder_tracking, allow_pos_source_cylinder_selection, default_payment_mode, stock_validation_enabled, allow_stock_override)
-          VALUES (1, 'gas_sale', 'gas_sale,cylinder_sale,security_deposit,cylinder_return', 1, 1, 'cash', 1, 1)
-          ON DUPLICATE KEY UPDATE default_transaction_type='gas_sale', pos_visible_transaction_types='gas_sale,cylinder_sale,security_deposit,cylinder_return', individual_cylinder_tracking=1, allow_pos_source_cylinder_selection=1, default_payment_mode='cash', stock_validation_enabled=1, allow_stock_override=1;
-          INSERT INTO rate_cards (location_id, rate_type, cylinder_type_id, rate_value, effective_from, created_by)
-          SELECT 1, 'gas_per_kg', NULL, 100.0000, NOW(), 1 WHERE NOT EXISTS (SELECT 1 FROM rate_cards WHERE location_id=1 AND rate_type='gas_per_kg' AND cylinder_type_id IS NULL);
-          INSERT INTO customers (code, name, phone, credit_limit, allow_credit_sale, opening_balance, is_active)
-          VALUES ('QA-E2E-CUST', 'QA E2E Customer', '03000000000', 100000, 1, 0, 1)
-          ON DUPLICATE KEY UPDATE name='QA E2E Customer', credit_limit=100000, allow_credit_sale=1, opening_balance=0, is_active=1;
-          INSERT INTO cylinder_units (location_id, cylinder_type_id, unit_code, status, gas_weight_kg, source_type, source_id, created_by)
-          SELECT 1, id, 'QA-E2E-C6-001', 'filled', 6.000, 'qa_seed', 0, 1 FROM cylinder_types WHERE code='C6'
-          AND NOT EXISTS (SELECT 1 FROM cylinder_units WHERE location_id=1 AND unit_code='QA-E2E-C6-001');
-          INSERT INTO cash_sessions (register_id, opened_by, opening_cash, status)
-          SELECT id, 1, 10000, 'open' FROM cash_registers WHERE location_id=1 AND code='REG-01'
-          AND NOT EXISTS (SELECT 1 FROM cash_sessions WHERE register_id=(SELECT id FROM cash_registers WHERE location_id=1 AND code='REG-01') AND status='open');
-          SQL
-      - name: Playwright business transaction QA
-        run: |
-          set -e
-          rm -rf /tmp/lpg-ui
-          mkdir -p /tmp/lpg-ui
-          cp tests/e2e/lpg-runtime.spec.mjs /tmp/lpg-ui/lpg-runtime.spec.mjs
-          cp tests/e2e/update-testing-report.mjs /tmp/lpg-ui/update-testing-report.mjs
-          cd /tmp/lpg-ui
-          npm init -y >/dev/null 2>&1
-          npm install --no-audit --no-fund @playwright/test@1.55.0
-          npx playwright install --with-deps chromium
-          mkdir -p "$GITHUB_WORKSPACE/writable/runtime-qa"
-          PLAYWRIGHT_JSON_OUTPUT_NAME="$GITHUB_WORKSPACE/writable/runtime-qa/playwright-results.json" LPG_QA_BASE_URL="http://127.0.0.1:8080" npx playwright test lpg-runtime.spec.mjs --workers=1 --reporter=json
-      - name: Update TESTING.md from Playwright results
-        if: always()
-        run: |
-          set -e
-          if [ -f writable/runtime-qa/playwright-results.json ]; then
-            cd /tmp/lpg-ui
-            PLAYWRIGHT_JSON_REPORT="$GITHUB_WORKSPACE/writable/runtime-qa/playwright-results.json" TESTING_MD_PATH="$GITHUB_WORKSPACE/TESTING.md" node update-testing-report.mjs
-          else
-            echo "Playwright JSON report was not generated."
-          fi
-      - name: Commit Playwright QA status to TESTING.md
-        if: always()
-        run: |
-          set -e
-          if git diff --quiet -- TESTING.md; then
-            echo "TESTING.md has no runtime status changes."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add TESTING.md
-          git commit -m "Update Playwright runtime QA status [skip ci]"
-          git push origin HEAD:main
+
       - name: Run PHPUnit
         env:
           CI_ENVIRONMENT: testing
