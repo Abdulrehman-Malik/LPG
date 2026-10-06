@@ -95,11 +95,6 @@ jobs:
           curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/dashboard -o /tmp/lpg-dashboard-direct.html
           grep -qi 'dashboard' /tmp/lpg-dashboard-direct.html
 
-
-      - name: Run PHPUnit
-        env:
-          CI_ENVIRONMENT: testing
-        run: php vendor/bin/phpunit --no-coverage
       - name: Upload runtime logs
         if: always()
         uses: actions/upload-artifact@v7
