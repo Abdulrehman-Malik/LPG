@@ -25,7 +25,23 @@
             <?php foreach ($rows as $r): ?>
                 <tr>
                     <td><?= esc($r['inventory_date']) ?></td>
-                    <td><?= esc(ucwords(str_replace('_', ' ', $r['inventory_type']))) ?></td>
+                    <td>
+                        <?php
+                        $openingAvgGas = (float) ($r['quantity'] ?? 0) > 0
+                            ? (float) ($r['gas_stock'] ?? 0) / (float) $r['quantity']
+                            : 0;
+                        $openingTypeLabel = ucwords(str_replace('_', ' ', $r['inventory_type']));
+                        if (($r['inventory_type'] ?? '') === 'filled_cylinder'
+                            && (float) ($r['capacity_kg'] ?? 0) > 0
+                            && $openingAvgGas > 0
+                            && $openingAvgGas < (float) $r['capacity_kg'] - 0.00001) {
+                            $openingTypeLabel = 'Partially Filled Cylinder';
+                        } elseif (($r['inventory_type'] ?? '') === 'filled_cylinder') {
+                            $openingTypeLabel = 'Full Filled Cylinder';
+                        }
+                        ?>
+                        <?= esc($openingTypeLabel) ?>
+                    </td>
                     <td><?= esc(trim(($r['cylinder_code'] ?? '') . ' ' . ($r['cylinder_name'] ?? '')) ?: '—') ?></td>
                     <td><?= number_format((float) $r['quantity'], 0) ?></td>
                     <td><?= number_format((float) ($r['gas_stock'] ?? 0), 3) ?></td>
