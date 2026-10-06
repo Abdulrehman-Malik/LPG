@@ -64,6 +64,9 @@ class ShopSettings extends Controller
         }
         $individualCylinderTracking = $this->request->getPost('individual_cylinder_tracking') ? 1 : 0;
         $allowPosSourceCylinderSelection = $this->request->getPost('allow_pos_source_cylinder_selection') ? 1 : 0;
+        if (!$individualCylinderTracking && $allowPosSourceCylinderSelection) {
+            return redirect()->back()->withInput()->with('error', 'Source Filled Cylinder Selection on POS can only be enabled when Individual Cylinder Tracking is enabled.');
+        }
         $posFontSize = (float) $this->request->getPost('pos_font_size_px');
         if ($posFontSize < 10 || $posFontSize > 24) {
             return redirect()->back()->withInput()->with('error', 'Application font size must be between 10 and 24 pixels.');
