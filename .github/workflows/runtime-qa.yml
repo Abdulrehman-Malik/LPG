@@ -111,8 +111,8 @@ jobs:
           try {
             await page.goto(base + '/login', { waitUntil: 'networkidle' });
             await page.screenshot({ path: '/tmp/login.png', fullPage: true });
-            const username = page.locator('input[name="username"], input[type="text"]').first();
-            const password = page.locator('input[name="password"], input[type="password"]').first();
+            const username = page.locator('input[name="login"]:visible, #login:visible').first();
+            const password = page.locator('input[name="password"]:visible, #password:visible').first();
             await username.fill('admin');
             await password.fill('admin123');
             await page.locator('button[type="submit"], input[type="submit"]').first().click();
