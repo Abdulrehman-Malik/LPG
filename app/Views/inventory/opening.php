@@ -13,7 +13,7 @@
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Type</th>
+                    <th>Status</th>
                     <th>Cylinder</th>
                     <th>Quantity</th>
                     <th>Gas Stock (KG)</th>
@@ -81,7 +81,6 @@
         <form method="post" action="<?= site_url('inventory/opening/save') ?>" class="modal-content" onsubmit="syncOpeningFields()">
             <?= csrf_field() ?>
             <input type="hidden" name="opening_id" id="openingId">
-            <input type="hidden" name="inventory_type" id="editInventoryType">
             <input type="hidden" name="cylinder_type_id" id="editCylinderTypeId">
 
             <div class="modal-header">
@@ -96,12 +95,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Inventory Type</label>
-                    <select id="invType" class="form-select" required>
-                        <option value="filled_cylinder">Full Filled Cylinder</option>
-                        <option value="partially_filled_cylinder">Partially Filled Cylinder</option>
-                        <option value="empty_cylinder">Empty Cylinder</option>
-                    </select>
+                    <label class="form-label">Cylinder Status</label>
+                    <input id="cylinderStatus" type="text" class="form-control" value="Empty" readonly>
+                    <div class="form-text">Calculated automatically from gas quantity and cylinder capacity.</div>
                 </div>
 
                 <div class="mb-3">
@@ -109,7 +105,7 @@
                     <select id="cylinderTypeId" class="form-select" required>
                         <option value="">Select</option>
                         <?php foreach ($types as $t): ?>
-                            <option value="<?= $t['id'] ?>"><?= esc($t['code'] . ' — ' . $t['name']) ?></option>
+                            <option value="<?= $t['id'] ?>" data-capacity="<?= esc($t['capacity_kg']) ?>"><?= esc($t['code'] . ' — ' . $t['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -120,9 +116,9 @@
                 </div>
 
                 <div class="mb-3" id="gasWeightWrap">
-                    <label class="form-label">Actual Gas per Filled Cylinder (KG)</label>
-                    <input name="actual_gas_weight_kg" id="actualGasWeight" type="number" min="0" step="0.001" class="form-control">
-                    <div class="form-text" id="gasWeightHelp">Leave blank to use the selected cylinder's full capacity.</div>
+                    <label class="form-label">Gas Quantity per Cylinder (KG)</label>
+                    <input name="actual_gas_weight_kg" id="actualGasWeight" type="number" min="0" step="0.001" class="form-control" required>
+                    <div class="form-text" id="gasWeightHelp">0 = Empty, less than capacity = Partially Filled, equal to capacity = Full.</div>
                 </div>
 
                 <div class="mb-3">
@@ -132,7 +128,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Save Opening</button>
+                <button type="submit" class="btn btn-primary">Save Opening Inventory</button>
             </div>
         </form>
     </div>
@@ -140,73 +136,68 @@
 
 <script>
 function syncOpeningFields() {
-    // The visible selects are disabled during edit, so their values must be
-    // copied to the hidden POST fields before the form is submitted.
-    document.getElementById('editInventoryType').value =
-        document.getElementById('invType').value || '';
-
     document.getElementById('editCylinderTypeId').value =
         document.getElementById('cylinderTypeId').value || '';
 }
 
-function toggleOpening() {
-    const type = document.getElementById('invType').value;
-    const filled = type === 'filled_cylinder' || type === 'partially_filled_cylinder';
-    const partial = type === 'partially_filled_cylinder';
-    const weight = document.getElementById('actualGasWeight');
-    const help = document.getElementById('gasWeightHelp');
+function updateCylinderStatus() {
+    const selected = document.getElementById('cylinderTypeId').selectedOptions[0];
+    const capacity = selected && selected.dataset.capacity ? Number(selected.dataset.capacity) : 0;
+    const gasInput = document.getElementById('actualGasWeight');
+    const gas = gasInput.value === '' ? 0 : Number(gasInput.value);
+    const status = document.getElementById('cylinderStatus');
 
-    document.getElementById('gasWeightWrap').style.display = filled ? 'block' : 'none';
-    weight.disabled = !filled;
-    weight.required = partial;
-    help.textContent = partial
-        ? 'Enter the actual gas remaining in each cylinder. It must be greater than 0 and less than the cylinder capacity.'
-        : 'Leave blank to use the selected cylinder\'s full capacity.';
+    if (capacity > 0 && gas > capacity) {
+        gasInput.setCustomValidity('Gas quantity cannot exceed cylinder capacity.');
+        status.value = 'Invalid — exceeds capacity';
+        return;
+    }
+
+    gasInput.setCustomValidity('');
+    status.value = gas <= 0.00001
+        ? 'Empty'
+        : (capacity > 0 && gas < capacity - 0.00001 ? 'Partially Filled' : 'Full');
 }
 
 function prepareAdd() {
     document.getElementById('formTitle').textContent = 'Add Opening Inventory';
     document.getElementById('openingId').value = '';
     document.getElementById('inventoryDate').value = '<?= date('Y-m-d') ?>';
-    document.getElementById('invType').value = 'filled_cylinder';
     document.getElementById('cylinderTypeId').value = '';
     document.getElementById('quantity').value = '';
-    document.getElementById('actualGasWeight').value = '';
+    document.getElementById('actualGasWeight').value = '0';
     document.getElementById('comments').value = '';
-    document.getElementById('invType').disabled = false;
     document.getElementById('cylinderTypeId').disabled = false;
+    document.getElementById('actualGasWeight').disabled = false;
+    document.getElementById('quantity').disabled = false;
     syncOpeningFields();
-    toggleOpening();
+    updateCylinderStatus();
 }
 
 function prepareEdit(row) {
     document.getElementById('formTitle').textContent = 'Edit Opening Inventory';
     document.getElementById('openingId').value = row.id;
     document.getElementById('inventoryDate').value = row.date;
-    const averageGas = row.quantity > 0 ? Number(row.gasStock || 0) / Number(row.quantity) : 0;
-    const isPartial = row.type === 'filled_cylinder'
-        && Number(row.capacityKg || 0) > 0
-        && averageGas > 0
-        && averageGas < Number(row.capacityKg) - 0.00001;
-
-    document.getElementById('invType').value = isPartial ? 'partially_filled_cylinder' : row.type;
     document.getElementById('cylinderTypeId').value = row.cylinderTypeId;
     document.getElementById('quantity').value = row.quantity;
-    document.getElementById('actualGasWeight').value = '';
+
+    const averageGas = row.quantity > 0 ? Number(row.gasStock || 0) / Number(row.quantity) : 0;
+    document.getElementById('actualGasWeight').value = averageGas.toFixed(3);
     document.getElementById('comments').value = row.comments || '';
-    document.getElementById('invType').disabled = true;
+
     document.getElementById('cylinderTypeId').disabled = true;
+    document.getElementById('actualGasWeight').disabled = false;
+    document.getElementById('quantity').disabled = false;
     syncOpeningFields();
-    toggleOpening();
+    updateCylinderStatus();
 }
 
-document.getElementById('invType')?.addEventListener('change', function () {
+document.getElementById('cylinderTypeId')?.addEventListener('change', function () {
     syncOpeningFields();
-    toggleOpening();
+    updateCylinderStatus();
 });
-
-document.getElementById('cylinderTypeId')?.addEventListener('change', syncOpeningFields);
-
-toggleOpening();
+document.getElementById('actualGasWeight')?.addEventListener('input', updateCylinderStatus);
+document.getElementById('actualGasWeight')?.addEventListener('change', updateCylinderStatus);
+updateCylinderStatus();
 </script>
 <?= $this->endSection() ?>
