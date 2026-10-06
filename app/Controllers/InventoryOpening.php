@@ -7,6 +7,7 @@ use App\Models\InventoryOpeningBalanceModel;
 use App\Services\AuditService;
 use App\Services\PermissionService;
 use App\Services\CylinderUnitService;
+use App\Services\ExcelInventoryService;
 use Config\Database;
 use CodeIgniter\Controller;
 
@@ -15,12 +16,14 @@ class InventoryOpening extends Controller
     protected InventoryOpeningBalanceModel $model;
     protected CylinderTypeModel $types;
     protected CylinderUnitService $cylinders;
+    protected ExcelInventoryService $excel;
 
     public function __construct()
     {
         $this->model = new InventoryOpeningBalanceModel();
         $this->types = new CylinderTypeModel();
         $this->cylinders = new CylinderUnitService();
+        $this->excel = new ExcelInventoryService();
     }
 
     private function guard(): ?\CodeIgniter\HTTP\ResponseInterface
@@ -343,6 +346,299 @@ class InventoryOpening extends Controller
         } catch (\Throwable $e) {
             $db->transRollback();
             return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        if ($r = $this->guard()) {
+            return $r;
+        }
+
+        $target = WRITEPATH . 'uploads/opening_inventory_template.xlsx';
+        try {
+            $this->excel->createTemplate($target);
+            return $this->response
+                ->download($target, null)
+                ->setFileName('opening_inventory_template.xlsx');
+        } catch (\Throwable $e) {
+            return $this->response->setStatusCode(500)->setBody('Could not generate the Excel template: ' . $e->getMessage());
+        } finally {
+            if (is_file($target)) {
+                @unlink($target);
+            }
+        }
+    }
+
+    public function importExcel()
+    {
+        if ($r = $this->guard()) {
+            return $r;
+        }
+
+        $locationId = (int) session()->get('location_id');
+        $userId = (int) session()->get('user_id');
+        $confirmed = (string) $this->request->getPost('capacity_mismatch_confirmed') === '1';
+        $file = $this->request->getFile('opening_inventory_file');
+
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()->with('error', 'Please select a valid .xlsx Excel file.');
+        }
+        if (strtolower($file->getExtension()) !== 'xlsx') {
+            return redirect()->back()->with('error', 'Only .xlsx Excel files are supported. Download the template and use that format.');
+        }
+
+        $tempPath = WRITEPATH . 'uploads/opening_import_' . bin2hex(random_bytes(8)) . '.xlsx';
+        try {
+            $file->move(dirname($tempPath), basename($tempPath));
+            $rows = $this->excel->readOpeningInventory($tempPath);
+            $today = date('Y-m-d');
+            $db = Database::connect();
+
+            $validated = [];
+            $mismatches = [];
+            $errors = [];
+            $typeCache = [];
+
+            foreach ($rows as $row) {
+                $excelRow = (int) $row['excel_row'];
+                $code = strtoupper(trim((string) $row['cylinder_type']));
+                $quantityRaw = $row['quantity'];
+                $capacityRaw = $row['max_gas_capacity'];
+                $gasRaw = $row['available_gas'];
+
+                if ($code === '' || !preg_match('/^[A-Z0-9_-]{1,30}$/', $code)) {
+                    $errors[] = 'Row ' . $excelRow . ': Cylinder Type must be 1-30 characters using letters, numbers, hyphen or underscore.';
+                    continue;
+                }
+                if (!is_numeric($quantityRaw) || (float) $quantityRaw < 1 || floor((float) $quantityRaw) !== (float) $quantityRaw) {
+                    $errors[] = 'Row ' . $excelRow . ': Quantity must be a positive whole number.';
+                    continue;
+                }
+                if (!is_numeric($capacityRaw) || (float) $capacityRaw <= 0) {
+                    $errors[] = 'Row ' . $excelRow . ': Max GAS Capacity must be greater than zero.';
+                    continue;
+                }
+                if (!is_numeric($gasRaw) || (float) $gasRaw < 0) {
+                    $errors[] = 'Row ' . $excelRow . ': Available Gas must be zero or greater.';
+                    continue;
+                }
+
+                $quantity = (int) $quantityRaw;
+                $excelCapacity = (float) $capacityRaw;
+                $gas = (float) $gasRaw;
+                if ($gas > $excelCapacity + 0.00001) {
+                    $errors[] = 'Row ' . $excelRow . ': Available Gas cannot exceed Max GAS Capacity.';
+                    continue;
+                }
+
+                if (!array_key_exists($code, $typeCache)) {
+                    $typeCache[$code] = $db->table('cylinder_types')->where('code', $code)->get()->getRowArray();
+                }
+                $type = $typeCache[$code];
+
+                if ($type) {
+                    $dbCapacity = (float) $type['capacity_kg'];
+                    if (abs($dbCapacity - $excelCapacity) > 0.00001) {
+                        $mismatches[] = [
+                            'row' => $excelRow,
+                            'code' => $code,
+                            'excel_capacity' => $excelCapacity,
+                            'database_capacity' => $dbCapacity,
+                        ];
+                        if (!$confirmed) {
+                            continue;
+                        }
+                    }
+                    $effectiveCapacity = $dbCapacity;
+                    if ($gas > $effectiveCapacity + 0.00001) {
+                        $errors[] = 'Row ' . $excelRow . ': Available Gas (' . $gas . ' KG) exceeds the existing database capacity (' . $dbCapacity . ' KG) for ' . $code . '.';
+                        continue;
+                    }
+                    $typeId = (int) $type['id'];
+                } else {
+                    $effectiveCapacity = $excelCapacity;
+                    $typeId = null;
+                }
+
+                $validated[] = [
+                    'excel_row' => $excelRow,
+                    'code' => $code,
+                    'quantity' => $quantity,
+                    'excel_capacity' => $excelCapacity,
+                    'effective_capacity' => $effectiveCapacity,
+                    'gas' => $gas,
+                    'type_id' => $typeId,
+                ];
+            }
+
+            if ($mismatches && !$confirmed) {
+                $details = array_map(static function (array $m): string {
+                    return 'Row ' . $m['row'] . ' (' . $m['code'] . '): Excel ' . number_format($m['excel_capacity'], 3) . ' KG vs database ' . number_format($m['database_capacity'], 3) . ' KG';
+                }, $mismatches);
+                return redirect()->back()->with('error', 'Capacity mismatch found. Review and upload again with "Confirm capacity mismatches" enabled. Existing database capacity will be retained. ' . implode(' | ', $details));
+            }
+            if ($errors) {
+                return redirect()->back()->with('error', implode(' | ', array_slice($errors, 0, 20)) . (count($errors) > 20 ? ' | More validation errors exist.' : ''));
+            }
+            if (!$validated) {
+                return redirect()->back()->with('error', 'No valid inventory rows were found in the Excel file.');
+            }
+
+            $fileHash = hash_file('sha256', $tempPath);
+            $batchKeyBase = substr($fileHash, 0, 48);
+            $duplicateImport = $db->table('audit_logs')
+                ->where('location_id', $locationId)
+                ->where('entity_type', 'inventory_opening_excel_import')
+                ->like('new_values', '"file_hash":"' . $fileHash . '"')
+                ->countAllResults();
+            if ($duplicateImport > 0) {
+                throw new \RuntimeException('This Excel file has already been imported for this shop. Do not upload the same opening inventory file twice.');
+            }
+
+            $db->transBegin();
+            try {
+                $createdTypes = [];
+                $createdOpeningIds = [];
+                $totalUnits = 0;
+                $totalGas = 0.0;
+
+                foreach ($validated as $index => $row) {
+                    $typeId = (int) ($row['type_id'] ?? 0);
+                    if ($typeId <= 0) {
+                        $maxSort = (int) ($db->table('cylinder_types')->selectMax('sort_order')->get()->getRow('sort_order') ?? 0);
+                        $ok = $db->table('cylinder_types')->insert([
+                            'code' => $row['code'],
+                            'name' => $row['code'],
+                            'capacity_kg' => $row['effective_capacity'],
+                            'sort_order' => $maxSort + 1,
+                            'is_active' => 1,
+                        ]);
+                        if ($ok === false) {
+                            $error = $db->error();
+                            throw new \RuntimeException('Could not create cylinder type ' . $row['code'] . ': ' . ($error['message'] ?? 'database error.'));
+                        }
+                        $typeId = (int) $db->insertID();
+                        $typeCache[$row['code']] = $db->table('cylinder_types')->where('id', $typeId)->get()->getRowArray();
+                        $createdTypes[] = $row['code'];
+                    }
+
+                    $kind = $row['gas'] <= 0.00001 ? 'empty_cylinder' : 'filled_cylinder';
+                    $batchKey = $batchKeyBase . '-' . str_pad((string) ($index + 1), 5, '0', STR_PAD_LEFT);
+
+                    $ok = $db->table('inventory_opening_balances')->insert([
+                        'location_id' => $locationId,
+                        'inventory_date' => $today,
+                        'inventory_type' => $kind,
+                        'cylinder_type_id' => $typeId,
+                        'quantity' => $row['quantity'],
+                        'comments' => 'Excel opening inventory import; Excel row ' . $row['excel_row'],
+                        'opening_batch_key' => $batchKey,
+                        'created_by' => $userId,
+                    ]);
+                    if ($ok === false) {
+                        $error = $db->error();
+                        throw new \RuntimeException('Opening inventory row ' . $row['excel_row'] . ' could not be saved: ' . ($error['message'] ?? 'database error.'));
+                    }
+                    $openingId = (int) $db->insertID();
+                    if ($openingId <= 0) {
+                        throw new \RuntimeException('Opening inventory row ' . $row['excel_row'] . ' did not receive an ID.');
+                    }
+
+                    $unitStatus = $row['gas'] <= 0.00001 ? 'empty' : 'filled';
+                    $unitIds = $this->cylinders->createUnits(
+                        $locationId,
+                        $typeId,
+                        $row['quantity'],
+                        $unitStatus,
+                        $row['gas'],
+                        $userId,
+                        'opening',
+                        $openingId
+                    );
+
+                    foreach ($unitIds as $unitId) {
+                        $movementAt = $today . ' 00:00:00';
+                        $db->table('inventory_movements')->insert([
+                            'location_id' => $locationId,
+                            'inventory_type' => $kind,
+                            'cylinder_type_id' => $typeId,
+                            'quantity' => 1,
+                            'direction' => 'in',
+                            'movement_at' => $movementAt,
+                            'source_type' => 'opening_excel',
+                            'source_id' => $openingId,
+                            'cylinder_unit_id' => $unitId,
+                            'created_by' => $userId,
+                            'notes' => 'Physical cylinder created from Excel opening inventory row ' . $row['excel_row'],
+                        ]);
+
+                        if ($unitStatus === 'filled') {
+                            $db->table('inventory_movements')->insert([
+                                'location_id' => $locationId,
+                                'inventory_type' => 'gas_kg',
+                                'cylinder_type_id' => null,
+                                'quantity' => $row['gas'],
+                                'direction' => 'in',
+                                'movement_at' => $movementAt,
+                                'source_type' => 'opening_excel',
+                                'source_id' => $openingId,
+                                'cylinder_unit_id' => $unitId,
+                                'created_by' => $userId,
+                                'notes' => 'Gas contained in Excel opening filled cylinder row ' . $row['excel_row'],
+                            ]);
+                        }
+                    }
+
+                    $createdOpeningIds[] = $openingId;
+                    $totalUnits += $row['quantity'];
+                    $totalGas += $row['quantity'] * $row['gas'];
+                }
+
+                if (!$db->transStatus()) {
+                    $error = $db->error();
+                    throw new \RuntimeException('Opening inventory Excel import failed: ' . ($error['message'] ?? 'database transaction failed.'));
+                }
+
+                AuditService::log(
+                    'CREATE',
+                    'inventory_opening_excel_import',
+                    $createdOpeningIds[0] ?? 0,
+                    null,
+                    [
+                        'file_hash' => $fileHash,
+                        'file_name' => $file->getClientName(),
+                        'inventory_date' => $today,
+                        'row_count' => count($validated),
+                        'physical_cylinder_count' => $totalUnits,
+                        'gas_kg' => $totalGas,
+                        'created_cylinder_types' => $createdTypes,
+                        'capacity_mismatch_confirmed' => $confirmed && (bool) $mismatches,
+                    ],
+                    $userId,
+                    $locationId
+                );
+
+                $db->transCommit();
+            } catch (\Throwable $e) {
+                $db->transRollback();
+                throw $e;
+            }
+
+            $message = 'Excel opening inventory imported successfully: ' . count($validated) . ' rows, ' . $totalUnits . ' physical cylinders, ' . number_format($totalGas, 3) . ' KG gas.';
+            if ($createdTypes) {
+                $message .= ' Created cylinder types: ' . implode(', ', $createdTypes) . '.';
+            }
+            if ($mismatches) {
+                $message .= ' Capacity mismatch confirmed; existing database capacities were retained.';
+            }
+            return redirect()->to(site_url('inventory/opening'))->with('success', $message);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } finally {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
+            }
         }
     }
 
