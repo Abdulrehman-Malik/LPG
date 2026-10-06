@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ShopSettingsModel;
 use Config\Backup;
 use Config\Database;
 
@@ -98,6 +99,29 @@ class DatabaseBackupService
         return ['name' => basename($uploadedPath)];
     }
 
+    public function sendTestEmail(string $recipient): bool
+    {
+        $settings = $this->emailSettings();
+        if (!(int) ($settings['smtp_enabled'] ?? 0)) {
+            throw new \RuntimeException('SMTP email sending is disabled. Enable it in Email Configuration first.');
+        }
+
+        $email = $this->buildEmail($settings);
+        $email->setTo($recipient);
+        $email->setSubject('Perfect LPG - SMTP Test Email');
+        $email->setMessage(
+            'This is a test email from Perfect LPG. SMTP configuration is working.'
+        );
+
+        if (!$email->send()) {
+            $debug = $email->printDebugger(['headers', 'subject']);
+            log_message('error', 'SMTP test email failed: {debug}', ['debug' => $debug]);
+            throw new \RuntimeException('Test email could not be sent. Check the SMTP host, port, username, password and encryption settings.');
+        }
+
+        return true;
+    }
+
     private function ensureDirectory(): void
     {
         $dir = $this->directory();
@@ -168,19 +192,72 @@ class DatabaseBackupService
         }
     }
 
-    private function emailBackup(string $path, ?string $emailRecipient = null): bool
+    private function emailSettings(): array
     {
-        $emailConfig = config('Email');
-        $recipients = trim((string) ($emailRecipient ?? $emailConfig->recipients));
-        if ($recipients === '') {
-            throw new \RuntimeException('Email backup was requested, but no recipient email address is configured.');
+        $locationId = (int) session()->get('location_id');
+        if ($locationId <= 0) {
+            throw new \RuntimeException('No shop/location is selected for email configuration.');
         }
-        if (trim((string) $emailConfig->fromEmail) === '') {
-            throw new \RuntimeException('Email backup was requested, but email.fromEmail is not configured.');
+
+        $settings = (new ShopSettingsModel())->forLocation($locationId);
+        if (trim((string) ($settings['smtp_host'] ?? '')) === '') {
+            throw new \RuntimeException('SMTP host is not configured. Open Email Configuration and save the SMTP settings.');
+        }
+        if (trim((string) ($settings['smtp_from_email'] ?? '')) === '') {
+            throw new \RuntimeException('From Email is not configured. Open Email Configuration and save the SMTP settings.');
+        }
+
+        return $settings;
+    }
+
+    private function buildEmail(array $settings)
+    {
+        $encryption = trim((string) ($settings['smtp_encryption'] ?? ''));
+        if ($encryption === 'ssl') {
+            $host = trim((string) $settings['smtp_host']);
+            if (!str_starts_with($host, 'ssl://')) {
+                $host = 'ssl://' . $host;
+            }
+        } else {
+            $host = trim((string) $settings['smtp_host']);
         }
 
         $email = service('email');
-        $email->setFrom($emailConfig->fromEmail, $emailConfig->fromName ?: 'Perfect LPG');
+        $email->initialize([
+            'protocol' => 'smtp',
+            'SMTPHost' => $host,
+            'SMTPUser' => (string) ($settings['smtp_username'] ?? ''),
+            'SMTPPass' => (string) ($settings['smtp_password'] ?? ''),
+            'SMTPPort' => (int) ($settings['smtp_port'] ?? 587),
+            'SMTPTimeout' => 30,
+            'SMTPKeepAlive' => false,
+            'SMTPCrypto' => $encryption === 'ssl' ? '' : $encryption,
+            'wordWrap' => true,
+            'wrapChars' => 76,
+            'mailType' => 'text',
+            'charset' => 'UTF-8',
+            'validate' => true,
+            'newline' => "\r\n",
+            'CRLF' => "\r\n",
+        ]);
+        $email->setFrom((string) $settings['smtp_from_email'], (string) ($settings['smtp_from_name'] ?: 'Perfect LPG'));
+
+        return $email;
+    }
+
+    private function emailBackup(string $path, ?string $emailRecipient = null): bool
+    {
+        $settings = $this->emailSettings();
+        if (!(int) ($settings['smtp_enabled'] ?? 0)) {
+            throw new \RuntimeException('Email backup was requested, but SMTP email sending is disabled. Enable it in Email Configuration first.');
+        }
+
+        $recipients = trim((string) $emailRecipient);
+        if ($recipients === '') {
+            throw new \RuntimeException('Email backup was requested, but no recipient email address is configured.');
+        }
+
+        $email = $this->buildEmail($settings);
         $email->setTo($recipients);
         $email->setSubject('Perfect LPG Database Backup - ' . date('Y-m-d H:i:s'));
         $email->setMessage(
@@ -189,8 +266,9 @@ class DatabaseBackupService
         $email->attach($path);
 
         if (!$email->send()) {
-            log_message('error', 'Database backup email failed: {debug}', ['debug' => $email->printDebugger(['headers', 'subject'])]);
-            throw new \RuntimeException('Backup was created, but the email could not be sent. Check SMTP/email configuration.');
+            $debug = $email->printDebugger(['headers', 'subject']);
+            log_message('error', 'Database backup email failed: {debug}', ['debug' => $debug]);
+            throw new \RuntimeException('Backup was created, but the email could not be sent. Check the SMTP configuration on the Email Configuration tab.');
         }
 
         return true;
