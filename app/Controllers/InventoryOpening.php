@@ -75,20 +75,13 @@ class InventoryOpening extends Controller
         $openingId = $openingIdRaw === null || $openingIdRaw === '' ? null : (int) $openingIdRaw;
 
         $date = (string) $this->request->getPost('inventory_date');
-        $kind = (string) $this->request->getPost('inventory_type');
         $typeId = $this->request->getPost('cylinder_type_id') === '' ? null : (int) $this->request->getPost('cylinder_type_id');
         $qty = (float) $this->request->getPost('quantity');
         $actualRaw = $this->request->getPost('actual_gas_weight_kg');
-        $actual = $actualRaw !== null && $actualRaw !== '' ? (float) $actualRaw : 0;
         $comments = trim((string) ($this->request->getPost('comments') ?? ''));
 
-        $partialFilled = $kind === 'partially_filled_cylinder';
-        if ($partialFilled) {
-            $kind = 'filled_cylinder';
-        }
-
-        if (!$date || !in_array($kind, ['filled_cylinder', 'empty_cylinder'], true) || $qty < 0) {
-            return redirect()->back()->withInput()->with('error', 'Valid date, inventory type and non-negative quantity are required.');
+        if (!$date || $qty < 1) {
+            return redirect()->back()->withInput()->with('error', 'Valid date and a cylinder quantity of at least 1 are required.');
         }
         if (!$typeId) {
             return redirect()->back()->withInput()->with('error', 'Select a cylinder type.');
@@ -106,25 +99,26 @@ class InventoryOpening extends Controller
         }
 
         $actualProvided = $actualRaw !== null && $actualRaw !== '';
-
-        if ($kind === 'filled_cylinder') {
-            if ($actualProvided) {
-                $actual = (float) $actualRaw;
-                if ($actual <= 0 || $actual > (float) $ct['capacity_kg']) {
-                    return redirect()->back()->withInput()->with('error', 'Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
-                }
-                if ($partialFilled && $actual >= (float) $ct['capacity_kg']) {
-                    return redirect()->back()->withInput()->with('error', 'For a partially filled cylinder, actual gas weight must be less than the cylinder capacity.');
-                }
-            } else {
-                if ($partialFilled) {
-                    return redirect()->back()->withInput()->with('error', 'Actual gas weight is required for a partially filled cylinder.');
-                }
-                $actual = (float) $ct['capacity_kg'];
-            }
-        } else {
-            $actual = 0;
+        if (!$actualProvided || !is_numeric($actualRaw)) {
+            return redirect()->back()->withInput()->with('error', 'Enter the actual gas quantity per cylinder. Enter 0 for an empty cylinder.');
         }
+
+        $actual = (float) $actualRaw;
+        $capacity = (float) $ct['capacity_kg'];
+
+        if ($capacity <= 0) {
+            return redirect()->back()->withInput()->with('error', 'Selected cylinder type has an invalid capacity.');
+        }
+        if ($actual < 0) {
+            return redirect()->back()->withInput()->with('error', 'Gas quantity cannot be negative.');
+        }
+        if ($actual > $capacity + 0.00001) {
+            return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 3) . ' KG.');
+        }
+
+        // Full / partially filled / empty is a calculated cylinder condition,
+        // not a separate cylinder type.
+        $kind = $actual <= 0.00001 ? 'empty_cylinder' : 'filled_cylinder';
 
         $existing = null;
         if ($openingId !== null) {
@@ -134,19 +128,6 @@ class InventoryOpening extends Controller
             if (!$existing) {
                 return redirect()->back()->withInput()->with('error', 'Opening inventory record not found.');
             }
-
-            if ((int) $existing['cylinder_type_id'] !== $typeId || $existing['inventory_type'] !== $kind) {
-                return redirect()->back()->withInput()->with('error', 'Inventory type and cylinder type cannot be changed after an opening record is created.');
-            }
-        } else {
-            $existing = $this->model
-                ->where([
-                    'location_id' => $locationId,
-                    'inventory_date' => $date,
-                    'inventory_type' => $kind,
-                    'cylinder_type_id' => $typeId,
-                ])
-                ->first();
         }
 
         $db = Database::connect();
@@ -211,49 +192,37 @@ class InventoryOpening extends Controller
                 $openingId = (int) $this->model->getInsertID();
             }
 
-            $units = $db->table('cylinder_units')
-                ->where([
-                    'location_id' => $locationId,
-                    'source_type' => 'opening',
-                    'source_id' => $openingId,
-                ])
-                ->whereIn('status', ['filled', 'empty'])
-                ->get()->getResultArray();
-
-            if ($kind === 'filled_cylinder' && !$actualProvided && $existing) {
-                $existingFilledWeights = array_values(array_filter(
-                    array_map(static fn(array $unit): float => (float) $unit['gas_weight_kg'], $units),
-                    static fn(float $weight): bool => $weight > 0
-                ));
-                if ($existingFilledWeights) {
-                    $actual = $existingFilledWeights[0];
-                }
-            }
-
-            $activeCount = count($units);
-            $newUnitGasWeight = $actual;
-            if ($activeCount > $qty) {
-                throw new \RuntimeException('Opening quantity cannot be reduced below cylinders already in active opening stock. Use stock transactions instead.');
-            }
-
-            if ($activeCount < $qty) {
-                $this->cylinders->createUnits(
-                    $locationId,
-                    $typeId,
-                    (int) $qty - $activeCount,
-                    $kind === 'filled_cylinder' ? 'filled' : 'empty',
-                    $newUnitGasWeight,
-                    $userId,
-                    'opening',
-                    $openingId
-                );
-            }
-
-            if ($kind === 'filled_cylinder') {
+            // Every new opening save creates the requested number of new
+            // physical cylinder units. On edit, the existing opening is rebuilt
+            // only after the downstream-history guard above confirms it is safe.
+            if ($existing) {
                 $db->table('inventory_movements')
                     ->where(['source_type' => 'opening_cylinder', 'source_id' => $openingId])
                     ->delete();
 
+                $db->table('cylinder_units')
+                    ->where([
+                        'location_id' => $locationId,
+                        'source_type' => 'opening',
+                        'source_id' => $openingId,
+                    ])
+                    ->delete();
+            }
+
+            $unitStatus = $actual <= 0.00001 ? 'empty' : 'filled';
+
+            $this->cylinders->createUnits(
+                $locationId,
+                $typeId,
+                (int) $qty,
+                $unitStatus,
+                $actual,
+                $userId,
+                'opening',
+                $openingId
+            );
+
+            if ($unitStatus === 'filled') {
                 $current = $db->table('cylinder_units')
                     ->where([
                         'location_id' => $locationId,
@@ -264,13 +233,21 @@ class InventoryOpening extends Controller
                     ->get()->getResultArray();
 
                 foreach ($current as $unit) {
-                    $unitGasWeight = (float) $unit['gas_weight_kg'];
-                    if ($actualProvided) {
-                        $unitGasWeight = $actual;
-                        $db->table('cylinder_units')
-                            ->where('id', $unit['id'])
-                            ->update(['gas_weight_kg' => $unitGasWeight]);
-                    }
+                    $db->table('inventory_movements')->insert([
+                        'location_id' => $locationId,
+                        'inventory_type' => 'gas_kg',
+                        'cylinder_type_id' => null,
+                        'quantity' => $actual,
+                        'direction' => 'in',
+                        'movement_at' => $date . ' 00:00:00',
+                        'source_type' => 'opening_cylinder',
+                        'source_id' => $openingId,
+                        'cylinder_unit_id' => $unit['id'],
+                        'created_by' => $userId,
+                        'notes' => 'Gas contained in opening filled cylinder',
+                    ]);
+                }
+            }
 
                     $db->table('inventory_movements')->insert([
                         'location_id' => $locationId,
@@ -295,6 +272,10 @@ class InventoryOpening extends Controller
                 'cylinder_type_id' => $typeId,
                 'quantity' => $qty,
                 'comments' => $comments !== '' ? $comments : null,
+                'cylinder_status' => $actual <= 0.00001
+                    ? 'Empty'
+                    : ($actual < $capacity - 0.00001 ? 'Partially Filled' : 'Full'),
+                'gas_per_cylinder_kg' => $actual,
                 'gas_stock_kg' => $kind === 'filled_cylinder'
                     ? (float) $db->table('cylinder_units')
                         ->selectSum('gas_weight_kg')
