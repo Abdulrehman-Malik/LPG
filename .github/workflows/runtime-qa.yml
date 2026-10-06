@@ -53,13 +53,13 @@ jobs:
           cp env .env
           sed -i "s# app.baseURL = 'http://localhost:180/LPG/public/'#app.baseURL = 'http://localhost:8080/'#" .env
           sed -i "s# app_baseURL = 'http://localhost:180/LPG/public/'#app_baseURL = 'http://localhost:8080/'#" .env
+          sed -i "s/^CI_ENVIRONMENT[[:space:]]*=.*/CI_ENVIRONMENT = testing/" .env
           cat >> .env <<'EOF'
           database.default.hostname = 127.0.0.1
           database.default.database = perfect_lpg
           database.default.username = root
           database.default.password = root
           database.default.DBDriver = MySQLi
-          CI_ENVIRONMENT = testing
           EOF
       - name: Start web application
         run: |
@@ -77,7 +77,7 @@ jobs:
           csrf_name=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login-before-migrations.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\1/')
           csrf_value=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login-before-migrations.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\2/')
           test -n "$csrf_name" && test -n "$csrf_value"
-          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt -X POST             --data-urlencode "$csrf_name=$csrf_value"             http://127.0.0.1:8080/migrations/run -o /tmp/migration-response.html
+          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt -X POST --data-urlencode "$csrf_name=$csrf_value" http://127.0.0.1:8080/migrations/run -o /tmp/migration-response.html
           if grep -qi migration_error /tmp/migration-response.html; then cat /tmp/migration-response.html; exit 1; fi
           curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
