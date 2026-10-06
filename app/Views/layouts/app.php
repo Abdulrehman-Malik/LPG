@@ -151,7 +151,7 @@ unset($group);
 <div class="content-wrap"><?php
 $pendingMigrationNotice = null;
 try {
-    $migrationStatus = (new \\App\\Services\\MigrationRunnerService())->status();
+    $migrationStatus = (new \App\Services\MigrationRunnerService())->status();
     if (!$migrationStatus['ready']) {
         $pendingRows = $migrationStatus['migrations'] ?? [];
         $pendingFiles = array_map(static fn(array $row): string => (string)($row['file'] ?? 'migration'), $pendingRows);
@@ -160,7 +160,7 @@ try {
             $pendingMigrationNotice .= ' Pending: '.implode(', ', $pendingFiles).'.';
         }
     }
-} catch (\\Throwable $e) {
+} catch (\Throwable $e) {
     $pendingMigrationNotice = 'Database migration status could not be verified. Please log off and check the migration status from the login page.';
 }
 ?><?php if ($pendingMigrationNotice !== null): ?><div class="alert alert-warning d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3" role="alert"><div><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Migration Required:</strong> <?= esc($pendingMigrationNotice) ?></div><a class="btn btn-sm btn-warning" href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-right me-1"></i>Log Off</a></div><?php endif; ?><?php if(session()->getFlashdata('success')): ?><div class="alert alert-success d-flex justify-content-between align-items-center gap-2 flex-wrap"><span><?= esc(session()->getFlashdata('success')) ?></span><?php if(session()->getFlashdata('receipt_url')): ?><a class="btn btn-sm btn-success" href="<?= esc(session()->getFlashdata('receipt_url')) ?>" target="_blank" rel="noopener"><i class="bi bi-printer me-1"></i>Print Receipt</a><?php endif; ?></div><?php endif; ?><?php if(session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?><?= $this->renderSection('content') ?></div></div>
