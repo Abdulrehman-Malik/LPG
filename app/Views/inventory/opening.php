@@ -42,6 +42,8 @@
                                 "type" => $r["inventory_type"],
                                 "cylinderTypeId" => $r["cylinder_type_id"],
                                 "quantity" => (float) $r["quantity"],
+                                "gasStock" => (float) ($r["gas_stock"] ?? 0),
+                                "capacityKg" => (float) ($r["capacity_kg"] ?? 0),
                                 "comments" => $r["comments"] ?? "",
                             ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
                             Edit
@@ -165,7 +167,13 @@ function prepareEdit(row) {
     document.getElementById('formTitle').textContent = 'Edit Opening Inventory';
     document.getElementById('openingId').value = row.id;
     document.getElementById('inventoryDate').value = row.date;
-    document.getElementById('invType').value = row.type;
+    const averageGas = row.quantity > 0 ? Number(row.gasStock || 0) / Number(row.quantity) : 0;
+    const isPartial = row.type === 'filled_cylinder'
+        && Number(row.capacityKg || 0) > 0
+        && averageGas > 0
+        && averageGas < Number(row.capacityKg) - 0.00001;
+
+    document.getElementById('invType').value = isPartial ? 'partially_filled_cylinder' : row.type;
     document.getElementById('cylinderTypeId').value = row.cylinderTypeId;
     document.getElementById('quantity').value = row.quantity;
     document.getElementById('actualGasWeight').value = '';
