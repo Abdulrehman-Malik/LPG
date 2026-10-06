@@ -24,7 +24,7 @@ class DatabaseBackup extends Controller
             'backups' => $service->listBackups(),
             'backupDirectory' => $service->directory(),
             'maxUploadSize' => config('Backup')->maxUploadSize,
-            'emailRecipients' => config('Email')->recipients,
+            'emailRecipients' => (string) session()->get('database_backup_email'),
         ]);
     }
 
@@ -33,8 +33,18 @@ class DatabaseBackup extends Controller
         if ($r = $this->guard()) return $r;
 
         try {
+            $emailRecipient = trim((string) $this->request->getPost('email_recipient'));
+            if ($emailRecipient !== '' && !filter_var($emailRecipient, FILTER_VALIDATE_EMAIL)) {
+                return redirect()->back()->withInput()->with('error', 'Please enter a valid email address.');
+            }
+
+            if ($emailRecipient !== '') {
+                session()->set('database_backup_email', $emailRecipient);
+            }
+
             $result = (new DatabaseBackupService())->createBackup(
-                $this->request->getPost('send_email') === '1'
+                $this->request->getPost('send_email') === '1',
+                $emailRecipient !== '' ? $emailRecipient : (string) session()->get('database_backup_email')
             );
 
             $message = 'Database backup created successfully: ' . $result['name'];
