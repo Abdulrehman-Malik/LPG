@@ -82,6 +82,11 @@ class InventoryOpening extends Controller
         $actual = $actualRaw !== null && $actualRaw !== '' ? (float) $actualRaw : 0;
         $comments = trim((string) ($this->request->getPost('comments') ?? ''));
 
+        $partialFilled = $kind === 'partially_filled_cylinder';
+        if ($partialFilled) {
+            $kind = 'filled_cylinder';
+        }
+
         if (!$date || !in_array($kind, ['filled_cylinder', 'empty_cylinder'], true) || $qty < 0) {
             return redirect()->back()->withInput()->with('error', 'Valid date, inventory type and non-negative quantity are required.');
         }
@@ -108,7 +113,13 @@ class InventoryOpening extends Controller
                 if ($actual <= 0 || $actual > (float) $ct['capacity_kg']) {
                     return redirect()->back()->withInput()->with('error', 'Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
                 }
+                if ($partialFilled && $actual >= (float) $ct['capacity_kg']) {
+                    return redirect()->back()->withInput()->with('error', 'For a partially filled cylinder, actual gas weight must be less than the cylinder capacity.');
+                }
             } else {
+                if ($partialFilled) {
+                    return redirect()->back()->withInput()->with('error', 'Actual gas weight is required for a partially filled cylinder.');
+                }
                 $actual = (float) $ct['capacity_kg'];
             }
         } else {
