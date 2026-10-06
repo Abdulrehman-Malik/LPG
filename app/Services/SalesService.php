@@ -833,7 +833,10 @@ class SalesService
         $paymentTotal=0;
         foreach($payments as $p){
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
-            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
+            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<0)throw new RuntimeException('Invalid payment.');
+            if($amount<=0 && !($mode==='credit' && $customerId)){
+                throw new RuntimeException('Payment amount must be greater than zero unless this is an unpaid customer credit sale.');
+            }
             if(!$customerId&&$mode!=='cash')throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer.':'Walk-in transactions are cash only.');
             $paymentTotal+=$amount;
         }
@@ -871,9 +874,12 @@ class SalesService
             $creditMode=(string)($shopSettings['credit_limit_validation_mode']??'none');
             $settlementTotal=array_sum(array_map(static fn($p)=>(float)$p['amount'],$settlements));
 
-            if($creditMode==='customer'){
+            if($creditMode==='customer' || ($creditMode==='none' && (float)($customerForCredit['credit_limit']??0)>0)){
+                // A configured customer credit limit is authoritative for that customer.
+                // This also prevents a configured limit from being displayed as Unlimited
+                // while the server silently allows unlimited credit.
                 $creditLimit=(float)($customerForCredit['credit_limit']??0);
-                if($newOs>$creditLimit+0.01){
+                if($creditLimit>0 && $newOs>$creditLimit+0.01){
                     $available=max(0,$creditLimit-$previousOs);
                     throw new RuntimeException('Customer credit limit exceeded. Existing OS Rs. '.number_format($previousOs,2).'; available additional credit Rs. '.number_format($available,2).'.');
                 }
