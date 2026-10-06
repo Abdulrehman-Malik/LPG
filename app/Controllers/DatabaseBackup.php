@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Models\ShopSettingsModel;
 use App\Services\DatabaseBackupService;
 use CodeIgniter\Controller;
 
@@ -19,12 +20,16 @@ class DatabaseBackup extends Controller
         if ($r = $this->guard()) return $r;
 
         $service = new DatabaseBackupService();
+        $locationId = (int) session()->get('location_id');
+        $settings = (new ShopSettingsModel())->forLocation($locationId);
+
         return view('database-backup/index', [
             'title' => 'Database Backup & Restore',
             'backups' => $service->listBackups(),
             'backupDirectory' => $service->directory(),
             'maxUploadSize' => config('Backup')->maxUploadSize,
             'emailRecipients' => (string) session()->get('database_backup_email'),
+            'emailSettings' => $settings,
         ]);
     }
 
@@ -58,6 +63,87 @@ class DatabaseBackup extends Controller
         }
     }
 
+    public function saveEmailSettings()
+    {
+        if ($r = $this->guard()) return $r;
+
+        $locationId = (int) session()->get('location_id');
+        $host = trim((string) $this->request->getPost('smtp_host'));
+        $port = (int) $this->request->getPost('smtp_port');
+        $username = trim((string) $this->request->getPost('smtp_username'));
+        $password = (string) $this->request->getPost('smtp_password');
+        $encryption = trim((string) $this->request->getPost('smtp_encryption'));
+        $fromEmail = trim((string) $this->request->getPost('smtp_from_email'));
+        $fromName = trim((string) $this->request->getPost('smtp_from_name'));
+        $enabled = $this->request->getPost('smtp_enabled') ? 1 : 0;
+
+        if ($enabled) {
+            if ($host === '' || $port < 1 || $port > 65535) {
+                return redirect()->back()->withInput()->with('error', 'Enter a valid SMTP host and port.');
+            }
+            if (!in_array($encryption, ['', 'tls', 'ssl'], true)) {
+                return redirect()->back()->withInput()->with('error', 'Invalid SMTP encryption type.');
+            }
+            if ($fromEmail === '' || !filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+                return redirect()->back()->withInput()->with('error', 'Enter a valid From Email address.');
+            }
+        }
+
+        $model = new ShopSettingsModel();
+        $settings = $model->forLocation($locationId);
+
+        $data = [
+            'location_id' => $locationId,
+            'smtp_host' => $host,
+            'smtp_port' => $port ?: 587,
+            'smtp_username' => $username ?: null,
+            'smtp_encryption' => $encryption,
+            'smtp_from_email' => $fromEmail ?: null,
+            'smtp_from_name' => $fromName ?: 'Perfect LPG',
+            'smtp_enabled' => $enabled,
+        ];
+
+        // Keep the existing password when the password field is left blank.
+        if ($password !== '') {
+            $data['smtp_password'] = $password;
+        } elseif (!empty($settings['smtp_password'])) {
+            $data['smtp_password'] = $settings['smtp_password'];
+        } else {
+            $data['smtp_password'] = null;
+        }
+
+        try {
+            if ((int) ($settings['id'] ?? 0) > 0) {
+                $model->update((int) $settings['id'], $data);
+            } else {
+                $model->insert($data);
+            }
+
+            return redirect()->to('/database-backup')->with('success', 'Email/SMTP configuration saved successfully.');
+        } catch (\Throwable $e) {
+            log_message('error', 'SMTP settings save failed: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', 'Email configuration could not be saved.');
+        }
+    }
+
+    public function testEmail()
+    {
+        if ($r = $this->guard()) return $r;
+
+        $recipient = trim((string) $this->request->getPost('test_email'));
+        if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->withInput()->with('error', 'Enter a valid test email address.');
+        }
+
+        try {
+            (new DatabaseBackupService())->sendTestEmail($recipient);
+            return redirect()->to('/database-backup')->with('success', 'Test email sent successfully.');
+        } catch (\Throwable $e) {
+            log_message('error', 'Test email failed: {error}', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
     public function restore()
     {
         if ($r = $this->guard()) return $r;
@@ -86,7 +172,6 @@ class DatabaseBackup extends Controller
                 throw new \RuntimeException('The backup file could not be uploaded.');
             }
 
-            // Always create a local safety backup immediately before restore.
             (new DatabaseBackupService())->createBackup(false);
             $result = (new DatabaseBackupService())->restore($temporary);
 
