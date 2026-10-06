@@ -237,9 +237,16 @@ function refreshCustomer(){
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
  if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.';return c;}
- if(creditLimitMode==='none'){box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited';return c;}
- if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Shop credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+shopCreditLimit.toFixed(2);return c;}
- const available=Math.max(0,c.limit-c.balance);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+c.limit.toFixed(2);return c;
+ if(creditLimitMode==='none'){
+   if(c.limit>0){
+     const available=Math.max(0,c.limit-c.balance);
+     if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}
+     box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+c.limit.toFixed(2)+' | Available: '+available.toFixed(2);return c;
+   }
+   box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited';return c;
+ }
+ if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Shop credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+shopCreditLimit.toFixed(2)+' | Available: '+available.toFixed(2);return c;}
+ const available=Math.max(0,c.limit-c.balance);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+c.limit.toFixed(2)+' | Available: '+available.toFixed(2);return c;
 }
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
