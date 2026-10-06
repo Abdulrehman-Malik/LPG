@@ -16,7 +16,13 @@ use App\Controllers\Filters\AuthFilter;
 
 class Filters extends BaseFilters
 {
-    private array $csrfExcept = ENVIRONMENT === 'testing' ? ['migrations/run'] : [];
+    public function __construct()
+    {
+        if (ENVIRONMENT === 'testing') {
+            $this->globals['before']['csrf']['except'] = ['migrations/run'];
+        }
+    }
+
     /**
      * Configures aliases for Filter classes to
      * make reading things nicer and simpler.
@@ -73,7 +79,7 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            'csrf' => ['except' => $this->csrfExcept],
+            'csrf' => ['except' => []],
         ],
         'after' => [
             // 'honeypot',
