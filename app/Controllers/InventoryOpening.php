@@ -76,11 +76,12 @@ class InventoryOpening extends Controller
 
         $date = (string) $this->request->getPost('inventory_date');
         $typeId = $this->request->getPost('cylinder_type_id') === '' ? null : (int) $this->request->getPost('cylinder_type_id');
-        $qty = (float) $this->request->getPost('quantity');
+        $qtyRaw = $this->request->getPost('quantity');
+        $qty = is_numeric($qtyRaw) ? (float) $qtyRaw : 0;
         $actualRaw = $this->request->getPost('actual_gas_weight_kg');
         $comments = trim((string) ($this->request->getPost('comments') ?? ''));
 
-        if (!$date || $qty < 1) {
+        if (!$date || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $date) || $qty < 1) {
             return redirect()->back()->withInput()->with('error', 'Valid date and a cylinder quantity of at least 1 are required.');
         }
         if (!$typeId) {
@@ -132,7 +133,19 @@ class InventoryOpening extends Controller
 
         $db = Database::connect();
 
+        // Cylinder type is part of the physical identity. It may not be changed
+        // while editing an opening entry.
         if ($existing) {
+            $typeId = (int) $existing['cylinder_type_id'];
+            $ct = $this->types->find($typeId);
+            if (!$ct) {
+                return redirect()->back()->withInput()->with('error', 'The cylinder type used by this opening record no longer exists.');
+            }
+            $capacity = (float) $ct['capacity_kg'];
+            if ($actual > $capacity + 0.00001) {
+                return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 3) . ' KG.');
+            }
+
             $existingUnits = $db->table('cylinder_units')
                 ->select('id')
                 ->where([
@@ -165,6 +178,23 @@ class InventoryOpening extends Controller
         $db->transBegin();
 
         try {
+            // The opening table has a unique key on location + date + type + cylinder type.
+            // Check it explicitly so users get a useful validation message instead of
+            // the generic "could not be saved" transaction error.
+            $duplicateQuery = $db->table('inventory_opening_balances')
+                ->where('location_id', $locationId)
+                ->where('inventory_date', $date)
+                ->where('inventory_type', $kind)
+                ->where('cylinder_type_id', $typeId);
+
+            if ($existing) {
+                $duplicateQuery->where('id !=', (int) $existing['id']);
+            }
+
+            if ($duplicateQuery->countAllResults() > 0) {
+                throw new \RuntimeException('An opening inventory entry already exists for this date, cylinder type, and cylinder status. Edit the existing entry instead.');
+            }
+
             $oldValues = $existing ? [
                 'id' => (int) $existing['id'],
                 'inventory_date' => $existing['inventory_date'],
@@ -185,11 +215,28 @@ class InventoryOpening extends Controller
             ];
 
             if ($existing) {
-                $this->model->update($existing['id'], $data);
+                $ok = $db->table('inventory_opening_balances')
+                    ->where(['id' => (int) $existing['id'], 'location_id' => $locationId])
+                    ->update($data);
+
+                if ($ok === false) {
+                    $error = $db->error();
+                    throw new \RuntimeException('Opening inventory update failed: ' . ($error['message'] ?? 'Database error.'));
+                }
+
                 $openingId = (int) $existing['id'];
             } else {
-                $this->model->insert($data);
-                $openingId = (int) $this->model->getInsertID();
+                $ok = $db->table('inventory_opening_balances')->insert($data);
+
+                if ($ok === false) {
+                    $error = $db->error();
+                    throw new \RuntimeException('Opening inventory insert failed: ' . ($error['message'] ?? 'Database error.'));
+                }
+
+                $openingId = (int) $db->insertID();
+                if ($openingId <= 0) {
+                    throw new \RuntimeException('Opening inventory insert failed: no record ID was generated.');
+                }
             }
 
             // Every new opening save creates the requested number of new
@@ -285,7 +332,8 @@ class InventoryOpening extends Controller
             );
 
             if (!$db->transStatus()) {
-                throw new \RuntimeException('Opening inventory could not be saved.');
+                $error = $db->error();
+                throw new \RuntimeException('Opening inventory could not be saved: ' . ($error['message'] ?? 'database transaction failed.'));
             }
 
             $db->transCommit();
