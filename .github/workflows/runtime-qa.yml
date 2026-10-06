@@ -70,6 +70,12 @@ jobs:
           done
           cat /tmp/lpg-server.log
           exit 1
+      - name: Verify PHP MySQL connectivity
+        env:
+          MYSQL_PWD: root
+        run: |
+          set -e
+          php -r '$m = new mysqli("127.0.0.1", "root", "root", "perfect_lpg", 3306); if ($m->connect_error) { fwrite(STDERR, "PHP_MYSQLI_CONNECT_FAILED: ".$m->connect_error."\n"); exit(1); } echo "PHP_MYSQLI_CONNECT_PASS\n"; echo "PHP_MYSQLI_SERVER=".$m->server_info."\n";'
       - name: Run application migrations
         env:
           CI_ENVIRONMENT: development
