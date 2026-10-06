@@ -213,14 +213,9 @@ class DatabaseBackupService
     private function buildEmail(array $settings)
     {
         $encryption = trim((string) ($settings['smtp_encryption'] ?? ''));
-        if ($encryption === 'ssl') {
-            $host = trim((string) $settings['smtp_host']);
-            if (!str_starts_with($host, 'ssl://')) {
-                $host = 'ssl://' . $host;
-            }
-        } else {
-            $host = trim((string) $settings['smtp_host']);
-        }
+        // Keep the hostname separate from the encryption setting. CI4's email
+        // configuration supports TLS/SSL through SMTPCrypto and the port.
+        $host = trim((string) $settings['smtp_host']);
 
         $email = service('email');
         $email->initialize([
@@ -231,7 +226,7 @@ class DatabaseBackupService
             'SMTPPort' => (int) ($settings['smtp_port'] ?? 587),
             'SMTPTimeout' => 30,
             'SMTPKeepAlive' => false,
-            'SMTPCrypto' => $encryption === 'ssl' ? '' : $encryption,
+            'SMTPCrypto' => in_array($encryption, ['tls', 'ssl'], true) ? $encryption : '',
             'wordWrap' => true,
             'wrapChars' => 76,
             'mailType' => 'text',
