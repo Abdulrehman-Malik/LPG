@@ -68,3 +68,13 @@ CI_ENVIRONMENT = development
 #--------------------------------------------------------------------
 
 # logger.threshold = 4
+
+
+#--------------------------------------------------------------------
+# DATABASE BACKUP
+#--------------------------------------------------------------------
+# Relative paths are resolved from the LPG project root.
+# Default is writable/backups when these values are omitted.
+# backup.directory = writable/backups
+# backup.mysqldumpPath = C:/xampp/mysql/bin/mysqldump.exe
+# backup.mysqlPath = C:/xampp/mysql/bin/mysql.exe
