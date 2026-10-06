@@ -72,7 +72,7 @@ jobs:
           exit 1
       - name: Run application migrations
         env:
-          CI_ENVIRONMENT: testing
+          CI_ENVIRONMENT: development
           MYSQL_PWD: root
         run: |
           set -e
