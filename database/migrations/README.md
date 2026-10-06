@@ -29,6 +29,11 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 015 | `015_20261004_pos_os_receipt_snapshot.sql` | POS OS / receipt snapshot fields |
 | 016 | `016_20261004_empty_cylinder_sale_price.sql` | Cylinder Type empty-cylinder sale price |
 | 017 | `017_20261004_cylinder_sale_rate_components.sql` | Cylinder sale gas-rate and cylinder-price components |
+| 018 | `018_20261005_purchase_void_authorization.sql` | Purchase void authorization |
+| 019 | `019_20261005_stock_adjustment_history.sql` | Stock adjustment history |
+| 020 | `020_20261005_pos_transaction_type_visibility.sql` | POS transaction-type visibility |
+| 021 | `021_20261005_backup_email_settings.sql` | Database backup email settings |
+| 022 | `022_20261006_opening_inventory_excel_import.sql` | Opening inventory Excel import and separate import batches |
 
 ## Deployment rules
 
@@ -39,7 +44,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 019**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 022**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
