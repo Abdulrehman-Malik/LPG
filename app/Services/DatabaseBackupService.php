@@ -45,7 +45,7 @@ class DatabaseBackupService
         return $files;
     }
 
-    public function createBackup(bool $email = false): array
+    public function createBackup(bool $email = false, ?string $emailRecipient = null): array
     {
         $this->ensureDirectory();
 
@@ -70,7 +70,7 @@ class DatabaseBackupService
 
         $emailSent = false;
         if ($email) {
-            $emailSent = $this->emailBackup($path);
+            $emailSent = $this->emailBackup($path, $emailRecipient);
         }
 
         return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent];
@@ -168,12 +168,12 @@ class DatabaseBackupService
         }
     }
 
-    private function emailBackup(string $path): bool
+    private function emailBackup(string $path, ?string $emailRecipient = null): bool
     {
         $emailConfig = config('Email');
-        $recipients = trim((string) $emailConfig->recipients);
+        $recipients = trim((string) ($emailRecipient ?? $emailConfig->recipients));
         if ($recipients === '') {
-            throw new \RuntimeException('Email backup was requested, but email.recipients is not configured.');
+            throw new \RuntimeException('Email backup was requested, but no recipient email address is configured.');
         }
         if (trim((string) $emailConfig->fromEmail) === '') {
             throw new \RuntimeException('Email backup was requested, but email.fromEmail is not configured.');
