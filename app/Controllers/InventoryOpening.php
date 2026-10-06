@@ -357,12 +357,20 @@ class InventoryOpening extends Controller
             return $r;
         }
 
-        $target = WRITEPATH . 'uploads/opening_inventory_template.xlsx';
+        $target = WRITEPATH . 'uploads/opening_inventory_template_' . bin2hex(random_bytes(6)) . '.xlsx';
         try {
             $this->excel->createTemplate($target);
+            $contents = file_get_contents($target);
+            if ($contents === false) {
+                throw new \RuntimeException('Could not read the generated Excel template.');
+            }
+
             return $this->response
-                ->download($target, null)
-                ->setFileName('opening_inventory_template.xlsx');
+                ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->setHeader('Content-Disposition', 'attachment; filename="opening_inventory_template.xlsx"')
+                ->setHeader('Content-Length', (string) strlen($contents))
+                ->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+                ->setBody($contents);
         } catch (\Throwable $e) {
             return $this->response->setStatusCode(500)->setBody('Could not generate the Excel template: ' . $e->getMessage());
         } finally {
