@@ -39,7 +39,7 @@ class InventoryOpening extends Controller
 
         $locationId = (int) session()->get('location_id');
         $rows = $this->model
-            ->select('inventory_opening_balances.*, cylinder_types.code AS cylinder_code, cylinder_types.name AS cylinder_name')
+            ->select('inventory_opening_balances.*, cylinder_types.code AS cylinder_code, cylinder_types.name AS cylinder_name, cylinder_types.capacity_kg')
             ->join('cylinder_types', 'cylinder_types.id=inventory_opening_balances.cylinder_type_id', 'left')
             ->where('inventory_opening_balances.location_id', $locationId)
             ->orderBy('inventory_date', 'DESC')
