@@ -611,8 +611,10 @@ class SalesService
             $configuredCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
             $configuredCylinderRate=($configuredCylinderRate!==null && $configuredCylinderRate>0)?$configuredCylinderRate:null;
             $masterCylinderRate=(float)($type['empty_cylinder_price']??0);
-            if($masterCylinderRate<=0 && $configuredCylinderRate===null) throw new RuntimeException('No valid empty-cylinder price is defined for '.$type['name'].'. Configure a positive rate on Rates or Cylinder Types.');
             $stdCylinderRate=$configuredCylinderRate??$masterCylinderRate;
+            // A manually entered cylinder price is valid even when it is 0.00.
+            // Only require a configured/default price when the user leaves the price blank.
+            if($cylRateInput===null && $stdCylinderRate<=0) throw new RuntimeException('No empty-cylinder price is defined for '.$type['name'].'. Enter a cylinder price on the POS line or configure a default rate.');
             $cylRate=$cylRateInput??$stdCylinderRate;
             if($cylRate<0) throw new RuntimeException('Cylinder price cannot be negative on line '.$n.'.');
 
