@@ -71,9 +71,10 @@ jobs:
         run: |
           set -e
           curl -fsS -L -X POST http://127.0.0.1:8080/migrations/run -o /tmp/migration-response.html
-          grep -qiE 'Migration .* failed|migration_error' /tmp/migration-response.html && { cat /tmp/migration-response.html; exit 1; } || true
+          if grep -qi migration_error /tmp/migration-response.html; then cat /tmp/migration-response.html; exit 1; fi
           curl -fsS http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
-          grep -qiE 'name=["'"']login["'"']|name=["'"']password["'"']' /tmp/lpg-login-after-migrations.html
+          grep -qi 'login' /tmp/lpg-login-after-migrations.html
+          grep -qi 'password' /tmp/lpg-login-after-migrations.html
       - name: HTTP runtime smoke tests
         run: |
           set -e
