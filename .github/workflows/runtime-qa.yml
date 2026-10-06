@@ -82,7 +82,14 @@ jobs:
           MYSQL_PWD: root
         run: |
           set -e
-          php spark migrations:run
+          env \
+            'database.default.hostname=127.0.0.1' \
+            'database.default.port=3306' \
+            'database.default.database=perfect_lpg' \
+            'database.default.username=root' \
+            'database.default.password=root' \
+            'database.default.DBDriver=MySQLi' \
+            php spark migrations:run
           curl -fsS http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
           grep -qi 'password' /tmp/lpg-login-after-migrations.html
