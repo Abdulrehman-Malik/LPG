@@ -184,11 +184,13 @@ class InventoryOpening extends Controller
             // The opening table has a unique key on location + date + type + cylinder type.
             // Check it explicitly so users get a useful validation message instead of
             // the generic "could not be saved" transaction error.
+            $openingBatchKey = $existing ? (string) ($existing['opening_batch_key'] ?? '') : '';
             $duplicateQuery = $db->table('inventory_opening_balances')
                 ->where('location_id', $locationId)
                 ->where('inventory_date', $date)
                 ->where('inventory_type', $kind)
-                ->where('cylinder_type_id', $typeId);
+                ->where('cylinder_type_id', $typeId)
+                ->where('opening_batch_key', $openingBatchKey);
 
             if ($existing) {
                 $duplicateQuery->where('id !=', (int) $existing['id']);
