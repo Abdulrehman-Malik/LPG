@@ -92,6 +92,71 @@ class ExcelInventoryService
         return $data;
     }
 
+    public function readCustomers(string $path): array
+    {
+        if (!is_file($path) || filesize($path) <= 0) throw new RuntimeException('The uploaded Excel file is empty or could not be read.');
+        if (filesize($path) > 5 * 1024 * 1024) throw new RuntimeException('The Excel file is too large. Maximum allowed size is 5 MB.');
+        $archive=$this->openArchive($path);
+        try { $sheetPath=$this->resolveFirstSheetPath($archive); $sheetXml=$this->readEntry($archive,$sheetPath); $sharedStrings=$this->readSharedStrings($archive); }
+        finally { if($archive instanceof \ZipArchive) $archive->close(); }
+        $rowMatches=[]; preg_match_all('/<row\b[^>]*>(.*?)<\/row>/si',$sheetXml,$rowMatches);
+        $headers=null; $data=[];
+        $required=['code','name','phone','city','address','vehicle no','credit limit','allow credit sale','opening balance','active'];
+        foreach($rowMatches[1] as $rowIndex=>$rowXml){
+            $excelRow=$rowIndex+1; $cells=$this->readCells($rowXml,$sharedStrings); if(!$cells) continue;
+            if($headers===null){
+                $headers=[]; for($i=1;$i<=10;$i++) $headers[]=$this->normalizeHeader($cells[$i]??'');
+                if($headers!==$required) throw new RuntimeException('Invalid Excel headers. Required columns are: Code, Name, Phone, City, Address, Vehicle No, Credit Limit, Allow Credit Sale, Opening Balance, Active.');
+                continue;
+            }
+            $nonBlank=array_filter($cells,static fn($v)=>trim((string)$v)!==''); if(!$nonBlank) continue;
+            foreach($cells as $column=>$value) if($column>10 && trim((string)$value)!=='') throw new RuntimeException('Row '.$excelRow.' contains data outside the ten required columns.');
+            $data[]=['excel_row'=>$excelRow,'code'=>trim((string)($cells[1]??'')),'name'=>trim((string)($cells[2]??'')),'phone'=>trim((string)($cells[3]??'')),'city'=>trim((string)($cells[4]??'')),'address'=>trim((string)($cells[5]??'')),'vehicle_no'=>trim((string)($cells[6]??'')),'credit_limit'=>trim((string)($cells[7]??'')),'allow_credit_sale'=>trim((string)($cells[8]??'')),'opening_balance'=>trim((string)($cells[9]??'')),'is_active'=>trim((string)($cells[10]??''))];
+            if(count($data)>5000) throw new RuntimeException('The Excel file contains more than 5,000 data rows.');
+        }
+        if($headers===null) throw new RuntimeException('The Excel sheet is missing the required header row.');
+        if(!$data) throw new RuntimeException('The Excel sheet does not contain any customer rows.');
+        return $data;
+    }
+
+    public function createCustomerTemplate(string $targetPath): void
+    {
+        $dir=dirname($targetPath); if(!is_dir($dir)&&!mkdir($dir,0775,true)&&!is_dir($dir)) throw new RuntimeException('Unable to create the Excel template directory.');
+        $base=$dir.DIRECTORY_SEPARATOR.'customer_template_'.bin2hex(random_bytes(8)); $tarPath=$base.'.tar'; $zipPath=$base.'.xlsx';
+        try{
+            $archive=new \PharData($tarPath);
+            foreach($this->customerTemplateFiles() as $name=>$content) $archive[$name]=$content;
+            unset($archive); $tar=new \PharData($tarPath); $tar->convertToData(\Phar::ZIP,null,'xlsx');
+            if(!is_file($zipPath)) throw new RuntimeException('Unable to generate the Excel template.');
+            if(!rename($zipPath,$targetPath)) throw new RuntimeException('Unable to prepare the Excel template for download.');
+        }finally{@unlink($tarPath);@unlink($zipPath);}
+    }
+
+    private function customerTemplateFiles(): array
+    {
+        return [
+            '[Content_Types].xml'=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+            '_rels/.rels'=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+            'xl/workbook.xml'=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Customers" sheetId="1" r:id="rId1"/><sheet name="Instructions" sheetId="2" r:id="rId2"/></sheets></workbook>',
+            'xl/_rels/workbook.xml.rels'=>'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>',
+            'xl/worksheets/sheet1.xml'=>$this->worksheetXml([
+                ['Code','Name','Phone','City','Address','Vehicle No','Credit Limit','Allow Credit Sale','Opening Balance','Active'],
+                ['CUST001','Sample Customer','03001234567','Lahore','Sample address','ABC-123', '50000','1','0','1'],
+                ['CUST002','Another Customer','03009876543','Islamabad','Sample address','XYZ-456','0','0','1500','1'],
+            ]),
+            'xl/worksheets/sheet2.xml'=>$this->worksheetXml([
+                ['Customer Excel Upload Instructions'],
+                ['Code','Optional but must be unique when supplied. Existing customer codes are rejected; import never overwrites existing customers.'],
+                ['Name','Required.'],
+                ['Allow Credit Sale','Use 1 for allowed, 0 for cash only.'],
+                ['Credit Limit','Must be 0 or greater.'],
+                ['Opening Balance','Must be 0 or greater.'],
+                ['Active','Use 1 for active, 0 for inactive.'],
+                ['Other fields','Phone, City, Address and Vehicle No are optional.'],
+            ]),
+        ];
+    }
+
     public function createTemplate(string $targetPath): void
     {
         $dir = dirname($targetPath);
