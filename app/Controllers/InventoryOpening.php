@@ -249,21 +249,6 @@ class InventoryOpening extends Controller
                 }
             }
 
-                    $db->table('inventory_movements')->insert([
-                        'location_id' => $locationId,
-                        'inventory_type' => 'gas_kg',
-                        'cylinder_type_id' => null,
-                        'quantity' => $unitGasWeight,
-                        'direction' => 'in',
-                        'movement_at' => $date . ' 00:00:00',
-                        'source_type' => 'opening_cylinder',
-                        'source_id' => $openingId,
-                        'cylinder_unit_id' => $unit['id'],
-                        'created_by' => $userId,
-                        'notes' => 'Gas contained in opening filled cylinder',
-                    ]);
-                }
-            }
 
             $newValues = [
                 'id' => $openingId,
