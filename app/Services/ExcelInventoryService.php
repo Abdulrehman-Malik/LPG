@@ -227,7 +227,7 @@ class ExcelInventoryService
             }
 
             $type = strtolower($attrs['t'] ?? '');
-            if ($type === 'inlineStr') {
+            if ($type === 'inlinestr') {
                 $text = [];
                 preg_match_all('/<t\b[^>]*>(.*?)<\/t>/si', $body, $textMatches);
                 foreach ($textMatches[1] as $part) {
