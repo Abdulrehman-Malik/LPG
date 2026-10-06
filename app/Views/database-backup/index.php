@@ -3,7 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4 class="mb-1">Database Backup & Restore</h4>
-        <div class="text-muted small">Manage local database backups and restore SQL backup files.</div>
+        <div class="text-muted small">Manage local database backups, restore SQL files, and configure backup email delivery.</div>
     </div>
 </div>
 
@@ -23,6 +23,11 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="restore-tab" data-bs-toggle="tab" data-bs-target="#restore-pane" type="button" role="tab">
             <i class="bi bi-database-up me-1"></i>Restore
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab">
+            <i class="bi bi-envelope-gear me-1"></i>Email Configuration
         </button>
     </li>
 </ul>
@@ -45,15 +50,9 @@
 
                     <div class="mb-3">
                         <label for="emailRecipient" class="form-label">Email Address</label>
-                        <input type="email"
-                               class="form-control"
-                               id="emailRecipient"
-                               name="email_recipient"
-                               value="<?= esc($emailRecipients) ?>"
-                               placeholder="Enter email address">
-                        <div class="form-text">
-                            This address is remembered for your next backup until you change it.
-                        </div>
+                        <input type="email" class="form-control" id="emailRecipient" name="email_recipient"
+                               value="<?= esc($emailRecipients) ?>" placeholder="Enter email address">
+                        <div class="form-text">This address is remembered for your next backup until you change it.</div>
                     </div>
 
                     <div class="form-check form-switch mb-3">
@@ -102,6 +101,95 @@
                 <div class="form-text mt-2">
                     Maximum upload size: <?= esc(number_format($maxUploadSize / 1048576, 0)) ?> MB, subject to PHP upload limits.
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade" id="email-pane" role="tabpanel" aria-labelledby="email-tab">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">SMTP Email Configuration</div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    Configure email delivery here. No PHP <code>php.ini</code> mail configuration is required for backup emails.
+                </div>
+
+                <form method="post" action="<?= site_url('database-backup/email-settings/save') ?>">
+                    <?= csrf_field() ?>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="smtpEnabled" name="smtp_enabled" value="1"
+                               <?= !empty($emailSettings['smtp_enabled']) ? 'checked' : '' ?>>
+                        <label class="form-check-label fw-semibold" for="smtpEnabled">Enable SMTP email sending</label>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">SMTP Host</label>
+                            <input type="text" class="form-control" name="smtp_host"
+                                   value="<?= esc($emailSettings['smtp_host'] ?? '') ?>"
+                                   placeholder="smtp.example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">SMTP Port</label>
+                            <input type="number" class="form-control" name="smtp_port"
+                                   value="<?= esc($emailSettings['smtp_port'] ?? 587) ?>" min="1" max="65535">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">SMTP Username</label>
+                            <input type="text" class="form-control" name="smtp_username"
+                                   value="<?= esc($emailSettings['smtp_username'] ?? '') ?>"
+                                   autocomplete="username">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">SMTP Password</label>
+                            <input type="password" class="form-control" name="smtp_password"
+                                   placeholder="<?= !empty($emailSettings['smtp_password']) ? 'Leave blank to keep current password' : 'Enter SMTP password' ?>"
+                                   autocomplete="new-password">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Encryption</label>
+                            <select class="form-select" name="smtp_encryption">
+                                <option value="" <?= ($emailSettings['smtp_encryption'] ?? '') === '' ? 'selected' : '' ?>>None</option>
+                                <option value="tls" <?= ($emailSettings['smtp_encryption'] ?? '') === 'tls' ? 'selected' : '' ?>>TLS</option>
+                                <option value="ssl" <?= ($emailSettings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">From Email</label>
+                            <input type="email" class="form-control" name="smtp_from_email"
+                                   value="<?= esc($emailSettings['smtp_from_email'] ?? '') ?>"
+                                   placeholder="backup@example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">From Name</label>
+                            <input type="text" class="form-control" name="smtp_from_name"
+                                   value="<?= esc($emailSettings['smtp_from_name'] ?? 'Perfect LPG') ?>">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i>Save Email Configuration
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <form method="post" action="<?= site_url('database-backup/email-settings/test') ?>">
+                    <?= csrf_field() ?>
+                    <label class="form-label fw-semibold">Test Email</label>
+                    <div class="input-group">
+                        <input type="email" class="form-control" name="test_email"
+                               value="<?= esc($emailRecipients) ?>" placeholder="Enter test recipient" required>
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-send me-1"></i>Send Test Email
+                        </button>
+                    </div>
+                    <div class="form-text">Save the SMTP configuration before sending the test email.</div>
+                </form>
             </div>
         </div>
     </div>
