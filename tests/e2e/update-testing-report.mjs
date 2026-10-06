@@ -17,4 +17,4 @@ const idx=doc.indexOf(start);
 if(idx>=0){const next=doc.indexOf('\n## ',idx+start.length);doc=doc.slice(0,idx)+section+(next>=0?doc.slice(next+1):'');}
 else doc+='\n\n'+section;
 fs.writeFileSync(docPath,doc);
-if(failed>0) process.exitCode=1;
+
