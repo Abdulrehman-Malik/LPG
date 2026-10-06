@@ -9,6 +9,9 @@ on:
       - qa/workflow-cleanup
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   runtime-qa:
     runs-on: ubuntu-latest
@@ -107,59 +110,63 @@ jobs:
           await browser.close();
           EOF
 
-      - name: Browser UI QA (Playwright)
+      - name: Seed isolated Playwright business test data
+        env:
+          MYSQL_PWD: root
         run: |
           set -e
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg <<'SQL'
+          INSERT INTO shop_settings (location_id, default_transaction_type, pos_visible_transaction_types, individual_cylinder_tracking, allow_pos_source_cylinder_selection, default_payment_mode, stock_validation_enabled, allow_stock_override)
+          VALUES (1, 'gas_sale', 'gas_sale,cylinder_sale,security_deposit,cylinder_return', 1, 1, 'cash', 1, 1)
+          ON DUPLICATE KEY UPDATE default_transaction_type='gas_sale', pos_visible_transaction_types='gas_sale,cylinder_sale,security_deposit,cylinder_return', individual_cylinder_tracking=1, allow_pos_source_cylinder_selection=1, default_payment_mode='cash', stock_validation_enabled=1, allow_stock_override=1;
+          INSERT INTO rate_cards (location_id, rate_type, cylinder_type_id, rate_value, effective_from, created_by)
+          SELECT 1, 'gas_per_kg', NULL, 100.0000, NOW(), 1 WHERE NOT EXISTS (SELECT 1 FROM rate_cards WHERE location_id=1 AND rate_type='gas_per_kg' AND cylinder_type_id IS NULL);
+          INSERT INTO customers (code, name, phone, credit_limit, allow_credit_sale, opening_balance, is_active)
+          VALUES ('QA-E2E-CUST', 'QA E2E Customer', '03000000000', 100000, 1, 0, 1)
+          ON DUPLICATE KEY UPDATE name='QA E2E Customer', credit_limit=100000, allow_credit_sale=1, opening_balance=0, is_active=1;
+          INSERT INTO cylinder_units (location_id, cylinder_type_id, unit_code, status, gas_weight_kg, source_type, source_id, created_by)
+          SELECT 1, id, 'QA-E2E-C6-001', 'filled', 6.000, 'qa_seed', 0, 1 FROM cylinder_types WHERE code='C6'
+          AND NOT EXISTS (SELECT 1 FROM cylinder_units WHERE location_id=1 AND unit_code='QA-E2E-C6-001');
+          INSERT INTO cash_sessions (register_id, opened_by, opening_cash, status)
+          SELECT id, 1, 10000, 'open' FROM cash_registers WHERE location_id=1 AND code='REG-01'
+          AND NOT EXISTS (SELECT 1 FROM cash_sessions WHERE register_id=(SELECT id FROM cash_registers WHERE location_id=1 AND code='REG-01') AND status='open');
+          SQL
+      - name: Playwright business transaction QA
+        run: |
+          set -e
+          rm -rf /tmp/lpg-ui
           mkdir -p /tmp/lpg-ui
+          cp tests/e2e/lpg-runtime.spec.mjs /tmp/lpg-ui/lpg-runtime.spec.mjs
+          cp tests/e2e/update-testing-report.mjs /tmp/lpg-ui/update-testing-report.mjs
           cd /tmp/lpg-ui
           npm init -y >/dev/null 2>&1
-          npm install --no-audit --no-fund playwright@1.55.0
+          npm install --no-audit --no-fund @playwright/test@1.55.0
           npx playwright install --with-deps chromium
-          cat > /tmp/lpg-ui/lpg-ui-qa.mjs <<'EOF'
-          import { chromium } from 'playwright';
-          const browser = await chromium.launch({ headless: true, args: ['--no-proxy-server', '--disable-features=ProxyResolutionService'] });
-          const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-          const base = 'http://localhost:8080';
-          try {
-            await page.goto(base + '/login', { waitUntil: 'networkidle' });
-            await page.screenshot({ path: '/tmp/login.png', fullPage: true });
-            const username = page.locator('input[name="login"]:visible, #login:visible').first();
-            const password = page.locator('input[name="password"]:visible, #password:visible').first();
-            await username.fill('admin');
-            await password.fill('admin123');
-            await page.locator('button[type="submit"], input[type="submit"]').first().click();
-            await page.waitForLoadState('networkidle');
-            if (!page.url().includes('/dashboard')) {
-              console.log('LOGIN_DIAGNOSTIC_URL', page.url());
-              console.log('LOGIN_DIAGNOSTIC_BODY', (await page.locator('body').innerText()).slice(0, 4000));
-              throw new Error('Login did not reach dashboard: ' + page.url());
-            }
-            await page.screenshot({ path: '/tmp/dashboard-browser.png', fullPage: true });
-            const dashboardText = await page.locator('body').innerText();
-            for (const label of ['Total Sale', 'Cash Sale', 'Credit Sale', 'Payments', 'Stock Purchased']) {
-              if (!dashboardText.toLowerCase().includes(label.toLowerCase())) throw new Error('Dashboard metric missing: ' + label);
-            }
-            const stockTab = page.locator('#stock-tab');
-            await stockTab.click();
-            await page.waitForTimeout(300);
-            const stockText = await page.locator('#stock-pane').innerText();
-            for (const label of ['Filled Cylinders', 'Empty Cylinders', 'Issued Temporarily Against Deposit']) {
-              if (!stockText.toLowerCase().includes(label.toLowerCase())) throw new Error('Current stock metric missing: ' + label);
-            }
-            await page.locator('#summary-tab').click();
-            await page.waitForTimeout(300);
-            const config = page.getByText('Configuration', { exact: false }).first();
-            if (await config.count() === 0) throw new Error('Configuration menu not found');
-            await config.click();
-            await page.waitForTimeout(300);
-            await page.screenshot({ path: '/tmp/configuration-clicked.png', fullPage: true });
-            if (!(await page.locator('body').innerText()).toLowerCase().includes('configuration')) throw new Error('Configuration menu content disappeared after click');
-            const overflow = await page.evaluate(() => ({htmlOverflow:getComputedStyle(document.documentElement).overflowY,bodyOverflow:getComputedStyle(document.body).overflowY,scrollHeight:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight),viewportHeight:window.innerHeight}));
-            if (overflow.htmlOverflow === 'hidden' || overflow.bodyOverflow === 'hidden') throw new Error('Vertical scrolling is explicitly hidden');
-            console.log('UI QA PASS', JSON.stringify(overflow));
-          } finally { await browser.close(); }
-          EOF
-          env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy NO_PROXY=127.0.0.1,localhost node /tmp/lpg-ui/lpg-ui-qa.mjs
+          mkdir -p "$GITHUB_WORKSPACE/writable/runtime-qa"
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$GITHUB_WORKSPACE/writable/runtime-qa/playwright-results.json" LPG_QA_BASE_URL="http://127.0.0.1:8080" npx playwright test lpg-runtime.spec.mjs --workers=1 --reporter=json
+      - name: Update TESTING.md from Playwright results
+        if: always()
+        run: |
+          set -e
+          if [ -f writable/runtime-qa/playwright-results.json ]; then
+            cd /tmp/lpg-ui
+            PLAYWRIGHT_JSON_REPORT="$GITHUB_WORKSPACE/writable/runtime-qa/playwright-results.json" TESTING_MD_PATH="$GITHUB_WORKSPACE/TESTING.md" node update-testing-report.mjs
+          else
+            echo "Playwright JSON report was not generated."
+          fi
+      - name: Commit Playwright QA status to TESTING.md
+        if: always()
+        run: |
+          set -e
+          if git diff --quiet -- TESTING.md; then
+            echo "TESTING.md has no runtime status changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TESTING.md
+          git commit -m "Update Playwright runtime QA status [skip ci]"
+          git push origin HEAD:main
       - name: Run PHPUnit
         env:
           CI_ENVIRONMENT: testing
