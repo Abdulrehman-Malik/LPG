@@ -28,9 +28,11 @@ test('E2E-003 POS screen exposes configured gas-sale transaction', async ({ page
 test('E2E-004 Actual gas sale posts successfully', async ({ page }) => {
   await login(page); await page.goto('/sales',{waitUntil:'networkidle'});
   await page.locator('#transactionType').selectOption('gas_sale');
-  await page.locator('#customer_id').selectOption({label:/QA-E2E-CUST/});
+  await page.locator('#customer_id').selectOption({label:'QA-E2E-CUST — QA E2E Customer'});
   const line=page.locator('#lines tbody tr').first();
-  await line.locator('.cyl').selectOption({label:/C6/});
+  await line.locator('.cyl').selectOption({label:'C6 — 6 kg'});
+  await expect(line.locator('.sourceCyl')).toBeEnabled();
+  await line.locator('.sourceCyl').selectOption({label:/QA-E2E-C6-001/});
   await line.locator('.entryValue').fill('2');
   const total=await page.locator('#saleTotal').innerText();
   expect(Number(total)).toBeGreaterThan(0);
@@ -61,7 +63,7 @@ test('E2E-006 Gas stock is reduced after the actual sale', async ({ page }) => {
 test('E2E-007 POS rejects an invalid zero-quantity gas sale without posting', async ({ page }) => {
   await login(page); await page.goto('/sales',{waitUntil:'networkidle'});
   const line=page.locator('#lines tbody tr').first();
-  await line.locator('.cyl').selectOption({label:/C6/}); await line.locator('.entryValue').fill('0');
+  await line.locator('.cyl').selectOption({label:'C6 — 6 kg'}); await line.locator('.entryValue').fill('0');
   await page.locator('.payment .amount').first().fill('0'); await page.locator('#saveBtn').click();
   await expect(page.locator('#posValidationAlert')).toBeVisible();
   await expect(page.locator('#posValidationAlert')).toContainText(/valid quantity|invalid/i);
