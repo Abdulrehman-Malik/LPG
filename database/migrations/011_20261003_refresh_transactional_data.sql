@@ -93,6 +93,7 @@ BEGIN
         TRUNCATE TABLE supplier_payments;
 
         TRUNCATE TABLE inventory_wastage_logs;
+        TRUNCATE TABLE inventory_adjustments;
         TRUNCATE TABLE inventory_movements;
         TRUNCATE TABLE inventory_opening_balances;
         TRUNCATE TABLE cylinder_units;
@@ -154,6 +155,7 @@ BEGIN
             (SELECT COUNT(*) FROM sales) AS sales_rows,
             (SELECT COUNT(*) FROM purchases) AS purchase_rows,
             (SELECT COUNT(*) FROM inventory_movements) AS inventory_movement_rows,
+            (SELECT COUNT(*) FROM inventory_adjustments) AS inventory_adjustment_rows,
             (SELECT COUNT(*) FROM cylinder_units) AS cylinder_unit_rows,
             (SELECT COUNT(*) FROM customer_receipts) AS customer_receipt_rows,
             (SELECT COUNT(*) FROM supplier_payments) AS supplier_payment_rows,
