@@ -80,7 +80,8 @@
                 <div class="mb-3">
                     <label class="form-label">Inventory Type</label>
                     <select id="invType" class="form-select" required>
-                        <option value="filled_cylinder">Filled Cylinder</option>
+                        <option value="filled_cylinder">Full Filled Cylinder</option>
+                        <option value="partially_filled_cylinder">Partially Filled Cylinder</option>
                         <option value="empty_cylinder">Empty Cylinder</option>
                     </select>
                 </div>
@@ -103,7 +104,7 @@
                 <div class="mb-3" id="gasWeightWrap">
                     <label class="form-label">Actual Gas per Filled Cylinder (KG)</label>
                     <input name="actual_gas_weight_kg" id="actualGasWeight" type="number" min="0" step="0.001" class="form-control">
-                    <div class="form-text">Leave blank to use the selected cylinder's full capacity.</div>
+                    <div class="form-text" id="gasWeightHelp">Leave blank to use the selected cylinder's full capacity.</div>
                 </div>
 
                 <div class="mb-3">
@@ -131,9 +132,18 @@ function syncOpeningFields() {
 }
 
 function toggleOpening() {
-    const filled = document.getElementById('invType').value === 'filled_cylinder';
+    const type = document.getElementById('invType').value;
+    const filled = type === 'filled_cylinder' || type === 'partially_filled_cylinder';
+    const partial = type === 'partially_filled_cylinder';
+    const weight = document.getElementById('actualGasWeight');
+    const help = document.getElementById('gasWeightHelp');
+
     document.getElementById('gasWeightWrap').style.display = filled ? 'block' : 'none';
-    document.getElementById('actualGasWeight').disabled = !filled;
+    weight.disabled = !filled;
+    weight.required = partial;
+    help.textContent = partial
+        ? 'Enter the actual gas remaining in each cylinder. It must be greater than 0 and less than the cylinder capacity.'
+        : 'Leave blank to use the selected cylinder\'s full capacity.';
 }
 
 function prepareAdd() {
