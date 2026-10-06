@@ -122,7 +122,7 @@ class DatabaseBackup extends Controller
             return redirect()->to('/database-backup')->with('success', 'Email/SMTP configuration saved successfully.');
         } catch (\Throwable $e) {
             log_message('error', 'SMTP settings save failed: {error}', ['error' => $e->getMessage()]);
-            return redirect()->back()->withInput()->with('error', 'Email configuration could not be saved.');
+            return redirect()->back()->withInput()->with('error', 'Email configuration could not be saved: ' . $e->getMessage());
         }
     }
 
