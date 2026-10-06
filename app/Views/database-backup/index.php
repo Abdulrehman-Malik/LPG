@@ -109,10 +109,6 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">SMTP Email Configuration</div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    Configure email delivery here. No PHP <code>php.ini</code> mail configuration is required for backup emails.
-                </div>
-
                 <form method="post" action="<?= site_url('database-backup/email-settings/save') ?>">
                     <?= csrf_field() ?>
 
