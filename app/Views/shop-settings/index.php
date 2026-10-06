@@ -73,10 +73,10 @@
                     <div class="col-md-5">
                         <label class="form-label">Source Filled Cylinder Selection on POS</label>
                         <div class="form-check form-switch mt-2">
-                            <input class="form-check-input" type="checkbox" name="allow_pos_source_cylinder_selection" id="allowPosSourceCylinderSelection" <?= !empty($settings['allow_pos_source_cylinder_selection']) ? 'checked' : '' ?>>
+                            <input class="form-check-input" type="checkbox" name="allow_pos_source_cylinder_selection" id="allowPosSourceCylinderSelection" <?= !empty($settings['allow_pos_source_cylinder_selection']) ? 'checked' : '' ?> <?= empty($settings['individual_cylinder_tracking']) ? 'disabled' : '' ?>>
                             <label class="form-check-label" for="allowPosSourceCylinderSelection">Allow user to select the source filled cylinder on POS</label>
                         </div>
-                        <div class="form-text">ON: cashier selects one source cylinder per gas line. OFF: system automatically consumes physical filled cylinders in ascending sequence order.</div>
+                        <div class="form-text">Requires Individual Cylinder Tracking. ON: cashier selects a physical source cylinder. OFF: system automatically allocates available physical cylinders.</div>
                     </div>
                     <div class="col-md-5">
                         <label class="form-label">Individual Cylinder Tracking</label>
@@ -84,7 +84,7 @@
                             <input class="form-check-input" type="checkbox" name="individual_cylinder_tracking" id="individualCylinderTracking" <?= !empty($settings['individual_cylinder_tracking']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="individualCylinderTracking">Track individual physical cylinders in normal POS sales</label>
                         </div>
-                        <div class="form-text">Gas Sale always requires the cashier to select one filled physical source cylinder. Gas is deducted only from that selected unit and that same unit becomes empty when its gas reaches zero. This setting is retained for compatibility with existing installations.</div>
+                        <div class="form-text">ON: the system maintains stock at physical-cylinder level, including each cylinder's gas quantity/status. OFF: stock remains managed at cylinder-type level. Enable this before enabling Source Filled Cylinder Selection on POS.</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Credit Limit Validation</label>
@@ -188,4 +188,12 @@
     </div>
 </div>
 </form>
+<script>
+document.getElementById('individualCylinderTracking')?.addEventListener('change', function () {
+    const source = document.getElementById('allowPosSourceCylinderSelection');
+    if (!source) return;
+    source.disabled = !this.checked;
+    if (!this.checked) source.checked = false;
+});
+</script>
 <?= $this->endSection() ?>
