@@ -14,6 +14,7 @@ class ShopSettingsModel extends Model
         'location_id','default_sale_mode','default_transaction_type','pos_visible_transaction_types','individual_cylinder_tracking','allow_pos_source_cylinder_selection','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
         'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit','purchase_void_enabled',
         'backup_enabled','db_backup_url','backup_notes',
+        'smtp_host','smtp_port','smtp_username','smtp_password','smtp_encryption','smtp_from_email','smtp_from_name','smtp_enabled',
         'receipt_title','receipt_footer','show_address_on_receipt',
         'settings_note'
     ];
@@ -77,6 +78,14 @@ class ShopSettingsModel extends Model
             'backup_enabled' => 0,
             'db_backup_url' => '',
             'backup_notes' => '',
+            'smtp_host' => '',
+            'smtp_port' => 587,
+            'smtp_username' => '',
+            'smtp_password' => '',
+            'smtp_encryption' => 'tls',
+            'smtp_from_email' => '',
+            'smtp_from_name' => 'Perfect LPG',
+            'smtp_enabled' => 0,
             'receipt_title' => 'SALE RECEIPT',
             'receipt_footer' => 'Thank you',
             'show_address_on_receipt' => 1,
