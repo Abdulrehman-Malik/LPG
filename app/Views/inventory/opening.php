@@ -1,10 +1,23 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('content') ?>
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>Opening Inventory</h4>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#form" onclick="prepareAdd()">
-        Add Opening
-    </button>
+<div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+    <h4 class="mb-0">Opening Inventory</h4>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-secondary" href="<?= site_url('inventory/opening/template') ?>">
+            Download Excel Template
+        </a>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#excelImportForm">
+            Upload Excel
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#form" onclick="prepareAdd()">
+            Add Opening
+        </button>
+    </div>
+</div>
+
+<div class="alert alert-info py-2">
+    Excel imports use <strong>today's date</strong>. Each Excel row stays separate and creates its own physical cylinders.
+    Existing cylinder types with a capacity mismatch are flagged for confirmation; the existing database capacity is retained.
 </div>
 
 <div class="card">
@@ -73,6 +86,43 @@
             <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+</div>
+
+<div class="modal fade" id="excelImportForm" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form method="post" action="<?= site_url('inventory/opening/import') ?>" enctype="multipart/form-data" class="modal-content">
+            <?= csrf_field() ?>
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Opening Inventory Excel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Excel File (.xlsx)</label>
+                    <input type="file" name="opening_inventory_file" class="form-control" accept=".xlsx" required>
+                    <div class="form-text">
+                        Required columns: Cylinder Type, Quantity, Max GAS Capacity, Available Gas.
+                    </div>
+                </div>
+
+                <div class="alert alert-warning mb-3">
+                    If an existing cylinder type has a different capacity in Excel, the import will be flagged.
+                    Enable the confirmation below only after reviewing the mismatch. The existing database capacity will be used; it will not be changed by the import.
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="1" name="capacity_mismatch_confirmed" id="capacityMismatchConfirmed">
+                    <label class="form-check-label" for="capacityMismatchConfirmed">
+                        Confirm capacity mismatches and use the existing database capacity.
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="<?= site_url('inventory/opening/template') ?>" class="btn btn-outline-secondary">Download Template</a>
+                <button type="submit" class="btn btn-primary">Validate &amp; Import</button>
+            </div>
+        </form>
     </div>
 </div>
 
