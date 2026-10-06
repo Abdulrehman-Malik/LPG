@@ -37,6 +37,7 @@ class PermissionService
             'REPORT_VIEW' => 'View reports',
             'USER_MANAGE' => 'Manage users',
             'AUDIT_VIEW' => 'View audit log',
+            'BACKUP_MANAGE' => 'Create and restore database backups',
         ];
 
         foreach ($permissions as $code => $name) {
