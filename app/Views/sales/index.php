@@ -197,7 +197,6 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 </div>
 
 <textarea name="notes" class="form-control mb-3" placeholder="Notes"></textarea>
-<div id="posSubmitError" class="alert alert-danger d-none py-2 mb-2" role="alert"></div>
 <button class="btn btn-primary w-100" id="saveBtn">Post Transaction</button>
 </div></div></div>
 </div>
@@ -413,9 +412,9 @@ document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();
- const errorBox=document.getElementById('posSubmitError'),topError=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
- const showError=(message)=>{const msg=String(message||'Validation failed.');[errorBox,topError].forEach(el=>{el.textContent=msg;el.classList.remove('d-none');});errorBox.scrollIntoView({behavior:'smooth',block:'nearest'});};
- const clearError=()=>{[errorBox,topError].forEach(el=>{el.textContent='';el.classList.add('d-none');});};
+ const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
+ const showError=(message)=>{const msg=String(message||'Validation failed.');errorBox.textContent=msg;errorBox.classList.remove('d-none');errorBox.scrollIntoView({behavior:'smooth',block:'nearest'});};
+ const clearError=()=>{errorBox.textContent='';errorBox.classList.add('d-none');};
  clearError();
  const t=transactionType(),customerId=selectedCustomerId();
  const fail=(msg)=>{showError(msg);return false;};
@@ -483,6 +482,7 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
    saveBtn.disabled=false;saveBtn.textContent=originalText;showError(err.message);
  }
  return false;
+};
 addPayment();document.getElementById('transactionType').value=defaultTransactionType;refreshCustomer();refreshForm();
 </script>
 <?= $this->endSection() ?>
