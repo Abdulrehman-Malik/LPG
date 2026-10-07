@@ -772,6 +772,7 @@ function handleTransactionTypeChange(){
  try{
    resetTransactionFormState();
    refreshForm();
+   rebuildLines();
    const c=selectedCustomer();
    const previousOs=c?Math.max(0,c.balance):0;
    document.getElementById('previousOs').textContent=previousOs.toFixed(2);
