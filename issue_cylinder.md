@@ -6,7 +6,7 @@ Authoritative implementation source for POS Security Deposit / Issue Cylinder an
 ## Core Accounting Rule — MUST BE INDEPENDENT
 Security Deposit is a **separate financial transaction/component** from the gas/cylinder issue or return.
 
-- Security Deposit Receive must NEVER be netted, offset, allocated, or used as payment against the gas/cylinder sale amount.
+- Security Deposit Receive is always recorded as a separate refundable-deposit liability and is never netted into the gas/cylinder sale ledger. When a customer pays gas/cylinder charges and the deposit together, Shop Settings controls whether the single received amount is allocated Gas/Cylinder First, Security Deposit First, or manually; the resulting payment records remain separate.
 - Security Deposit Refund must NEVER be netted, offset, or used as payment against return-gas OS.
 - Gas/cylinder OS and Security Deposit OS must be calculated independently and then reflected in the customer's overall OS.
 - Deposit receipt/refund must have its own payment/refund records and deposit ledger/history.
