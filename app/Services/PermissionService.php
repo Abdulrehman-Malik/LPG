@@ -26,6 +26,7 @@ class PermissionService
         $permissions = [
             'DASHBOARD_VIEW' => 'View dashboard',
             'POS_SALE' => 'Create POS sales',
+            'POS_HISTORY' => 'View sale history',
             'POS_VOID' => 'Void posted sales',
             'CUSTOMER_MANAGE' => 'Manage customers',
             'SUPPLIER_MANAGE' => 'Manage suppliers',
@@ -50,7 +51,7 @@ class PermissionService
         $roleDefaults = [
             'ADMIN' => array_keys($permissions),
             'MANAGER' => array_values(array_diff(array_keys($permissions), ['USER_MANAGE'])),
-            'CASHIER' => ['DASHBOARD_VIEW', 'POS_SALE', 'CUSTOMER_MANAGE', 'REPORT_VIEW'],
+            'CASHIER' => ['DASHBOARD_VIEW', 'POS_SALE', 'POS_HISTORY', 'CUSTOMER_MANAGE', 'REPORT_VIEW'],
         ];
 
         foreach ($roleDefaults as $roleCode => $permissionCodes) {
