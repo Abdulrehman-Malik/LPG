@@ -850,23 +850,22 @@ class SalesService
                 $lockedRows[$id]=$locked;
             }
 
-            $salePayments=$payments;
-            if($deposit>0 && !$includeDepositOs){
-                $remainingDeposit=$deposit;$salePayments=[];
-                foreach($payments as $p){
-                    $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
-                    if($amount<=0) continue;
-                    $take=($mode==='credit')?0:min($amount,$remainingDeposit);
-                    if($take>0){$remainingDeposit-=$take;$amount-=$take;}
-                    if($amount>0)$salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
-                }
-                if($remainingDeposit>0.00001) throw new RuntimeException('Security deposit must be fully paid with a non-credit payment when Include Security Deposit in Party OS is disabled.');
-                $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
-                $paymentTotal=$paymentPlan['payment_total']+$deposit;
-            }else{
-                $paymentPlan=$this->prepareSalePaymentPlan($payments,$customerId,$expected);
-                $paymentTotal=$paymentPlan['payment_total'];
+            $remainingDeposit=$deposit;$salePayments=[];
+            foreach($payments as $p){
+                $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
+                if($amount<=0) continue;
+                $take=min($amount,$remainingDeposit);
+                if($mode==='credit') $take=0;
+                if($take>0){$remainingDeposit-=$take;$amount-=$take;}
+                if($amount>0)$salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
             }
+            if($remainingDeposit>0.00001) throw new RuntimeException('Security deposit must be fully paid with a non-credit payment.');
+            if($chargeTotal>0.00001){
+                $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
+            }else{
+                $paymentPlan=['sale_payments'=>[],'settlements'=>[],'credit_amount'=>0,'previous_os'=>$customerId?$this->customerBalance($customerId):0,'payment_total'=>0,'net_receivable'=>$customerId?$this->customerBalance($customerId):0,'remaining_os'=>$customerId?$this->customerBalance($customerId):0];
+            }
+            $paymentTotal=$paymentPlan['payment_total']+$deposit;
             if(abs($paymentTotal-$expected)>0.01) throw new RuntimeException('Payment total must equal the transaction amount including Security Deposit.');
 
             $saleNo=$this->nextSaleNo($transactionAt,$locationId);
@@ -875,7 +874,7 @@ class SalesService
                 'transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$chargeTotal,'discount_amount'=>0,'total_amount'=>$chargeTotal,
                 'security_deposit_amount'=>$deposit,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
                 'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>$paymentTotal,'net_receivable_amount'=>$includeDepositOs?$paymentPlan['net_receivable']:($paymentPlan['net_receivable']+$deposit),
-                'os_balance'=>$includeDepositOs?$paymentPlan['remaining_os']:($paymentPlan['remaining_os']),'return_gas_ledger_amount'=>0,
+                'os_balance'=>$includeDepositOs?($paymentPlan['remaining_os']+$deposit):$paymentPlan['remaining_os'],'return_gas_ledger_amount'=>0,
                 'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId
             ]);
             $saleId=(int)$this->db->insertID();
@@ -919,6 +918,7 @@ class SalesService
     {
         $lines=is_array($payload['lines']??null)?$payload['lines']:[];
         if(!$returnUnitIds && !$lines) throw new RuntimeException('Select at least one customer custody cylinder to return.');
+        $payments=is_array($payload['payments']??null)?$payload['payments']:[];
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
         $allowGas=(int)($shopSettings['allow_return_gas_qty']??0)===1;
         $affectsOs=(int)($shopSettings['return_gas_affects_os']??0)===1;
