@@ -1,16 +1,40 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('styles') ?>
 <style>
-.pos-workspace > .pos-lines-panel { flex: 0 0 75%; max-width: 75%; }
-.pos-workspace > .pos-summary-panel { flex: 0 0 25%; max-width: 25%; }
+.pos-workspace { align-items:flex-start; }
+.pos-workspace > .pos-lines-panel { flex:1 1 auto; min-width:0; max-width:none; }
+.pos-workspace > .pos-summary-panel { flex:0 0 310px; max-width:310px; min-width:280px; }
+.pos-workspace.mode-security_deposit > .pos-summary-panel,
+.pos-workspace.mode-cylinder_return > .pos-summary-panel { flex-basis:330px; max-width:330px; }
+.pos-workspace.mode-security_deposit > .pos-lines-panel,
+.pos-workspace.mode-cylinder_return > .pos-lines-panel { flex-basis:0; }
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
-/* Gas Sale: 7 columns */
-#lines.gas-sale-mode th:nth-child(1){width:27%} #lines.gas-sale-mode th:nth-child(2){width:20%} #lines.gas-sale-mode th:nth-child(3){width:14%}
-#lines.gas-sale-mode th:nth-child(4){width:13%} #lines.gas-sale-mode th:nth-child(5){width:15%} #lines.gas-sale-mode th:nth-child(6){width:8%} #lines.gas-sale-mode th:nth-child(7){width:3%}
-/* Cylinder Sale: 8 columns — keep every field readable */
-#lines.cylinder-sale-mode th:nth-child(1){width:22%} #lines.cylinder-sale-mode th:nth-child(2){width:14%} #lines.cylinder-sale-mode th:nth-child(3){width:8%}
-#lines.cylinder-sale-mode th:nth-child(4){width:10%} #lines.cylinder-sale-mode th:nth-child(5){width:14%} #lines.cylinder-sale-mode th:nth-child(6){width:14%} #lines.cylinder-sale-mode th:nth-child(7){width:11%} #lines.cylinder-sale-mode th:nth-child(8){width:7%}
+/* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:29%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:17%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:17%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:20%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:13%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:4%}
+#lines.gas-sale-mode.source-enabled th:nth-child(1){width:22%}
+#lines.gas-sale-mode.source-enabled th:nth-child(2){width:20%}
+#lines.gas-sale-mode.source-enabled th:nth-child(3){width:13%}
+#lines.gas-sale-mode.source-enabled th:nth-child(4){width:13%}
+#lines.gas-sale-mode.source-enabled th:nth-child(5){width:13%}
+#lines.gas-sale-mode.source-enabled th:nth-child(6){width:6%}
+#lines.gas-sale-mode.source-enabled th:nth-child(7){width:3%}
+#lines.cylinder-sale-mode th:nth-child(1){width:23%}
+#lines.cylinder-sale-mode th:nth-child(2){width:16%}
+#lines.cylinder-sale-mode th:nth-child(3){width:9%}
+#lines.cylinder-sale-mode th:nth-child(4){width:12%}
+#lines.cylinder-sale-mode th:nth-child(5){width:13%}
+#lines.cylinder-sale-mode th:nth-child(6){width:14%}
+#lines.cylinder-sale-mode th:nth-child(7){width:9%}
+#lines.cylinder-sale-mode th:nth-child(8){width:4%}
+#lines.gas-sale-mode .sourceCell { display:table-cell; }
+#lines.gas-sale-mode:not(.source-enabled) .sourceCell { display:none; }
+#lines.gas-sale-mode:not(.source-enabled) .sourceHead { display:none !important; }
 #lines.cylinder-sale-mode .cylStatus { min-width:0; }
 #lines.cylinder-sale-mode select { min-width:0; width:100%; }
 #lines .form-select,#lines .form-control { min-height:42px; }
@@ -21,6 +45,29 @@
 .pos-header-row .form-label { margin-bottom:.25rem; }
 .pos-header-row .credit-status-row { margin-top:-.15rem; }
 #standardTransaction { margin-top:0 !important; padding-top:0 !important; }
+#standardTransaction .table-responsive { overflow-x:auto; }
+#securityTransaction, #returnTransaction { width:100%; }
+#securityTransaction .table-responsive, #returnTransaction .table-responsive { overflow-x:auto; }
+#securityTransaction table, #returnTransaction table { width:100%; table-layout:fixed; }
+#securityTransaction th, #securityTransaction td,
+#returnTransaction th, #returnTransaction td { white-space:normal; overflow-wrap:anywhere; }
+#securityTransaction th:nth-child(1){width:18%} #securityTransaction th:nth-child(2){width:28%}
+#securityTransaction th:nth-child(3){width:10%} #securityTransaction th:nth-child(4){width:11%}
+#securityTransaction th:nth-child(5){width:12%} #securityTransaction th:nth-child(6){width:12%} #securityTransaction th:nth-child(7){width:5%}
+#returnTransaction th:nth-child(1){width:19%} #returnTransaction th:nth-child(2){width:11%}
+#returnTransaction th:nth-child(3){width:14%} #returnTransaction th:nth-child(4){width:14%}
+#returnTransaction th:nth-child(5){width:13%} #returnTransaction th:nth-child(6){width:13%} #returnTransaction th:nth-child(7){width:6%}
+#securityTransaction .card-body, #returnTransaction .card-body { padding:.8rem; }
+#securityTransaction .table td, #securityTransaction .table th,
+#returnTransaction .table td, #returnTransaction .table th { padding:.45rem .4rem; }
+.pos-workspace.mode-security_deposit #standardTransaction,
+.pos-workspace.mode-cylinder_return #standardTransaction { display:none !important; }
+.pos-workspace.mode-security_deposit #securityTransaction,
+.pos-workspace.mode-cylinder_return #returnTransaction { min-width:0; }
+.pos-workspace.mode-gas_sale #securityTransaction,
+.pos-workspace.mode-gas_sale #returnTransaction,
+.pos-workspace.mode-cylinder_sale #securityTransaction,
+.pos-workspace.mode-cylinder_sale #returnTransaction { display:none !important; }
 #standardTransaction .table-responsive { margin:0 !important; padding:0 !important; }
 #lines { margin-top:0 !important; margin-bottom:.25rem !important; }
 #lines thead { margin:0 !important; }
@@ -60,7 +107,7 @@
 .custody-list { max-height:250px; overflow:auto; }
 .custody-list option { padding:4px; }
 @media (max-width:1199.98px){
-  .pos-workspace > .pos-lines-panel,.pos-workspace > .pos-summary-panel{flex:0 0 100%;max-width:100%}
+  .pos-workspace > .pos-lines-panel,.pos-workspace > .pos-summary-panel{flex:0 0 100%;max-width:100%;min-width:0}
 }
 input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
@@ -100,7 +147,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 <input type="hidden" name="payments_json" id="payments_json">
 <input type="hidden" name="stock_override_confirmed" id="stock_override_confirmed" value="0">
 
-<div class="row g-3 pos-workspace">
+<div class="row g-3 pos-workspace mode-gas_sale" id="posWorkspace">
 <div class="col-lg-9 pos-lines-panel"><div class="card"><div class="card-body">
 
 <div class="row g-2 pos-header-row mb-2">
@@ -159,7 +206,11 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <div class="card border-info">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Cylinder Return / Refund Deposit</h6><button type="button" class="btn btn-sm btn-primary" id="openReturnPicker">Select Cylinders</button></div>
-      <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.<div class="row g-2 mb-2"><div class="col-md-4"><label class="form-label mb-1">Overall Return Gas Rate</label><input id="returnOverallRate" type="number" min="0" step="0.01" class="form-control form-control-sm"></div><div class="col-md-2 d-flex align-items-end"><button type="button" class="btn btn-sm btn-outline-primary w-100" id="applyReturnRate">Apply to All</button></div></div></div>
+      <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.</div>
+      <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-4 col-lg-3"><label class="form-label mb-1 fw-semibold">Overall Return Gas Rate</label><input id="returnOverallRate" type="number" min="0" step="0.01" class="form-control form-control-sm"></div>
+        <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-primary" id="applyReturnRate">Apply to All</button></div>
+      </div>
       <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       <div id="returnEmpty" class="text-muted small py-3">No cylinders selected. Click Select Cylinders.</div>
     </div>
@@ -305,7 +356,7 @@ function refreshDuplicateTypeOptions(){
 }
 function addGasLine(){
  const tr=document.createElement('tr');
- tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><div class="input-group input-group-sm"><span class="input-group-text"></span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
+ tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><div class="input-group input-group-sm"><span class="input-group-text"></span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';
  const mode=()=>document.getElementById('gasEntryMode').value;
  tr.dataset.entryMode=mode();tr.querySelector('.gasRate').value=kgRate!==null?Number(kgRate).toFixed(2):'';tr.querySelector('.gasRate').disabled=mode()==='amount';
  tr.querySelector('.cyl').onchange=()=>{refreshDuplicateTypeOptions();refreshGasSourceLine(tr,true);const t=tr.querySelector('.targetCyl');t.disabled=!selectedCustomerId();t.innerHTML=refillLineOptions(tr.querySelector('.cyl').value);recalc();};
@@ -315,8 +366,8 @@ function addGasLine(){
  tr.querySelector('.sourceCell').style.display=allowPosSourceCylinderSelection?'':'none';refreshGasSourceLine(tr,true);refreshDuplicateTypeOptions();
 }
 function rebuildLines(){
- clearLines();const t=transactionType();lineHead.innerHTML='';document.getElementById('lines').classList.remove('gas-sale-mode','cylinder-sale-mode');
- if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
+ clearLines();const t=transactionType();lineHead.innerHTML='';document.getElementById('lines').classList.remove('gas-sale-mode','cylinder-sale-mode','source-enabled');
+ if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');if(allowPosSourceCylinderSelection)document.getElementById('lines').classList.add('source-enabled');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
  else if(t==='cylinder_sale'){document.getElementById('lines').classList.add('cylinder-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
@@ -487,7 +538,8 @@ function recalc(){
  document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
 }
 function refreshForm(){
- const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
+ const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ workspace.className='row g-3 pos-workspace mode-'+t;
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('securityDeposit').disabled=t!=='security_deposit';document.getElementById('discount').disabled=!standard;if(!standard)document.getElementById('discount').value='0';if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
