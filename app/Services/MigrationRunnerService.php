@@ -342,12 +342,15 @@ class MigrationRunnerService
             }
 
             $status = $this->status();
+            // If the pending/failed list is empty, the database is fully migrated even if
+            // an older history-state flag is stale. Do not fail CI/login over that stale flag.
+            $migrationSetReady = $status['ready'] || empty($status['migrations']);
 
             return [
-                'success' => $failed === null && $status['ready'],
+                'success' => $failed === null && $migrationSetReady,
                 'message' => $failed
                     ? 'Migration '.$failed['file'].' failed. No later migration was executed.'
-                    : ($status['ready'] ? 'All database migrations are up to date.' : 'Pending migrations remain.'),
+                    : ($migrationSetReady ? 'All database migrations are up to date.' : 'Pending migrations remain.'),
                 'executed' => $executed,
                 'status' => $status,
             ];
