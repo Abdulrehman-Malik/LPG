@@ -276,3 +276,27 @@ __________________________________________________________________
 | POS-130 | Walk-in Cylinder Sale with unpaid balance | Existing Walk-in cash/full-payment rule remains enforced. |
 | POS-131 | Void posted Cylinder Sale | Gas and physical-cylinder inventory movements are fully reversed and the original sale remains visible as VOID. |
 | POS-132 | Gas Sale / Refill regression after Cylinder Sale changes | Existing Gas Sale / Refill UI, KG/Rs mode, source-cylinder logic and posting behavior remain unchanged. |
+
+
+## P. Independent Security Deposit / Gas OS Accounting Regression
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-133 | Issue gas/cylinder + deposit | Customer takes filled cylinder with gas/cylinder charge Rs.3,000 and Security Deposit Rs.5,000; pay both fully. | Gas/cylinder payment is recorded as sale payment; Rs.5,000 is recorded separately as Security Deposit Receive; deposit does not settle gas charge. | | |
+| POS-134 | Deposit affects OS | Enable Include Security Deposit in Party OS; issue with gas/cylinder charge fully paid and deposit Rs.5,000. | Gas OS remains 0; Deposit Balance = Rs.5,000; Deposit OS = +Rs.5,000; Overall OS = Rs.5,000. | | |
+| POS-135 | Deposit does not affect OS | Disable Include Security Deposit in Party OS; issue with fully paid gas/cylinder charge and deposit Rs.5,000. | Deposit Balance = Rs.5,000; Deposit OS = 0; Overall OS contains no deposit amount. | | |
+| POS-136 | Deposit cannot settle gas OS | Gas/cylinder charge Rs.3,000; deposit Rs.5,000; do not pay gas amount. | Gas OS = +Rs.3,000 and Deposit Balance = Rs.5,000 independently. Deposit is not used to clear the Rs.3,000 gas OS. | | |
+| POS-137 | Deposit refund + return gas | Return gas value Rs.1,000 and refund deposit Rs.5,000 with both OS settings enabled. | Return Gas OS = -Rs.1,000; Deposit OS = -Rs.5,000; refund payment is classified as Security Deposit Refund; neither component settles the other. | | |
+| POS-138 | Partial deposit refund | Deposit balance Rs.5,000; refund Rs.2,000. | Deposit balance becomes Rs.3,000; only Rs.2,000 deposit OS is reversed; return-gas OS remains independent. | | |
+| POS-139 | Refund cannot exceed deposit | Deposit balance Rs.5,000; attempt refund Rs.6,000. | Entire transaction rejected; no cylinder, stock, deposit or OS changes. | | |
+| POS-140 | Payment classification | Open issue/return transaction details after posting. | Gas/cylinder payments show payment type Sale; deposit receipt shows Security Deposit; refund shows Security Deposit Refund. | | |
+| POS-141 | Deposit balance source | Create multiple deposit receives/refunds across cylinders. | Refundable deposit balance equals deposits received minus deposits refunded; gas sales/return gas do not change it. | | |
+
+## Q. Legacy Gas Sale / Refill Regression After Deposit Changes
+
+| ID | Test Case | Steps | Expected Result | Result TRUE/FALSE | Actual Result / Notes |
+|---|---|---|---|---|---|
+| POS-142 | Existing Gas Sale / Refill | Perform normal Gas Sale / Refill without security deposit. | Existing gas-sale/refill posting, stock deduction, payment and OS behavior remains unchanged. | | |
+| POS-143 | Gas Sale with existing deposit | Customer already has refundable Security Deposit and deposit OS setting is ON; make a normal gas refill and pay the refill amount. | Refill payment settles only the gas/refill component; existing deposit is not consumed or reduced. | | |
+| POS-144 | Gas Sale credit with existing deposit | Customer has Security Deposit balance and gas refill is posted on credit. | New gas OS increases only by unpaid refill amount; deposit balance remains unchanged. | | |
+| POS-145 | Existing refill source-cylinder flow | Run existing source-cylinder ON and OFF refill scenarios. | Source selection/automatic allocation, gas quantities, physical-cylinder balances and refill history remain workable. | | |
