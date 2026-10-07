@@ -35,6 +35,7 @@
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:15%; white-space:normal}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:5%}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(6) .remove { font-size:.72rem; padding:.2rem .38rem; white-space:nowrap; }
+#lines.gas-sale-mode:not(.source-enabled) th .gas-sale-header-wrap { display:inline-block; line-height:1.05; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1){width:18%}
 #lines.gas-sale-mode.source-enabled th:nth-child(2){width:22%}
 #lines.gas-sale-mode.source-enabled th:nth-child(3){width:11%}
@@ -399,7 +400,7 @@ function refreshDuplicateTypeOptions(){
 }
 function addGasLine(){
  const tr=document.createElement('tr');
- tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><input class="form-control form-control-sm gasRate" type="number" min="0" step="any" aria-label="Gas Rate"></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove"><i class="bi bi-trash3 me-1"></i>Delete</button></td>';
+ tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><input class="form-control form-control-sm gasRate" type="number" min="0" step="any" aria-label="Gas Rate"></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">Delete</button></td>';
  const mode=()=>document.getElementById('gasEntryMode').value;
  tr.dataset.entryMode=mode();tr.querySelector('.gasRate').value=kgRate!==null?Number(kgRate).toFixed(2):'';tr.querySelector('.gasRate').disabled=mode()==='amount';
  tr.querySelector('.cyl').onchange=()=>{refreshDuplicateTypeOptions();refreshGasSourceLine(tr,true);const t=tr.querySelector('.targetCyl');t.disabled=!selectedCustomerId();t.innerHTML=refillLineOptions(tr.querySelector('.cyl').value);recalc();};
@@ -410,7 +411,7 @@ function addGasLine(){
 }
 function rebuildLines(){
  clearLines();const t=transactionType();lineHead.innerHTML='';document.getElementById('lines').classList.remove('gas-sale-mode','cylinder-sale-mode','source-enabled');
- if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');if(allowPosSourceCylinderSelection)document.getElementById('lines').classList.add('source-enabled');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th>Customer Cylinder</th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
+ if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');if(allowPosSourceCylinderSelection)document.getElementById('lines').classList.add('source-enabled');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th><span class="gas-sale-header-wrap">Customer<br>Cylinder</span></th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
  else if(t==='cylinder_sale'){document.getElementById('lines').classList.add('cylinder-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
