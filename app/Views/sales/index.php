@@ -516,6 +516,11 @@ function recalc(){
    else if(t==='cylinder_sale'){gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}
    gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
  });
+ if(t==='security_deposit'){
+   issueLines.forEach(l=>{const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);gasRequired+=gas;});
+ }else if(t==='cylinder_return'){
+   returnLines.forEach(l=>{gasRequired+=Number(l.return_gas_kg||0);});
+ }
  const discount=Math.max(0,Number(document.getElementById('discount').value||0));saleTotal=Math.max(0,saleTotal-discount);
  const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
@@ -536,7 +541,8 @@ function recalc(){
  updateRefund();
 }
 function refreshForm(){
- const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
+ const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ if(workspace)workspace.className='row g-3 pos-workspace mode-'+t;
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?'security_deposit':(t==='cylinder_return'?'security_deposit_refund':'sale');});
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
@@ -610,33 +616,8 @@ function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer f
 function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
 function setCustodyLists(){renderIssueLines();renderReturnLines();updateRefund();}
 function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=available.toFixed(2);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
-function recalc(){
- let saleTotal=0,gasRequired=0;const t=transactionType();
- if(t==='gas_sale'||t==='cylinder_sale'){
-   const usedByType={};
-   tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{const qty=Math.max(0,Number(tr.querySelector('.qty')?.value||0));let amount=0,gas=0;if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value,mode=document.getElementById('gasEntryMode')?.value||'quantity';if(mode==='amount'){const a=Number(tr.querySelector('.enteredAmount')?.value||0),rate=Number(tr.querySelector('.gasRate')?.value||0);gas=rate>0&&a>0?a/rate:0;tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';}else{tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';}const available=(filledUnits[typeId]||[]).reduce((s,u)=>s+Number(u.gas_weight_kg||0),0),prior=Number(usedByType[typeId]||0),remaining=Math.max(0,available-prior);if(gas>remaining&&tr.dataset.entryMode!=='amount'){tr.querySelector('.qty').value=remaining;gas=remaining;}usedByType[typeId]=prior+gas;amount=gas*Number(tr.querySelector('.gasRate').value||0);}else{gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=amount.toFixed(2);});
- }else if(t==='security_deposit'){
-   issueLines.forEach(l=>{const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);gasRequired+=gas;});
- }else if(t==='cylinder_return'){
-   returnLines.forEach(l=>{const gas=Number(l.return_gas_kg||0);gasRequired+=gas;});
- }
- const customer=selectedCustomer(),previousOs=customer?Number(customer.balance||0):0,deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0,refund=t==='cylinder_return'?Math.max(0,Number(document.getElementById('refundAmount').value||0)):0;
- const expected=t==='security_deposit'?saleTotal+deposit:(t==='cylinder_return'?refund:saleTotal+previousOs);
- document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);document.getElementById('previousOs').textContent=previousOs.toFixed(2);document.getElementById('netPayable').textContent=expected.toFixed(2);
- const paid=t==='cylinder_return'?refund:paymentTotal();document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
- document.getElementById('customerOsBalanceValue').textContent=(t==='security_deposit'&&<?=json_encode((int)($shopSettings['include_security_deposit_in_os']??0))?>===1?previousOs+deposit:(t==='cylinder_return'?previousOs:Math.max(0,expected-paid))).toFixed(2);
- document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
-}
-function refreshForm(){
- const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
- if(!workspace)return;
- workspace.className='row g-3 pos-workspace mode-'+t;
- document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
- document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit';document.getElementById('discount').disabled=!standard;if(!standard)document.getElementById('discount').value='0';if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
- document.getElementById('paymentSection').style.display=t==='cylinder_return'?'none':'block';document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
- if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}setCustodyLists();refreshPaymentModes();recalc();
-}
+
+
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
 document.getElementById('returnPickerType').onchange=returnPickerRender;document.getElementById('returnPickerStatus').onchange=returnPickerRender;document.getElementById('openReturnPicker').onclick=openReturnPicker;document.getElementById('confirmReturnPicker').onclick=addReturnSelection;
 document.getElementById('refundAmount').oninput=recalc;
