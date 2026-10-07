@@ -18,7 +18,7 @@
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#appearance" type="button">Appearance</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pos" type="button">POS & Sales</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventory" type="button">Inventory Control</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cash" type="button">Cash & Payments</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#security" type="button">Security & Void</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#custody" type="button">Cylinder Custody</button></li>\n            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#security" type="button">Security & Void</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#receipt" type="button">Receipt & Printing</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#backup" type="button">Backup & Maintenance</button></li>
         </ul>
@@ -124,6 +124,38 @@
                         <div class="form-text">The confirmation is recorded with the sale request. Keep this disabled for strict stock control.</div>
                     </div>
                     <div class="col-12"><div class="alert alert-info mb-0"><strong>Important:</strong> Cylinder-type overrides are managed separately in Inventory Controls so branch defaults and per-cylinder exceptions remain clear.</div></div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="custody">
+                <div class="row g-3">
+                    <div class="col-12"><div class="alert alert-info mb-0"><strong>Cylinder Custody:</strong> Configure how temporary cylinder issues, returns, gas recovery and security deposits affect stock and party OS.</div></div>
+                    <div class="col-md-6">
+                        <label class="form-label">Include Security Deposit in Party OS</label>
+                        <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="include_security_deposit_in_os" <?= !empty($settings['include_security_deposit_in_os']) ? 'checked' : '' ?>><label class="form-check-label">Include deposit hold/refund in customer OS</label></div>
+                        <div class="form-text">OFF by default. Deposit remains separately tracked either way.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Allow / Show Return Gas Quantity</label>
+                        <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="allow_return_gas_qty" <?= !empty($settings['allow_return_gas_qty']) ? 'checked' : '' ?>><label class="form-check-label">Allow cashier to enter gas returned with each cylinder</label></div>
+                        <div class="form-text">OFF by default. Return gas is then forced to 0.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Return Gas Affects Party OS</label>
+                        <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="return_gas_affects_os" <?= !empty($settings['return_gas_affects_os']) ? 'checked' : '' ?>><label class="form-check-label">Post returned-gas value as a party OS adjustment</label></div>
+                        <div class="form-text">Independent of whether the return-gas quantity field is visible.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Allow Empty-Issued Cylinder Returned With Gas</label>
+                        <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="allow_empty_issued_return_gas" <?= !empty($settings['allow_empty_issued_return_gas']) ? 'checked' : '' ?>><label class="form-check-label">Permit gas on return when it was issued empty</label></div>
+                        <div class="form-text">When enabled, the POS asks for confirmation before saving.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Allow Return Gas Greater Than Issued</label>
+                        <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" name="allow_return_gas_over_issued" <?= !empty($settings['allow_return_gas_over_issued']) ? 'checked' : '' ?>><label class="form-check-label">Permit returned gas to exceed historical issued gas</label></div>
+                        <div class="form-text">When enabled, the POS asks for confirmation before saving.</div>
+                    </div>
+                    <div class="col-12"><div class="alert alert-warning mb-0">All five options are disabled by default. A disabled rule rejects the complete transaction; the system never silently changes a disallowed return quantity.</div></div>
                 </div>
             </div>
 
