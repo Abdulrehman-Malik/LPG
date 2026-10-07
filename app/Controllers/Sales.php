@@ -86,9 +86,18 @@ class Sales extends Controller
         return view('sales/receipt',['sale'=>$sale,'items'=>$items,'payments'=>$payments,'shopSettings'=>$shopSettings,'location'=>$location]);
     }
 
-    public function history()
+    public function historyPage()
     {
-        if($r=$this->guard()) return $r;
+        if($r=$this->guard('POS_HISTORY')) return $r;
+        return view('sales/history', [
+            'title'=>'Sale History',
+            'canVoidSales'=>PermissionService::allows('POS_VOID'),
+        ]);
+    }
+
+    public function historyData()
+    {
+        if($r=$this->guard('POS_HISTORY')) return $r;
         $db=\Config\Database::connect();
         $from=trim((string)$this->request->getGet('from')) ?: date('Y-m-d');
         $to=trim((string)$this->request->getGet('to')) ?: $from;
@@ -104,7 +113,7 @@ class Sales extends Controller
     }
     public function details(int $id)
     {
-        if($r=$this->guard()) return $r;
+        if($r=$this->guard('POS_HISTORY')) return $r;
         $db=\Config\Database::connect(); $locationId=(int)session()->get('location_id');
         $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone,u.full_name created_by_name,vu.full_name voided_by_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->join('users vu','vu.id=s.voided_by','left')->where(['s.id'=>$id,'s.location_id'=>$locationId])->get()->getRowArray();
         if(!$sale) return $this->response->setStatusCode(404)->setJSON(['error'=>'Sale not found.']);
