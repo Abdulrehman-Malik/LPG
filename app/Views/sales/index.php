@@ -303,7 +303,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="col-md-3">
     <label class="form-label">Customer</label>
     <select name="customer_id" id="customer_id" class="form-select">
-      <option value="">Walk-in / Cash</option>
+      <option value="" data-walkin-option="1">Walk-in / Cash</option>
       <?php foreach($customers as $c): ?><option value="<?=$c['id']?>"><?=esc(($c['code']?$c['code'].' — ':'').$c['name'])?></option><?php endforeach; ?>
     </select>
   </div>
@@ -440,14 +440,30 @@ function transactionType(){return document.getElementById('transactionType').val
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:String(creditSaleAllowed[String(id)]??'0')==='1'}:null;}
 function refreshWalkInCustomerOption(){
- const select=document.getElementById('customer_id'),t=transactionType(),walkIn=select?.querySelector('option[value=""]');
- if(!select||!walkIn)return;
- const hideWalkIn=t==='security_deposit'||t==='cylinder_return';
- walkIn.hidden=hideWalkIn;
- walkIn.disabled=hideWalkIn;
- if(hideWalkIn&&select.value===''){
-   const firstCustomer=[...select.options].find(o=>o.value!=='');
-   if(firstCustomer)select.value=firstCustomer.value;
+ const select=document.getElementById('customer_id'),t=transactionType();
+ if(!select)return;
+ let walkIn=select.querySelector('option[data-walkin-option="1"]');
+ const customerOnly=t==='security_deposit'||t==='cylinder_return';
+ if(customerOnly){
+   if(!walkIn){
+     walkIn=document.createElement('option');
+     walkIn.value='';
+     walkIn.textContent='Walk-in / Cash';
+     walkIn.dataset.walkinOption='1';
+     walkIn.hidden=true;
+     select.insertBefore(walkIn,select.firstChild);
+   }
+   if(select.value===''){
+     const firstCustomer=[...select.options].find(o=>o.value!=='');
+     if(firstCustomer)select.value=firstCustomer.value;
+   }
+   walkIn.remove();
+ }else if(!walkIn){
+   walkIn=document.createElement('option');
+   walkIn.value='';
+   walkIn.textContent='Walk-in / Cash';
+   walkIn.dataset.walkinOption='1';
+   select.insertBefore(walkIn,select.firstChild);
  }
 }
 function refreshCustomer(){
