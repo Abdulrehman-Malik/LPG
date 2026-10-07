@@ -510,6 +510,11 @@ function recalc(){
 }
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
+ const workspace=document.getElementById('posWorkspace');
+ if(workspace){
+   workspace.classList.remove('mode-gas_sale','mode-cylinder_sale','mode-security_deposit','mode-cylinder_return');
+   workspace.classList.add('mode-'+t);
+ }
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?'security_deposit':(t==='cylinder_return'?'security_deposit_refund':'sale');});
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
