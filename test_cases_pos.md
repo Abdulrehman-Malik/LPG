@@ -300,3 +300,9 @@ __________________________________________________________________
 | POS-143 | Gas Sale with existing deposit | Customer already has refundable Security Deposit and deposit OS setting is ON; make a normal gas refill and pay the refill amount. | Refill payment settles only the gas/refill component; existing deposit is not consumed or reduced. | | |
 | POS-144 | Gas Sale credit with existing deposit | Customer has Security Deposit balance and gas refill is posted on credit. | New gas OS increases only by unpaid refill amount; deposit balance remains unchanged. | | |
 | POS-145 | Existing refill source-cylinder flow | Run existing source-cylinder ON and OFF refill scenarios. | Source selection/automatic allocation, gas quantities, physical-cylinder balances and refill history remain workable. | | |
+
+| POS-142 | Combined deposit + gas payment | Security Deposit / Issue Cylinder with gas charge and deposit; one Amount Received | POS displays Total Due and allocates payment according to Shop Settings while keeping sale/deposit payment classifications separate. | | |
+| POS-143 | Gas-first allocation | Allocation rule = Gas / Cylinder First | Gas/cylinder charge (including previous gas OS) is allocated first; remaining payment is classified as Security Deposit. | | |
+| POS-144 | Deposit-first allocation | Allocation rule = Security Deposit First | Deposit is allocated first; remaining payment is classified as Gas / Cylinder Sale. Security Deposit never becomes sale revenue. | | |
+| POS-145 | Manual allocation | Allocation rule = Manual Allocation | Cashier-entered gas and deposit allocations equal Amount Received and each stays within its due amount. | | |
+| POS-146 | Other transaction types unaffected | Run Gas Sale, Cylinder Sale, and Cylinder Return | Existing payment workflows continue to validate/post correctly. | | |
