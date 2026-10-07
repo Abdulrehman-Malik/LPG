@@ -488,6 +488,7 @@ function gasForCylinderSale(tr){
  if(status!=='filled'||!typeId)return 0;
  return selectedFilledUnits(tr).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);
 }
+function saleTotalForPayment(){return Number(document.getElementById('saleTotal').textContent||0);}
 function recalc(){
  let saleTotal=0,gasRequired=0;
  const t=transactionType();
@@ -796,12 +797,29 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  }else if(t==='cylinder_sale'){
    lines=[...tbody.querySelectorAll('tr:not(.cylinderPickerRow)')].map(tr=>({cylinder_type_id:tr.querySelector('.cyl').value,cylinder_status:tr.querySelector('.cylStatus').value,quantity:tr.querySelector('.qty').value,gas_weight_kg:tr.querySelector('.gasQty').value,gas_rate:tr.querySelector('.gasRate').value,cylinder_rate:tr.querySelector('.cylRate').value,selected_cylinder_unit_ids:tr._selectedUnitIds||[]}));if(!lines.length)return fail('Add at least one cylinder sale line.');
  }
- const pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:p.querySelector('.paymentType')?.value||'sale',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
+ let pays=[];
+ if(t==='security_deposit'){
+   const received=Math.max(0,Number(document.getElementById('combinedAmountReceived').value||0)),gasDue=saleTotalForPayment()+Number(document.getElementById('previousOs').textContent||0),depositDue=Number(document.getElementById('securityDeposit').value||0),mode=document.getElementById('combinedPaymentMode').value,ref=document.getElementById('combinedReference').value;
+   if(received<=0)return fail('Enter the amount received from the customer.');
+   if(received>gasDue+depositDue+0.01)return fail('Amount received cannot exceed the total amount due.');
+   if(depositPaymentAllocationRule==='manual'){
+     const ga=Math.max(0,Number(document.getElementById('manualGasAmount').value||0)),da=Math.max(0,Number(document.getElementById('manualDepositAmount').value||0));
+     if(Math.abs((ga+da)-received)>0.01)return fail('Manual Gas / Cylinder and Security Deposit allocations must equal Amount Received.');
+     if(ga>gasDue+0.01)return fail('Gas / Cylinder allocation exceeds the amount due.');
+     if(da>depositDue+0.01)return fail('Security Deposit allocation exceeds the deposit amount.');
+     if(ga>0)pays.push({payment_type:'sale',payment_mode:mode,amount:ga,reference_no:ref});
+     if(da>0)pays.push({payment_type:'security_deposit',payment_mode:mode,amount:da,reference_no:ref});
+   }else{
+     pays=[{payment_type:'combined',payment_mode:mode,amount:received,reference_no:ref}];
+   }
+ }else{
+   pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:p.querySelector('.paymentType')?.value||'sale',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
+ }
  document.getElementById('lines_json').value=JSON.stringify(lines);document.getElementById('payments_json').value=JSON.stringify(pays);
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0,refund=t==='cylinder_return'?Number(document.getElementById('refundAmount').value||0):0;
  if(t==='security_deposit'&&deposit<0)return fail('Security Deposit Amount cannot be negative.');
  if(t==='cylinder_return'&&refund>0){const refundTotal=paymentTotal('security_deposit_refund');if(!pays.length){addPayment('security_deposit_refund');return fail('Add a payment method for the security deposit refund.');}if(Math.abs(refundTotal-refund)>0.01)return fail('Refund payment total must equal the refund amount.');if(pays.some(p=>p.payment_type!=='security_deposit_refund'))return fail('Cylinder Return payments must be classified as Security Deposit Refund.');}
- if(t==='security_deposit'){const depositPaid=paymentTotal('security_deposit'),salePaid=paymentTotal('sale'),expectedGas=saleTotal+Number(document.getElementById('previousOs').textContent||0);if(deposit>0&&Math.abs(depositPaid-deposit)>0.01)return fail('Security Deposit payment total must equal the Security Deposit amount.');if(Math.abs(salePaid-expectedGas)>0.01)return fail('Gas / Cylinder payment total must equal the current charge plus any previous gas OS.');if(pays.some(p=>!['security_deposit','sale'].includes(p.payment_type)))return fail('Invalid payment classification for Security Deposit transaction.');}
+ if(t==='security_deposit'){const expectedGas=saleTotal+Number(document.getElementById('previousOs').textContent||0),totalDue=expectedGas+deposit,received=Number(document.getElementById('combinedAmountReceived').value||0);if(Math.abs(received-totalDue)>0.01)return fail('Amount Received must equal the Total Due of Rs. '+totalDue.toFixed(2)+'.');if(!pays.length)return fail('Enter a payment method and amount.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(Math.abs(dp-deposit)>0.01)return fail('Security Deposit allocation must equal Rs. '+deposit.toFixed(2)+'.');if(Math.abs(sp-expectedGas)>0.01)return fail('Gas / Cylinder allocation must equal Rs. '+expectedGas.toFixed(2)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
  if(['gas_sale','cylinder_sale'].includes(t)){const expected=saleTotal+Number(document.getElementById('previousOs').textContent||0);if(!pays.length)return fail('Add at least one payment.');if(paymentTotal()>expected+0.01)return fail('Payment cannot exceed the net receivable.');}
  document.getElementById('stock_override_confirmed').value='0';saveBtn.disabled=true;const old=saveBtn.textContent;saveBtn.textContent='Posting...';
  try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const data=await response.json().catch(()=>({}));if(!response.ok||data.success!==true)throw new Error(data.error||'Unable to post transaction.');window.location.href=data.redirect||'<?=site_url('sales')?>';}catch(err){saveBtn.disabled=false;saveBtn.textContent=old;return fail(err.message);}
