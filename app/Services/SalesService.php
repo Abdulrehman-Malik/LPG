@@ -1107,10 +1107,11 @@ class SalesService
             }
             if($amount>0.00001)throw new RuntimeException('Payment exceeds the customer net receivable.');
         }
-        // Only the unpaid portion of the current sale becomes new credit.
-        // Explicit Credit tender rows are already represented in $salePayments and
-        // must not be double-counted here.
-        $creditAmount=max(0,$remainingSale);
+        // The unpaid portion of the current sale becomes credit. If the cashier
+        // explicitly uses a Credit tender, retain that credit tender as part of the
+        // current-sale credit as well.
+        $explicitCreditAmount=array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
+        $creditAmount=max(0,$remainingSale)+$explicitCreditAmount;
         $newOs=max(0,$remainingOs+$creditAmount);
         if($customerId!==null && $creditAmount>0.01){
             $customerForCredit=$this->customers->find($customerId);
