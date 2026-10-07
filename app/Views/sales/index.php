@@ -325,14 +325,36 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
 </div>
 <div class="mb-3">
-  <label class="form-label">Net Receivable Amount</label>
+  <label class="form-label" id="netReceivableLabel">Net Receivable Amount</label>
   <div class="form-control bg-light fw-bold"><span id="netPayable">0.00</span></div>
 </div>
-<div class="mb-3"><label class="form-label">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
-<div class="mb-3"><label class="form-label fw-semibold">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
+<div class="mb-3"><label class="form-label" id="receiptAmountLabel">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
+<div class="mb-3"><label class="form-label fw-semibold" id="balanceLabel">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
 <div class="mb-3" id="refundBox" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'block' : 'none' ?>"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
 
-<div id="paymentSection" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'none' : 'block' ?>">
+<div id="combinedPaymentSection" class="border rounded p-3 mb-3" style="display:<?= $initialTransactionType === 'security_deposit' ? 'block' : 'none' ?>">
+  <div class="fw-semibold mb-2">Amount to Collect</div>
+  <div class="small text-muted mb-2">Enter the total amount the customer is paying now. The POS will keep the gas/cylinder charge and refundable deposit separate in the accounts.</div>
+  <div class="row g-2 mb-2">
+    <div class="col-6"><span class="small text-muted">Gas / Cylinder Sale</span><div class="fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div></div>
+    <div class="col-6"><span class="small text-muted">Security Deposit</span><div class="fw-semibold">Rs. <span id="combinedDepositDue">0.00</span></div></div>
+  </div>
+  <div class="border-top pt-2 mb-2 d-flex justify-content-between"><strong>Total Due</strong><strong>Rs. <span id="combinedTotalDue">0.00</span></strong></div>
+  <div class="mb-2"><label class="form-label fw-semibold">Payment Method</label><select id="combinedPaymentMode" class="form-select"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select></div>
+  <div class="mb-2"><label class="form-label fw-semibold">Amount Received</label><input id="combinedAmountReceived" type="number" min="0" step="0.01" class="form-control form-control-lg" placeholder="Enter amount received"></div>
+  <div class="mb-2"><label class="form-label">Reference <span class="text-muted">(optional)</span></label><input id="combinedReference" class="form-control" placeholder="Reference / Cheque No."></div>
+  <div id="manualAllocationBox" class="border rounded p-2 mb-2" style="display:none">
+    <div class="small fw-semibold mb-2">Manual Allocation</div>
+    <div class="row g-2">
+      <div class="col-6"><label class="form-label small">Gas / Cylinder</label><input id="manualGasAmount" type="number" min="0" step="0.01" class="form-control"></div>
+      <div class="col-6"><label class="form-label small">Security Deposit</label><input id="manualDepositAmount" type="number" min="0" step="0.01" class="form-control"></div>
+    </div>
+  </div>
+  <div class="d-flex justify-content-between small"><span>Allocated to Gas / Cylinder</span><strong>Rs. <span id="combinedGasAllocated">0.00</span></strong></div>
+  <div class="d-flex justify-content-between small"><span>Allocated to Deposit</span><strong>Rs. <span id="combinedDepositAllocated">0.00</span></strong></div>
+  <div class="d-flex justify-content-between mt-1"><span>Remaining</span><strong id="combinedRemaining" class="text-danger">Rs. 0.00</strong></div>
+</div>
+<div id="paymentSection" style="display:<?= $initialTransactionType === 'security_deposit' ? 'none' : 'block' ?>">
   <div id="paymentPurposeLabel" class="small fw-semibold text-muted mb-2">Sale Payment</div>
   <div id="payments"></div>
   <button type="button" class="btn btn-outline-secondary mb-3" id="addPayment">Add Payment</button>
@@ -353,6 +375,7 @@ const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit
 const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomerCustody=<?=json_encode($custodyUnits)?>;
 const allowPosSourceCylinderSelection=<?=json_encode((int)($allowPosSourceCylinderSelection??0))?>===1;
 const defaultTransactionType=<?=json_encode($defaultTransactionType??'gas_sale')?>,defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
+const depositPaymentAllocationRule=<?=json_encode($shopSettings['deposit_payment_allocation_rule']??'gas_first')?>;
 const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementById('lineHead'),payments=document.getElementById('payments');
 
 function transactionType(){return document.getElementById('transactionType').value;}
