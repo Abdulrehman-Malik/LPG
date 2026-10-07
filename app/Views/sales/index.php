@@ -358,7 +358,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
 <div id="paymentSection" style="display:block">
   <div id="paymentPurposeLabel" class="small fw-semibold text-muted mb-2">Sale Payment</div>
   <div id="payments"></div>
-  <button type="button" class="btn btn-outline-secondary btn-sm mb-2" id="addPayment">Add Payment</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm mb-2" id="addPayment">Add Payment</button><div class="mt-1"><label class="form-label small fw-semibold mb-1">Reference / Note</label><textarea id="paymentReferenceNote" class="form-control payment-reference" rows="2" placeholder="Reference / Note (optional)"></textarea></div>
 </div>
 
 
@@ -376,7 +376,7 @@ const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit
 const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomerCustody=<?=json_encode($custodyUnits)?>;
 const allowPosSourceCylinderSelection=<?=json_encode((int)($allowPosSourceCylinderSelection??0))?>===1;
 const defaultTransactionType=<?=json_encode($defaultTransactionType??'gas_sale')?>,defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
-const depositPaymentAllocationRule=<?=json_encode($shopSettings['deposit_payment_allocation_rule']??'gas_first')?>;
+const depositPaymentAllocationRule=<?=json_encode($shopSettings['deposit_payment_allocation_rule']??'deposit_first')?>;
 const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementById('lineHead'),payments=document.getElementById('payments');
 
 function transactionType(){return document.getElementById('transactionType').value;}
@@ -470,7 +470,7 @@ function paymentTypeOptions(){
 }
 function addPayment(paymentType){
  const div=document.createElement('div');div.className='payment';
- div.innerHTML='<select class="form-select paymentType"></select><select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="0.01" placeholder="Amount"><input class="form-control ref" placeholder="Reference / Note"><button type="button" class="btn btn-outline-danger remove" aria-label="Remove payment">×</button>';
+ div.innerHTML='<select class="form-select paymentType"></select><select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount payment-amount" type="number" min="0" step="0.01" placeholder="Amount (optional)"><input class="form-control ref" placeholder="Reference / Note"><button type="button" class="btn btn-outline-danger remove" aria-label="Remove payment">×</button>';
  payments.appendChild(div);
  const t=transactionType();
  const type=paymentType||((t==='security_deposit')?'combined':(t==='cylinder_return'?'security_deposit_refund':'sale'));
@@ -481,7 +481,6 @@ function addPayment(paymentType){
  div.querySelector('.mode').value=defaultPaymentMode;
  div.querySelector('.mode').onchange=()=>{refreshPaymentModes();recalc();};
  div.querySelector('.amount').oninput=recalc;
- div.querySelector('.ref').oninput=recalc;
  typeSelect.onchange=recalc;
  div.querySelector('.remove').onclick=()=>{div.remove();if(!payments.querySelector('.payment')&&transactionType()!=='cylinder_return')addPayment();recalc();};
  refreshPaymentModes();recalc();
@@ -763,14 +762,14 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
    const received=paymentTotal(),gasDue=saleTotalForPayment()+Number(document.getElementById('previousOs').textContent||0),depositDue=Number(document.getElementById('securityDeposit').value||0);
    if(received<=0)return fail('Enter the amount received from the customer.');
    if(received>gasDue+depositDue+0.01)return fail('Amount received cannot exceed the total amount due.');
-   pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:depositPaymentAllocationRule==='manual'?(p.querySelector('.paymentType')?.value||'sale'):'combined',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
+   pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:depositPaymentAllocationRule==='manual'?(p.querySelector('.paymentType')?.value||'sale'):'combined',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:(document.getElementById('paymentReferenceNote')?.value||'')}));
    if(depositPaymentAllocationRule==='manual'){
      const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);
      if(Math.abs(dp-depositDue)>0.01)return fail('Security Deposit payment allocation must equal Rs. '+depositDue.toFixed(2)+'.');
      if(Math.abs(sp-gasDue)>0.01)return fail('Gas / Cylinder payment allocation must equal Rs. '+gasDue.toFixed(2)+'.');
    }
  }else{
-   pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:p.querySelector('.paymentType')?.value||'sale',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:p.querySelector('.ref').value}));
+   pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:p.querySelector('.paymentType')?.value||'sale',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:(document.getElementById('paymentReferenceNote')?.value||'')}));
  }
  document.getElementById('lines_json').value=JSON.stringify(lines);document.getElementById('payments_json').value=JSON.stringify(pays);
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0,refund=t==='cylinder_return'?Number(document.getElementById('refundAmount').value||0):0;
