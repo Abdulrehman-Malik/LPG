@@ -38,6 +38,7 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 024 | `024_20261006_issue_cylinder_workflow.sql` | Issue cylinder workflow |
 | 025 | `025_20261007_independent_deposit_payments.sql` | Classify Security Deposit Receive/Refund payments independently from gas/cylinder sale payments |
 | 026 | `026_20261007_backup_email_settings_idempotent.sql` | Safely reconcile backup email SMTP columns for databases where migration 021 was already applied |
+| 027 | `027_20261007_payment_allocation_rule.sql` | Configurable allocation rule for combined Security Deposit + Gas/Cylinder payment collection |
 
 ## Deployment rules
 
