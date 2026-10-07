@@ -133,6 +133,11 @@
 .pos-header-row + #standardTransaction { margin-top:-.2rem !important; }
 #lines thead th { padding:.35rem .4rem; line-height:1.15; font-size:.82rem; }
 #lines tbody td { padding:.4rem .35rem; }
+#paymentReferenceNote { width:100%; min-height:72px; resize:vertical; }
+#paymentSection .payment { display:grid; grid-template-columns:auto minmax(0,1fr) minmax(90px,130px) auto; gap:.35rem; align-items:center; }
+#paymentSection .payment .paymentType.is-hidden { display:none !important; }
+#paymentSection .payment .mode { min-width:0; }
+#paymentSection .payment .payment-amount { min-width:0; }
 #lines .form-select,#lines .form-control { min-height:38px; }
 #lines .input-group-sm > .form-control,#lines .input-group-sm > .input-group-text { min-height:34px; }
 #lines.cylinder-sale-mode .input-group-sm > .form-control { min-width:0; }
