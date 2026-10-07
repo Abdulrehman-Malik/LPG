@@ -11,7 +11,7 @@ class ShopSettingsModel extends Model
     protected $returnType = 'array';
     protected $useTimestamps = true;
     protected $allowedFields = [
-        'location_id','default_sale_mode','default_transaction_type','pos_visible_transaction_types','individual_cylinder_tracking','allow_pos_source_cylinder_selection','include_security_deposit_in_os','allow_return_gas_qty','return_gas_affects_os','allow_empty_issued_return_gas','allow_return_gas_over_issued','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
+        'location_id','default_sale_mode','default_transaction_type','pos_visible_transaction_types','individual_cylinder_tracking','allow_pos_source_cylinder_selection','include_security_deposit_in_os','deposit_payment_allocation_rule','allow_return_gas_qty','return_gas_affects_os','allow_empty_issued_return_gas','allow_return_gas_over_issued','default_payment_mode','pos_font_size_px','theme_mode','font_family','primary_color','accent_color',
         'stock_validation_enabled','allow_stock_override','credit_limit_validation_mode','shop_credit_limit','purchase_void_enabled',
         'backup_enabled','db_backup_url','backup_notes',
         'smtp_host','smtp_port','smtp_username','smtp_password','smtp_encryption','smtp_from_email','smtp_from_name','smtp_enabled',
@@ -65,6 +65,7 @@ class ShopSettingsModel extends Model
             'individual_cylinder_tracking' => 0,
             'allow_pos_source_cylinder_selection' => 0,
             'include_security_deposit_in_os' => 0,
+            'deposit_payment_allocation_rule' => 'gas_first',
             'allow_return_gas_qty' => 0,
             'return_gas_affects_os' => 0,
             'allow_empty_issued_return_gas' => 0,
