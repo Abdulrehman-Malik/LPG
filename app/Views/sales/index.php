@@ -515,7 +515,7 @@ function recalc(){
  const gasReceivable=t==='security_deposit'?(saleTotal+previousOs):(t==='cylinder_return'?0:(saleTotal+previousOs));
  let paid=0,balanceAfter=0;
  if(t==='security_deposit'){
-   const depositDue=deposit, totalDue=gasReceivable+depositDue, received=Number(document.getElementById('combinedAmountReceived')?.value||0), rule=depositPaymentAllocationRule;
+   const depositDue=deposit, totalDue=gasReceivable+depositDue, receivedInput=document.getElementById('combinedAmountReceived'), received=Number(receivedInput?.value||0), rule=depositPaymentAllocationRule; if(receivedInput && receivedInput.value==='') { receivedInput.value=totalDue.toFixed(2); }
    let gasAlloc=0,depositAlloc=0;
    if(rule==='manual'){
      gasAlloc=Math.max(0,Number(document.getElementById('manualGasAmount')?.value||0));
@@ -684,6 +684,7 @@ document.getElementById('customer_id').onchange=()=>{
   document.getElementById('manualDepositAmount').value='';
   payments.innerHTML='';
   addPayment();
+  document.getElementById('combinedPaymentMode').value=defaultPaymentMode;
   refreshCustomer();
   setCustodyLists();
   refreshForm();
