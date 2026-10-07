@@ -177,6 +177,20 @@ class MigrationRunnerService
                 continue;
             }
 
+            $baselineReason = $this->migrationAlreadyApplied($migration);
+            if ($baselineReason !== null) {
+                $results[] = [
+                    'seq' => $migration['seq'],
+                    'file' => $migration['file'],
+                    'status' => 'skipped',
+                    'message' => $baselineReason,
+                    'finished_at' => null,
+                    'duration_ms' => 0,
+                    'executed_statements' => 0,
+                ];
+                continue;
+            }
+
             $ready = false;
             $status = $history['status'] ?? 'pending';
             $message = $status === 'failed'
