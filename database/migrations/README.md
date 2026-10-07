@@ -34,6 +34,7 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 020 | `020_20261005_pos_transaction_type_visibility.sql` | POS transaction-type visibility |
 | 021 | `021_20261005_backup_email_settings.sql` | Database backup email settings |
 | 022 | `022_20261006_opening_inventory_excel_import.sql` | Opening inventory Excel import and separate import batches |
+| 023 | `023_20261006_rate_card_global_gas_rate.sql` | Allow global gas rate card without a cylinder type |
 | 024 | `024_20261007_independent_deposit_payments.sql` | Classify Security Deposit Receive/Refund payments independently from gas/cylinder sale payments |
 
 ## Deployment rules
