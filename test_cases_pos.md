@@ -305,4 +305,20 @@ __________________________________________________________________
 | POS-143 | Gas-first allocation | Allocation rule = Gas / Cylinder First | Gas/cylinder charge (including previous gas OS) is allocated first; remaining payment is classified as Security Deposit. | | |
 | POS-144 | Deposit-first allocation | Allocation rule = Security Deposit First | Deposit is allocated first; remaining payment is classified as Gas / Cylinder Sale. Security Deposit never becomes sale revenue. | | |
 | POS-145 | Manual allocation | Allocation rule = Manual Allocation | Cashier-entered gas and deposit allocations equal Amount Received and each stays within its due amount. | | |
-| POS-146 | Other transaction types unaffected | Run Gas Sale, Cylinder Sale, and Cylinder Return | Existing payment workflows continue to validate/post correctly. | | |
+| POS-146
+
+### POS-147 — Security Deposit compact multi-tender payment
+- Security Deposit / Issue Cylinder payment panel shows Gas / Cylinder + OS, Security Deposit Amount, and one Amount Received total.
+- Multiple payment rows remain available (e.g. Rs. 500 Online + Rs. 500 Cash).
+- Reference / Note is a single input per payment row.
+- Automatic allocation rules continue to split each tender between gas/cylinder and deposit without merging accounting classifications.
+
+### POS-148 — Security Deposit manual allocation
+- When Shop Settings allocation rule is Manual, each payment row exposes Gas / Cylinder or Security Deposit classification.
+- Gas allocation and deposit allocation must exactly match their respective due amounts.
+
+### POS-149 — Receipt preview
+- After posting, the receipt opens in a separate preview window/tab.
+- Receipt does not auto-print; Print must be explicitly selected from the preview.
+- Existing print layout remains available.
+ | Other transaction types unaffected | Run Gas Sale, Cylinder Sale, and Cylinder Return | Existing payment workflows continue to validate/post correctly. | | |
