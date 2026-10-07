@@ -235,7 +235,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="confirmReturnPicker">OK / Add Selected</button></div>
 </div></div></div></div>
 
-</div></div></div>
+</div></div>
 
 <div class="col-lg-3 pos-summary-panel"><div class="card pos-summary-card"><div class="card-body">
 <div class="pos-summary-metrics">
