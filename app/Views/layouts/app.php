@@ -66,6 +66,7 @@ $groups=[
         'icon'=>'bi-cart-check',
         'items'=>[
             ['permission'=>'POS_SALE','url'=>'sales','label'=>'POS Sales','icon'=>'bi-cart-plus'],
+            ['permission'=>'POS_HISTORY','url'=>'sales/history','label'=>'Sale History','icon'=>'bi-clock-history'],
             ['permission'=>'POS_SALE','url'=>'receipts','label'=>'Customer Receipts','icon'=>'bi-wallet2'],
         ],
     ],
