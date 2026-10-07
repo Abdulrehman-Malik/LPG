@@ -161,6 +161,8 @@
 .cylinder-option:has(input:checked) { border-width:2px !important; }
 
 .pos-summary-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; margin-bottom:.75rem; }
+#securityDepositSummary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+#securityDepositSummary .pos-summary-metric { min-width:0; }
 .pos-summary-metric .form-label { font-size:.8rem; margin-bottom:.25rem; white-space:nowrap; }
 .pos-summary-metric .form-control { padding:.35rem .5rem; min-height:36px; }
 #lines .remove { min-width:38px; min-height:38px; }
@@ -358,7 +360,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="form-control bg-light fw-bold"><span id="netPayable">0.00</span></div>
 </div>
 <div class="mb-3" id="receiptAmountBox"><label class="form-label" id="receiptAmountLabel">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
-<div class="mb-3"><label class="form-label fw-semibold" id="balanceLabel">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
+<div class="mb-3" id="balanceBox"><label class="form-label fw-semibold" id="balanceLabel">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
 <div class="mb-3" id="refundBox" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'block' : 'none' ?>"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
 
 <div id="combinedPaymentSection" class="border rounded p-2 mb-2" style="display:<?= $initialTransactionType === 'security_deposit' ? 'block' : 'none' ?>">
@@ -599,6 +601,7 @@ function recalc(){
  document.getElementById('balanceLabel').textContent=t==='security_deposit'?'Gas / Cylinder Balance':'OS Balance';
  document.getElementById('netReceivableBox').style.display=t==='security_deposit'?'none':'block';
  document.getElementById('receiptAmountBox').style.display=t==='security_deposit'?'none':'block';
+ document.getElementById('balanceBox').style.display=t==='security_deposit'?'none':'block';
  updateRefund();
 }
 function refreshForm(){
