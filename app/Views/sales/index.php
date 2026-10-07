@@ -157,27 +157,6 @@
 }
 input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
-
-/* POS visual refresh — no business logic changes. */
-.pos-workspace{--pos-accent:var(--lpg-accent,#0f766e)}
-.pos-workspace>.pos-lines-panel>.card,.pos-summary-card{box-shadow:0 4px 18px rgba(15,23,42,.055)}
-.pos-header-row{background:#f8fafc;border:1px solid #e7edf3;border-radius:.65rem;padding:.7rem .7rem .35rem}
-.pos-header-row .form-label{color:#334155}.pos-header-row .form-select,.pos-header-row .form-control{background:#fff}
-#standardTransaction{padding-top:.35rem!important}#lines thead th{background:#f1f5f9;color:#475569;font-size:.76rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;border-bottom:1px solid #dbe3ec}
-#lines tbody tr{border-bottom:1px solid #edf1f5}#lines tbody tr:hover{background:#f8fafc}
-#lines .form-control,#lines .form-select{background:#fff;border-color:#cbd5e1}
-#lines .lineTotal{font-weight:700;color:#172033}.pos-summary-card{position:sticky;top:5.2rem}.pos-summary-card .card-body{padding:1rem}
-.pos-summary-metrics{gap:.6rem}.pos-summary-metric .form-control{border-color:#d7e0e8;background:#f8fafc!important;font-weight:650}
-#saleTotal,#netPayable,#receiptAmountValue,#customerOsBalanceValue{font-variant-numeric:tabular-nums}
-#saleTotal{color:#0f766e}#netPayable{color:#172033}#customerOsBalanceValue{color:#2563eb!important}
-#paymentSection{border-top:1px solid #e5eaf0;padding-top:.8rem}#paymentPurposeLabel{color:#475569!important;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem!important}
-#securityTransaction .card,#returnTransaction .card{border:1px solid #dbe5ec!important;box-shadow:none}#securityTransaction .card{border-top:3px solid #d97706!important}#returnTransaction .card{border-top:3px solid #0e7490!important}
-#securityTransaction .table thead th,#returnTransaction .table thead th{background:#f8fafc;color:#475569;font-size:.75rem;text-transform:uppercase;letter-spacing:.02em}
-#issueEmpty,#returnEmpty{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:.5rem;padding:.75rem!important;text-align:center}
-.cylinder-option{border:1px solid #d5dee8!important;box-shadow:0 1px 3px rgba(15,23,42,.04)}.cylinder-option:hover{border-color:#94a3b8!important}.cylinder-option:has(input:checked){border-color:var(--pos-accent)!important;background:#ecfdf5;box-shadow:0 0 0 2px color-mix(in srgb,var(--pos-accent) 15%,transparent)}
-#addLine,#openIssuePicker,#openReturnPicker{font-weight:600}#saveBtn{min-height:46px;font-size:1rem;box-shadow:0 5px 12px rgba(15,23,42,.1)}
-#newSaleTab,#saleHistoryTab{min-width:110px;font-weight:600}#saleHistoryPanel .card{box-shadow:none}#saleHistoryPanel .table thead th{white-space:nowrap}
-@media(max-width:1199.98px){.pos-summary-card{position:static}}@media(max-width:767.98px){.pos-header-row{padding:.65rem .55rem .25rem}.pos-summary-metrics{grid-template-columns:1fr}.pos-workspace .btn{min-height:40px}#saveBtn{min-height:48px}}
 </style>
 <?= $this->endSection() ?>
 <?= $this->section('content') ?>
@@ -448,30 +427,18 @@ function rebuildLines(){
 }
 function setCustodyLists(){
  const sel=document.getElementById('custodyUnits');
- const ret=document.getElementById('returnUnits');
- // The current POS uses the cylinder picker cards/issueLines/returnLines. Older
- // hidden multi-select controls may not exist, so never let them block a
- // transaction-type refresh.
- if(sel){
-   const current=[...sel.selectedOptions].map(o=>o.value);
-   sel.innerHTML=availableCustodyUnits.map(u=>'<option value="'+u.id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+(u.status==='filled'?'Filled '+Number(u.gas_weight_kg||0).toFixed(2)+' KG':'Empty')+'</option>').join('');
-   current.forEach(v=>{const o=[...sel.options].find(x=>x.value===v);if(o)o.selected=true;});
- }
- if(ret){
-   const old=[...ret.selectedOptions].map(o=>o.value);
-   ret.innerHTML=allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — Gas '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
-   old.forEach(v=>{const o=[...ret.options].find(x=>x.value===v);if(o)o.selected=true;});
- }
+ const current=[...sel.selectedOptions].map(o=>o.value);
+ sel.innerHTML=availableCustodyUnits.map(u=>'<option value="'+u.id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+(u.status==='filled'?'Filled '+Number(u.gas_weight_kg||0).toFixed(2)+' KG':'Empty')+'</option>').join('');
+ current.forEach(v=>{const o=[...sel.options].find(x=>x.value===v);if(o)o.selected=true;});
+ const ret=document.getElementById('returnUnits'),old=[...ret.selectedOptions].map(o=>o.value);
+ ret.innerHTML=allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — Gas '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
+ old.forEach(v=>{const o=[...ret.options].find(x=>x.value===v);if(o)o.selected=true;});
  updateRefund();
 }
 function updateRefund(){
- const ret=document.getElementById('returnUnits');
- const ids=ret?[...ret.selectedOptions].map(o=>Number(o.value)):[];
+ const ids=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));
  const refund=allCustomerCustody.filter(u=>ids.includes(Number(u.unit_id))).reduce((s,u)=>s+Number(u.deposit_amount||0),0);
- const preview=document.getElementById('refundPreview');
- if(preview)preview.textContent=refund.toFixed(2);
- const refundInput=document.getElementById('refundAmount');
- if(refundInput && transactionType()==='cylinder_return' && refundInput.value==='0')refundInput.value=refund.toFixed(2);
+ document.getElementById('refundPreview').textContent=refund.toFixed(2);document.getElementById('refundAmount').value=refund.toFixed(2);
  document.getElementById('paymentSection').style.display=transactionType()==='cylinder_return'?(refund>0?'block':'none'):'block';
 }
 function refreshPaymentModes(){const walkIn=!selectedCustomerId(),customer=selectedCustomer();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash'||(!walkIn&&!customer?.allowCredit&&o.value==='credit'));if(walkIn||(!customer?.allowCredit&&m.value==='credit'))m.value='cash';});}
@@ -516,11 +483,6 @@ function recalc(){
    else if(t==='cylinder_sale'){gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}
    gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
  });
- if(t==='security_deposit'){
-   issueLines.forEach(l=>{const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);gasRequired+=gas;});
- }else if(t==='cylinder_return'){
-   returnLines.forEach(l=>{gasRequired+=Number(l.return_gas_kg||0);});
- }
  const discount=Math.max(0,Number(document.getElementById('discount').value||0));saleTotal=Math.max(0,saleTotal-discount);
  const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
@@ -541,8 +503,7 @@ function recalc(){
  updateRefund();
 }
 function refreshForm(){
- const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
- if(workspace)workspace.className='row g-3 pos-workspace mode-'+t;
+ const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?'security_deposit':(t==='cylinder_return'?'security_deposit_refund':'sale');});
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
@@ -616,8 +577,32 @@ function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer f
 function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
 function setCustodyLists(){renderIssueLines();renderReturnLines();updateRefund();}
 function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=available.toFixed(2);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
-
-
+function recalc(){
+ let saleTotal=0,gasRequired=0;const t=transactionType();
+ if(t==='gas_sale'||t==='cylinder_sale'){
+   const usedByType={};
+   tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{const qty=Math.max(0,Number(tr.querySelector('.qty')?.value||0));let amount=0,gas=0;if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value,mode=document.getElementById('gasEntryMode')?.value||'quantity';if(mode==='amount'){const a=Number(tr.querySelector('.enteredAmount')?.value||0),rate=Number(tr.querySelector('.gasRate')?.value||0);gas=rate>0&&a>0?a/rate:0;tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';}else{tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';}const available=(filledUnits[typeId]||[]).reduce((s,u)=>s+Number(u.gas_weight_kg||0),0),prior=Number(usedByType[typeId]||0),remaining=Math.max(0,available-prior);if(gas>remaining&&tr.dataset.entryMode!=='amount'){tr.querySelector('.qty').value=remaining;gas=remaining;}usedByType[typeId]=prior+gas;amount=gas*Number(tr.querySelector('.gasRate').value||0);}else{gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=amount.toFixed(2);});
+ }else if(t==='security_deposit'){
+   issueLines.forEach(l=>{const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);gasRequired+=gas;});
+ }else if(t==='cylinder_return'){
+   returnLines.forEach(l=>{const gas=Number(l.return_gas_kg||0);gasRequired+=gas;});
+ }
+ const customer=selectedCustomer(),previousOs=customer?Number(customer.balance||0):0,deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0,refund=t==='cylinder_return'?Math.max(0,Number(document.getElementById('refundAmount').value||0)):0;
+ const expected=t==='security_deposit'?saleTotal+deposit:(t==='cylinder_return'?refund:saleTotal+previousOs);
+ document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);document.getElementById('previousOs').textContent=previousOs.toFixed(2);document.getElementById('netPayable').textContent=expected.toFixed(2);
+ const paid=t==='cylinder_return'?refund:paymentTotal();document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
+ document.getElementById('customerOsBalanceValue').textContent=(t==='security_deposit'&&<?=json_encode((int)($shopSettings['include_security_deposit_in_os']??0))?>===1?previousOs+deposit:(t==='cylinder_return'?previousOs:Math.max(0,expected-paid))).toFixed(2);
+ document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
+}
+function refreshForm(){
+ const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ workspace.className='row g-3 pos-workspace mode-'+t;
+ document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
+ document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit';document.getElementById('discount').disabled=!standard;if(!standard)document.getElementById('discount').value='0';if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?'none':'block';document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
+ if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}setCustodyLists();refreshPaymentModes();recalc();
+}
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
 document.getElementById('returnPickerType').onchange=returnPickerRender;document.getElementById('returnPickerStatus').onchange=returnPickerRender;document.getElementById('openReturnPicker').onclick=openReturnPicker;document.getElementById('confirmReturnPicker').onclick=addReturnSelection;
 document.getElementById('refundAmount').oninput=recalc;
@@ -638,6 +623,8 @@ document.getElementById('customer_id').onchange=()=>{
   document.getElementById('securityDeposit').value='0';
   payments.innerHTML='';
   addPayment();
+  document.getElementById('custodyUnits').selectedIndex=-1;
+  document.getElementById('returnUnits').selectedIndex=-1;
   refreshCustomer();
   setCustodyLists();
   refreshForm();
@@ -652,7 +639,7 @@ document.getElementById('customer_id').onchange=()=>{
   recalc();
 };
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
-document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
+document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();
  const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
