@@ -103,10 +103,10 @@ jobs:
           csrf_name=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\1/')
           csrf_value=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\2/')
           test -n "$csrf_name" && test -n "$csrf_value"
-          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt --data-urlencode "login=admin" --data-urlencode "password=admin123" --data-urlencode "$csrf_name=$csrf_value" http://127.0.0.1:8080/login -o /tmp/lpg-dashboard.html
-          grep -qiE 'dashboard|welcome back' /tmp/lpg-dashboard.html
-          curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/dashboard -o /tmp/lpg-dashboard-direct.html
-          grep -qi 'dashboard' /tmp/lpg-dashboard-direct.html
+          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt --data-urlencode "login=admin" --data-urlencode "password=admin123" --data-urlencode "$csrf_name=$csrf_value" http://127.0.0.1:8080/login -o /tmp/dashboard.html
+          grep -qiE 'dashboard|welcome back' /tmp/dashboard.html
+          curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/dashboard -o /tmp/dashboard-direct.html
+          grep -qi 'dashboard' /tmp/dashboard-direct.html
 
       - name: Upload runtime logs
         if: always()
