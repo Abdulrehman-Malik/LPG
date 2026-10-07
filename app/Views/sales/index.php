@@ -436,6 +436,17 @@ const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementB
 function transactionType(){return document.getElementById('transactionType').value;}
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:String(creditSaleAllowed[String(id)]??'0')==='1'}:null;}
+function refreshWalkInCustomerOption(){
+ const select=document.getElementById('customer_id'),t=transactionType(),walkIn=select?.querySelector('option[value=""]');
+ if(!select||!walkIn)return;
+ const hideWalkIn=t==='security_deposit'||t==='cylinder_return';
+ walkIn.hidden=hideWalkIn;
+ walkIn.disabled=hideWalkIn;
+ if(hideWalkIn&&select.value===''){
+   const firstCustomer=[...select.options].find(o=>o.value!=='');
+   if(firstCustomer)select.value=firstCustomer.value;
+ }
+}
 function refreshCustomer(){
  const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalanceValue');
  if(osBox)osBox.textContent=(c?Math.max(0,c.balance):0).toFixed(2);
@@ -647,6 +658,8 @@ function recalc(){
 }
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ refreshWalkInCustomerOption();
+ refreshCustomer();
  if(workspace)workspace.className='row g-3 pos-workspace mode-'+t;
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?(depositPaymentAllocationRule==='manual'?'sale':'combined'):(t==='cylinder_return'?'security_deposit_refund':'sale');pt.classList.toggle('is-hidden',t!=='security_deposit'||depositPaymentAllocationRule!=='manual');});
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
