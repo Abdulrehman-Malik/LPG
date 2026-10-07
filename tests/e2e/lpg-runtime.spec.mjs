@@ -38,12 +38,9 @@ test('E2E-003a POS transaction type switch rebuilds isolated detail UI without p
 
   await expect(page.locator('#transactionType')).toHaveValue('gas_sale');
   await expect(page.locator('#lines thead')).toContainText('Qty / KG');
-
-  await page.locator('#saleHistoryTab').click();
-  await expect(page.locator('#saleHistoryPanel')).toBeVisible();
-  await expect(page.locator('#saleForm')).toBeHidden();
-  await page.locator('#newSaleTab').click();
-  await expect(page.locator('#saleForm')).toBeVisible();
+  await expect(page.locator('#newSaleTab')).toHaveCount(0);
+  await expect(page.locator('#saleHistoryTab')).toHaveCount(0);
+  await expect(page.locator('#saleHistoryPanel')).toHaveCount(0);
   await expect(page.locator('#lines thead')).toContainText('Gas Rate');
 
   await page.locator('#transactionType').selectOption('cylinder_sale');
@@ -85,8 +82,8 @@ test('E2E-004 Actual gas sale posts successfully', async ({ page }) => {
   await expect(page.locator('body')).toContainText(/posted successfully/i);
 });
 test('E2E-005 Posted gas sale appears in Sale History with inventory movement', async ({ page }) => {
-  await login(page); await page.goto('/sales',{waitUntil:'networkidle'});
-  await page.locator('#saleHistoryTab').click();
+  await login(page); await page.goto('/sales/history',{waitUntil:'networkidle'});
+  await expect(page.locator('#saleHistoryPanel')).toBeVisible();
   await page.locator('#historyType').selectOption('gas_sale');
   await page.locator('#historyCustomer').fill('QA-E2E-CUST');
   await page.locator('#historySearch').click(); await page.waitForTimeout(500);
