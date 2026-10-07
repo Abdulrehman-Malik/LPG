@@ -342,10 +342,12 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Cylinder Return / Refund Deposit</h6><button type="button" class="btn btn-sm btn-primary" id="openReturnPicker">Select Cylinders</button></div>
       <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.</div>
+      <?php if((int)($shopSettings['allow_return_gas_qty']??0)===1): ?>
       <div class="row g-2 mb-3 align-items-end">
         <div class="col-md-4 col-lg-3"><label class="form-label mb-1 fw-semibold">Overall Return Gas Rate</label><input id="returnOverallRate" type="number" min="0" step="0.01" class="form-control form-control-sm"></div>
         <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-primary" id="applyReturnRate">Apply to All</button></div>
       </div>
+      <?php endif; ?>
       <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><?php if((int)($shopSettings['allow_return_gas_qty']??0)===1): ?><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><?php endif; ?><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       <div id="returnEmpty" class="text-muted small py-3">No cylinders selected. Click Select Cylinders.</div>
     </div>
