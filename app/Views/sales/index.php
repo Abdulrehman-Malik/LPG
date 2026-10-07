@@ -334,11 +334,11 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <label class="form-label fw-semibold">Security Deposit Amount</label>
   <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
 </div>
-<div class="mb-3">
+<div class="mb-3" id="netReceivableBox">
   <label class="form-label" id="netReceivableLabel">Net Receivable Amount</label>
   <div class="form-control bg-light fw-bold"><span id="netPayable">0.00</span></div>
 </div>
-<div class="mb-3"><label class="form-label" id="receiptAmountLabel">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
+<div class="mb-3" id="receiptAmountBox"><label class="form-label" id="receiptAmountLabel">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
 <div class="mb-3"><label class="form-label fw-semibold" id="balanceLabel">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
 <div class="mb-3" id="refundBox" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'block' : 'none' ?>"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
 
@@ -361,11 +361,6 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <button type="button" class="btn btn-outline-secondary btn-sm mb-2" id="addPayment">Add Payment</button>
 </div>
 
-<div id="paymentSection" style="display:<?= $initialTransactionType === 'security_deposit' ? 'none' : 'block' ?>">
-  <div id="paymentPurposeLabel" class="small fw-semibold text-muted mb-2">Sale Payment</div>
-  <div id="payments"></div>
-  <button type="button" class="btn btn-outline-secondary mb-3" id="addPayment">Add Payment</button>
-</div>
 
 <button class="btn btn-primary w-100" id="saveBtn">Post Transaction</button>
 </div></div></div>
@@ -512,48 +507,85 @@ function recalc(){
  tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{
    const qty=Math.max(0,Number(tr.querySelector('.qty')?.value||0));
    let amount=0,gas=0;
-   if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value;const mode=document.getElementById('gasEntryMode')?.value||'quantity';if(mode==='amount'){const amountEntered=Number(tr.querySelector('.enteredAmount')?.value||0);const rate=Number(tr.querySelector('.gasRate')?.value||0);gas=rate>0&&amountEntered>0?amountEntered/rate:0;tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';}else{tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';}const available=(filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);const prior=Number(usedByType[typeId]||0);const remaining=Math.max(0,available-prior);tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));tr.querySelector('.qty').max=Math.max(0,remaining);if(gas>remaining && tr.dataset.entryMode!=='amount'){tr.querySelector('.qty').value=remaining;gas=remaining;tr.querySelector('.enteredAmount').value=(remaining*Number(tr.querySelector('.gasRate').value||0)).toFixed(2);}if(gas>remaining && tr.dataset.entryMode==='amount'){tr.querySelector('.entryValue').setCustomValidity('Amount exceeds available gas stock.');}else{tr.querySelector('.entryValue').setCustomValidity('');}usedByType[typeId]=(prior+gas);const rate=Number(tr.querySelector('.gasRate').value||0);amount=gas*rate;}
-   else if(t==='cylinder_sale'){gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}
-   gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
+   if(t==='gas_sale'){
+     gas=qty;
+     const typeId=tr.querySelector('.cyl').value;
+     const mode=document.getElementById('gasEntryMode')?.value||'quantity';
+     if(mode==='amount'){
+       const amountEntered=Number(tr.querySelector('.enteredAmount')?.value||0);
+       const rate=Number(tr.querySelector('.gasRate')?.value||0);
+       gas=rate>0&&amountEntered>0?amountEntered/rate:0;
+       tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';
+     }else{
+       tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0
+         ?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';
+     }
+     const available=(filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);
+     const prior=Number(usedByType[typeId]||0),remaining=Math.max(0,available-prior);
+     tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));
+     tr.querySelector('.qty').max=Math.max(0,remaining);
+     if(gas>remaining && tr.dataset.entryMode!=='amount'){
+       tr.querySelector('.qty').value=remaining;gas=remaining;
+       tr.querySelector('.enteredAmount').value=(remaining*Number(tr.querySelector('.gasRate').value||0)).toFixed(2);
+     }
+     if(gas>remaining && tr.dataset.entryMode==='amount')tr.querySelector('.entryValue').setCustomValidity('Amount exceeds available gas stock.');
+     else tr.querySelector('.entryValue').setCustomValidity('');
+     usedByType[typeId]=prior+gas;
+     amount=gas*Number(tr.querySelector('.gasRate').value||0);
+   }else if(t==='cylinder_sale'){
+     gas=gasForCylinderSale(tr);
+     const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);
+     amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;
+   }
+   gasRequired+=gas;saleTotal+=amount;
+   tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
  });
  if(t==='security_deposit'){
-   const depositDue=deposit, received=paymentTotal(), gasAlloc=depositPaymentAllocationRule==='manual'
-     ? paymentTotal('sale')
-     : (depositPaymentAllocationRule==='deposit_first'
-       ? Math.min(Math.max(0,received-depositDue),gasReceivable)
-       : Math.min(received,gasReceivable));
-   const depositAlloc=depositPaymentAllocationRule==='manual'
-     ? paymentTotal('security_deposit')
-     : Math.min(Math.max(0,received-gasAlloc),depositDue);
+   issueLines.forEach(l=>{
+     const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;
+     saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);
+     gasRequired+=gas;
+   });
+ }else if(t==='cylinder_return'){
+   returnLines.forEach(l=>{gasRequired+=Number(l.return_gas_kg||0);});
+ }
+ const discount=Math.max(0,Number(document.getElementById('discount').value||0));
+ saleTotal=Math.max(0,saleTotal-discount);
+ const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
+ const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
+ const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:(saleTotal+previousOs));
+ document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
+ document.getElementById('previousOs').textContent=previousOs.toFixed(2);
+ document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
+
+ let paid=0,balanceAfter=0;
+ if(t==='security_deposit'){
+   const gasReceivable=saleTotal+previousOs,received=paymentTotal();
    paid=received;
+   const gasAlloc=depositPaymentAllocationRule==='manual'
+     ?paymentTotal('sale')
+     :(depositPaymentAllocationRule==='deposit_first'
+       ?Math.min(Math.max(0,received-deposit),gasReceivable)
+       :Math.min(received,gasReceivable));
    balanceAfter=Math.max(0,gasReceivable-gasAlloc);
    document.getElementById('combinedGasDue').textContent=gasReceivable.toFixed(2);
-   document.getElementById('combinedDepositDue').textContent=depositDue.toFixed(2);
+   document.getElementById('combinedDepositDue').textContent=deposit.toFixed(2);
    document.getElementById('combinedAmountReceivedTotal').textContent=received.toFixed(2);
- }else }else{
-     gasAlloc=Math.min(received,gasReceivable);depositAlloc=Math.min(Math.max(0,received-gasAlloc),depositDue);
-   }
-   paid=gasAlloc+depositAlloc;
-   balanceAfter=Math.max(0,gasReceivable-gasAlloc);
-   document.getElementById('combinedGasDue').textContent=gasReceivable.toFixed(2);
-   document.getElementById('combinedDepositDue').textContent=depositDue.toFixed(2);
-   document.getElementById('combinedTotalDue').textContent=totalDue.toFixed(2);
-   document.getElementById('combinedGasAllocated').textContent=gasAlloc.toFixed(2);
-   document.getElementById('combinedDepositAllocated').textContent=depositAlloc.toFixed(2);
-   document.getElementById('combinedRemaining').textContent='Rs. '+Math.max(0,totalDue-received).toFixed(2);
-   document.getElementById('combinedRemaining').className=Math.abs(totalDue-received)<0.01?'text-success':'text-danger';
  }else{
-   const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):0;
+   const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
    paid=refundPaid;
    balanceAfter=Math.max(0,netReceivable-paid);
  }
+ document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
  document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';
- document.getElementById('paymentPurposeLabel').textContent=t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment';
+ document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
  document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';
  document.getElementById('netReceivableLabel').textContent=t==='security_deposit'?'Gas / Cylinder Due':'Net Receivable Amount';
  document.getElementById('balanceLabel').textContent=t==='security_deposit'?'Gas / Cylinder Balance':'OS Balance';
+ document.getElementById('netReceivableBox').style.display=t==='security_deposit'?'none':'block';
+ document.getElementById('receiptAmountBox').style.display=t==='security_deposit'?'none':'block';
  updateRefund();
 }
 function refreshForm(){
