@@ -833,15 +833,19 @@ class SalesService
         // The cashier may enter one total payment; the shop setting controls how that amount is allocated.
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
         $depositRequired=$deposit;
-        $allocationRule=(string)($shopSettings['deposit_payment_allocation_rule']??'gas_first');
-        if(!in_array($allocationRule,['gas_first','deposit_first','manual'],true))$allocationRule='gas_first';
+        $allocationRule=(string)($shopSettings['deposit_payment_allocation_rule']??'deposit_first');
+        if(!in_array($allocationRule,['gas_first','deposit_first','manual'],true))$allocationRule='deposit_first';
         $depositPayments=[];$salePayments=[];
         $combinedPayments=[];
         foreach($payments as $p){
             $type=(string)($p['payment_type']??'');
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
             if($type==='combined'){
-                if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid combined payment.');
+                if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<0)throw new RuntimeException('Invalid combined payment.');
+                // A blank/zero payment row means no money was received. It must not block
+                // a Security Deposit / Issue Cylinder transaction when the gas/cylinder
+                // amount is posted to customer credit within the normal credit rules.
+                if($amount<=0)continue;
                 $combinedPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
                 continue;
             }
