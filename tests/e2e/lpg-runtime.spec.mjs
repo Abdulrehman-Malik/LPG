@@ -25,6 +25,43 @@ test('E2E-003 POS screen exposes configured gas-sale transaction', async ({ page
   await expect(page.locator('#lines tbody .cyl')).toHaveCount(1);
   await expect(page.locator('#saveBtn')).toContainText('Post Transaction');
 });
+
+test('E2E-003a POS transaction type switch rebuilds isolated detail UI without page errors', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error') pageErrors.push(message.text());
+  });
+
+  await login(page);
+  await page.goto('/sales',{waitUntil:'networkidle'});
+
+  await expect(page.locator('#transactionType')).toHaveValue('gas_sale');
+  await expect(page.locator('#lines thead')).toContainText('Qty / KG');
+  await expect(page.locator('#lines thead')).toContainText('Gas Rate');
+
+  await page.locator('#transactionType').selectOption('cylinder_sale');
+  await expect(page.locator('#lines thead')).toContainText('Status');
+  await expect(page.locator('#lines thead')).toContainText('Cylinder Rate');
+  await expect(page.locator('#lines .cylStatus')).toHaveCount(1);
+  await expect(page.locator('#gasEntryModeWrap')).toBeHidden();
+
+  await page.locator('#transactionType').selectOption('security_deposit');
+  await expect(page.locator('#securityTransaction')).toBeVisible();
+  await expect(page.locator('#standardTransaction')).toBeHidden();
+  await expect(page.locator('#securityDeposit')).toBeEnabled();
+
+  await page.locator('#transactionType').selectOption('cylinder_return');
+  await expect(page.locator('#returnTransaction')).toBeVisible();
+  await expect(page.locator('#securityTransaction')).toBeHidden();
+  await expect(page.locator('#standardTransaction')).toBeHidden();
+
+  await page.locator('#transactionType').selectOption('gas_sale');
+  await expect(page.locator('#lines thead')).toContainText('Qty / KG');
+  await expect(page.locator('#lines tbody .cyl')).toHaveCount(1);
+
+  expect(pageErrors).toEqual([]);
+});
 test('E2E-004 Actual gas sale posts successfully', async ({ page }) => {
   await login(page); await page.goto('/sales',{waitUntil:'networkidle'});
   await page.locator('#transactionType').selectOption('gas_sale');
