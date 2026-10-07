@@ -439,31 +439,32 @@ const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementB
 function transactionType(){return document.getElementById('transactionType').value;}
 function selectedCustomerId(){return document.getElementById('customer_id').value;}
 function selectedCustomer(){const id=selectedCustomerId();return id?{balance:Number(balances[id]||0),limit:Number(creditLimits[id]||0),allowCredit:String(creditSaleAllowed[String(id)]??'0')==='1'}:null;}
-function refreshWalkInCustomerOption(){
+function refreshWalkInCustomerOption(resetSelection=false){
  const select=document.getElementById('customer_id'),t=transactionType();
  if(!select)return;
  let walkIn=select.querySelector('option[data-walkin-option="1"]');
+ let placeholder=select.querySelector('option[data-customer-placeholder="1"]');
  const customerOnly=t==='security_deposit'||t==='cylinder_return';
  if(customerOnly){
+   if(walkIn)walkIn.remove();
+   if(!placeholder){
+     placeholder=document.createElement('option');
+     placeholder.value='';
+     placeholder.textContent='Select customer';
+     placeholder.dataset.customerPlaceholder='1';
+     select.insertBefore(placeholder,select.firstChild);
+   }
+   if(resetSelection)select.value='';
+ }else{
+   if(placeholder)placeholder.remove();
    if(!walkIn){
      walkIn=document.createElement('option');
      walkIn.value='';
      walkIn.textContent='Walk-in / Cash';
      walkIn.dataset.walkinOption='1';
-     walkIn.hidden=true;
      select.insertBefore(walkIn,select.firstChild);
    }
-   if(select.value===''){
-     const firstCustomer=[...select.options].find(o=>o.value!=='');
-     if(firstCustomer)select.value=firstCustomer.value;
-   }
-   walkIn.remove();
- }else if(!walkIn){
-   walkIn=document.createElement('option');
-   walkIn.value='';
-   walkIn.textContent='Walk-in / Cash';
-   walkIn.dataset.walkinOption='1';
-   select.insertBefore(walkIn,select.firstChild);
+   if(resetSelection)select.value='';
  }
 }
 function refreshCustomer(){
@@ -746,7 +747,7 @@ function resetTransactionFormState(){
   const help=document.getElementById('amountToCollectHelpMessage');
   if(help)help.classList.add('d-none');
 
-  refreshWalkInCustomerOption();
+  refreshWalkInCustomerOption(true);
   addPayment();
 }
 function refreshForm(){
@@ -757,7 +758,7 @@ function refreshForm(){
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositSummary').style.display=t==='security_deposit'?'grid':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
@@ -894,7 +895,8 @@ function updateRefund(){const available=Number((window.depositBalances||{})[sele
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
 document.getElementById('returnPickerType').onchange=returnPickerRender;document.getElementById('returnPickerStatus').onchange=returnPickerRender;document.getElementById('openReturnPicker').onclick=openReturnPicker;document.getElementById('confirmReturnPicker').onclick=addReturnSelection;
 document.getElementById('refundAmount').oninput=recalc;
-document.getElementById('applyReturnRate').onclick=()=>{const rate=Math.max(0,Number(document.getElementById('returnOverallRate').value||0));returnLines.forEach(l=>l.return_gas_rate=rate);renderReturnLines();recalc();};
+const applyReturnRate=document.getElementById('applyReturnRate');
+if(applyReturnRate)applyReturnRate.onclick=()=>{const rate=Math.max(0,Number(document.getElementById('returnOverallRate').value||0));returnLines.forEach(l=>l.return_gas_rate=rate);renderReturnLines();recalc();};
 document.getElementById('gasEntryMode').onchange=()=>{
  const mode=document.getElementById('gasEntryMode').value;
  tbody.querySelectorAll('tr').forEach(tr=>{if(!tr.querySelector('.entryValue'))return;const rate=Number(tr.querySelector('.gasRate').value||0),q=Number(tr.querySelector('.qty').value||0),a=Number(tr.querySelector('.enteredAmount').value||0),input=tr.querySelector('.entryValue');tr.dataset.entryMode=mode;tr.querySelector('.gasRate').disabled=mode==='amount';if(mode==='amount'){const v=a>0?a:(rate>0?q*rate:0);tr.querySelector('.enteredAmount').value=v>0?v.toFixed(2):'';input.value=v>0?v.toFixed(2):'';input.placeholder='Amount';input.step='0.01';}else{const v=q>0?q:(rate>0&&a>0?a/rate:0);tr.querySelector('.qty').value=v>0?v.toFixed(3):'0';input.value=v>0?v.toFixed(3):'';input.placeholder='KG';input.step='any';tr.querySelector('.enteredAmount').value=rate>0&&v>0?(v*rate).toFixed(2):'';}refreshGasSourceLine(tr,false);});recalc();
