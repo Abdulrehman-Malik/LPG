@@ -334,3 +334,6 @@ __________________________________________________________________
 ### POS-151 — Zero/blank payment amount and reference note
 - Payment amount accepts blank/null, 0, 1, 1.23, and values up to two decimal places.
 - Reference / Note is displayed as a larger field below Add Payment and is persisted with payment records.
+
+| POS-152 | Security Deposit / Issue Cylinder with zero receipt | Customer allows credit and credit limit covers previous OS + current gas/cylinder amount; payment row is blank/0 | Transaction posts with no cash/online receipt; gas/cylinder amount becomes customer credit under the normal Gas Sale credit rules. Security Deposit, when entered, must still be paid separately and cannot be posted on credit. | | |
+| POS-153 | Compact Security Deposit payment controls | Security Deposit / Issue Cylinder screen | Payment collection area remains compact, delete payment control is small, and Reference / Note remains below Add Payment. | | |
