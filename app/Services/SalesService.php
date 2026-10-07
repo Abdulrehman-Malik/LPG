@@ -922,7 +922,7 @@ class SalesService
                     'deposit_amount'=>$share,'issued_gas_weight_kg'=>$item['gas'],'returned_gas_weight_kg'=>0,'consumed_gas_weight_kg'=>0,
                     'issued_gas_rate'=>$item['gas_rate'],'return_gas_rate'=>0,'issued_condition'=>$item['status']
                 ]);
-                if($share>0)$this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'hold','amount'=>$share,'sale_id'=>$saleId,'custody_id'=>$custody['id'],'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit received for '.$row['unit_code']]);
+                // Deposit ledger is posted from actual received payments, not custody/deposit amount.
 
                 $this->db->table('sale_items')->insert([
                     'sale_id'=>$saleId,'line_no'=>$idx+1,'line_type'=>$item['status']==='filled'?'filled_cylinder':'empty_cylinder',
@@ -937,6 +937,7 @@ class SalesService
             }
 
             // Deposit receipt and gas/cylinder payments have distinct payment classifications.
+            if($depositPaid>0)$this->db->table('customer_security_deposits')->insert(['location_id'=>$locationId,'customer_id'=>$customerId,'entry_type'=>'hold','amount'=>$depositPaid,'sale_id'=>$saleId,'custody_id'=>null,'transaction_at'=>$transactionAt,'created_by'=>$userId,'notes'=>'Security deposit actually received']);
             $this->insertSalePayments($saleId,$depositPayments,$transactionAt,$userId,'security_deposit');
             $this->insertSalePayments($saleId,$paymentPlan['sale_payments'],$transactionAt,$userId,'sale');
 
