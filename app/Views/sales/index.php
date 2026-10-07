@@ -85,6 +85,22 @@
 .pos-header-row { margin-bottom:.5rem !important; row-gap:.45rem !important; }
 .pos-header-row .form-label { margin-bottom:.25rem; }
 .pos-header-row .credit-status-row { margin-top:-.15rem; }
+/* Security Deposit header: use the full row when Gas Entry is hidden. */
+.pos-workspace.mode-security_deposit .pos-header-row > .col-md-3:not(#gasEntryModeWrap),
+.pos-workspace.mode-cylinder_return .pos-header-row > .col-md-3:not(#gasEntryModeWrap) { flex:0 0 33.333333%; max-width:33.333333%; }
+/* Combined payment rows: when Payment Type is hidden, let Mode and Amount fill the row. */
+#paymentSection .payment:has(.paymentType.is-hidden) { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px; }
+#paymentSection .payment:has(.paymentType.is-hidden) .mode,
+#paymentSection .payment:has(.paymentType.is-hidden) .payment-amount { width:100%; min-width:0; }
+#posSuccessAlert { display:none; }
+#posReceiptActions { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.55rem; }
+#posReceiptActions .btn { min-width:130px; }
+#receiptPreviewOverlay { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; background:rgba(15,23,42,.55); padding:1rem; }
+#receiptPreviewOverlay.is-visible { display:flex; }
+#receiptPreviewDialog { width:min(520px,96vw); height:min(760px,92vh); background:#fff; border-radius:.65rem; box-shadow:0 18px 50px rgba(0,0,0,.25); display:flex; flex-direction:column; overflow:hidden; }
+#receiptPreviewDialog .receipt-preview-head { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.6rem .75rem; border-bottom:1px solid #e5e7eb; font-weight:700; }
+#receiptPreviewFrame { flex:1; width:100%; border:0; background:#fff; }
+
 .pos-workspace,
 .pos-workspace .form-control,
 .pos-workspace .form-select,
@@ -243,6 +259,23 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <span class="badge text-bg-secondary">POS</span>
 </div>
 <div id="posValidationAlert" class="alert alert-danger d-none mb-3" role="alert"></div>
+<div id="posSuccessAlert" class="alert alert-success mb-3" role="status">
+  <div id="posSuccessMessage" class="fw-semibold"></div>
+  <div id="posReceiptActions">
+    <button type="button" class="btn btn-outline-success btn-sm" id="printPreviewBtn">Print Preview</button>
+    <button type="button" class="btn btn-success btn-sm" id="printReceiptBtn">Print Receipt</button>
+  </div>
+</div>
+
+<div id="receiptPreviewOverlay" aria-hidden="true">
+  <div id="receiptPreviewDialog" role="dialog" aria-modal="true" aria-label="Receipt Print Preview">
+    <div class="receipt-preview-head">
+      <span>Receipt Print Preview</span>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="closeReceiptPreview">Close</button>
+    </div>
+    <iframe id="receiptPreviewFrame" title="Receipt Print Preview"></iframe>
+  </div>
+</div>
 
 <form method="post" action="<?=site_url('sales/save')?>" id="saleForm"><?=csrf_field()?>
 <input type="hidden" name="lines_json" id="lines_json">
@@ -758,6 +791,35 @@ document.getElementById('customer_id').onchange=()=>{
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=()=>addPayment();document.getElementById('amountToCollectHelp').onclick=()=>document.getElementById('amountToCollectHelpMessage').classList.toggle('d-none');
 
+window.lastPostedReceiptUrl='';
+const receiptOverlay=document.getElementById('receiptPreviewOverlay');
+const receiptFrame=document.getElementById('receiptPreviewFrame');
+const openReceiptPreview=()=>{
+  if(!window.lastPostedReceiptUrl)return;
+  receiptFrame.src=window.lastPostedReceiptUrl;
+  receiptOverlay.classList.add('is-visible');
+  receiptOverlay.setAttribute('aria-hidden','false');
+};
+const closeReceiptPreview=()=>{
+  receiptOverlay.classList.remove('is-visible');
+  receiptOverlay.setAttribute('aria-hidden','true');
+};
+const printReceiptDirect=()=>{
+  if(!window.lastPostedReceiptUrl)return;
+  const frame=document.createElement('iframe');
+  frame.style.position='fixed';frame.style.width='1px';frame.style.height='1px';frame.style.border='0';frame.style.opacity='0';frame.style.pointerEvents='none';
+  document.body.appendChild(frame);
+  frame.onload=()=>{
+    try{frame.contentWindow.focus();frame.contentWindow.print();}finally{setTimeout(()=>frame.remove(),1500);}
+  };
+  frame.src=window.lastPostedReceiptUrl;
+};
+document.getElementById('printPreviewBtn').onclick=openReceiptPreview;
+document.getElementById('printReceiptBtn').onclick=printReceiptDirect;
+document.getElementById('closeReceiptPreview').onclick=closeReceiptPreview;
+receiptOverlay.addEventListener('click',e=>{if(e.target===receiptOverlay)closeReceiptPreview();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeReceiptPreview();});
+
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
  const fail=msg=>{errorBox.textContent=String(msg);errorBox.classList.remove('d-none');errorBox.scrollIntoView({behavior:'smooth',block:'nearest'});return false;};errorBox.classList.add('d-none');
@@ -801,7 +863,18 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  if(t==='security_deposit'){const expectedGas=saleTotal+Number(document.getElementById('previousOs').textContent||0),totalDue=expectedGas+deposit,received=paymentTotal();if(received+0.01<deposit)return fail('Amount Received must be at least the Security Deposit Amount of Rs. '+deposit.toFixed(2)+'.');if(received>totalDue+0.01)return fail('Amount Received cannot exceed the Total Due of Rs. '+totalDue.toFixed(2)+'.');if(!pays.length)return fail('Add a payment row or leave the default zero/blank payment row when the gas amount is going to customer credit.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(sp>expectedGas+0.01)return fail('Gas / Cylinder allocation cannot exceed Rs. '+expectedGas.toFixed(2)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
  if(['gas_sale','cylinder_sale'].includes(t)){const expected=saleTotal+Number(document.getElementById('previousOs').textContent||0);if(!pays.length)return fail('Add at least one payment.');if(paymentTotal()>expected+0.01)return fail('Payment cannot exceed the net receivable.');}
  document.getElementById('stock_override_confirmed').value='0';saveBtn.disabled=true;const old=saveBtn.textContent;saveBtn.textContent='Posting...';
- try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{};}catch(_e){}if(!response.ok||data.success!==true){const serverMessage=String(data.error||'').trim();if(serverMessage)throw new Error(serverMessage);if(raw&&raw.trim()&&!/^\\s*</.test(raw))throw new Error(raw.trim().slice(0,500));throw new Error('Unable to post transaction. The server did not return a valid error message.');}if(data.receipt_url)window.open(data.receipt_url,'_blank','noopener');window.location.href=data.redirect||'<?=site_url('sales')?>';}catch(err){saveBtn.disabled=false;saveBtn.textContent=old;return fail(err.message);}
+ try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{};}catch(_e){}if(!response.ok||data.success!==true){const serverMessage=String(data.error||'').trim();if(serverMessage)throw new Error(serverMessage);if(raw&&raw.trim()&&!/^\s*</.test(raw))throw new Error(raw.trim().slice(0,500));throw new Error('Unable to post transaction. The server did not return a valid error message.');}
+ if(data.receipt_url){
+   window.lastPostedReceiptUrl=data.receipt_url;
+   document.getElementById('posSuccessMessage').textContent='Transaction '+String(data.sale_no||'')+' posted successfully.';
+   document.getElementById('posValidationAlert').classList.add('d-none');
+   document.getElementById('posSuccessAlert').style.display='block';
+   document.getElementById('posSuccessAlert').scrollIntoView({behavior:'smooth',block:'start'});
+   saveBtn.disabled=true;
+   saveBtn.textContent='Transaction Posted';
+ }else{
+   throw new Error('Transaction posted, but the receipt URL was not returned.');
+ }}catch(err){saveBtn.disabled=false;saveBtn.textContent=old;return fail(err.message);}
  return false;
 };
 (() => {
