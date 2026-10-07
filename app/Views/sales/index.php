@@ -629,6 +629,7 @@ function recalc(){
 }
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ if(!workspace)return;
  workspace.className='row g-3 pos-workspace mode-'+t;
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
@@ -656,8 +657,6 @@ document.getElementById('customer_id').onchange=()=>{
   document.getElementById('securityDeposit').value='0';
   payments.innerHTML='';
   addPayment();
-  document.getElementById('custodyUnits').selectedIndex=-1;
-  document.getElementById('returnUnits').selectedIndex=-1;
   refreshCustomer();
   setCustodyLists();
   refreshForm();
@@ -672,7 +671,7 @@ document.getElementById('customer_id').onchange=()=>{
   recalc();
 };
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
-document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('returnUnits').onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
+document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();
  const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
