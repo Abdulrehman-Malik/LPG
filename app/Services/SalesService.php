@@ -1088,6 +1088,9 @@ class SalesService
         if($customerId===null && $paymentTotal>$saleTotal+0.01)throw new RuntimeException('Payment cannot exceed the walk-in sale amount.');
         if($paymentTotal>$maxReceivable+0.01)throw new RuntimeException('Payment cannot exceed the customer net receivable of Rs. '.number_format($maxReceivable,2).'.');
 
+        // A customer payment may be less than the current sale amount. The unpaid
+        // remainder of the current sale is customer credit, subject to the same
+        // credit-eligibility and credit-limit rules used by Gas Sale.
         $salePayments=[];$settlements=[];$remainingSale=$saleTotal;$remainingOs=$previousOs;
         foreach($payments as $p){
             $amount=(float)$p['amount'];$mode=(string)$p['payment_mode'];
@@ -1104,7 +1107,10 @@ class SalesService
             }
             if($amount>0.00001)throw new RuntimeException('Payment exceeds the customer net receivable.');
         }
-        $creditAmount=max(0,$remainingSale)+array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
+        // Only the unpaid portion of the current sale becomes new credit.
+        // Explicit Credit tender rows are already represented in $salePayments and
+        // must not be double-counted here.
+        $creditAmount=max(0,$remainingSale);
         $newOs=max(0,$remainingOs+$creditAmount);
         if($customerId!==null && $creditAmount>0.01){
             $customerForCredit=$this->customers->find($customerId);
