@@ -52,14 +52,23 @@
 #lines.gas-sale-mode.source-enabled th:nth-child(7){width:6%; text-align:right}
 #lines.gas-sale-mode.source-enabled td:nth-child(7){text-align:right}
 #lines.gas-sale-mode.source-enabled td:nth-child(7) .remove { min-width:0; min-height:28px; width:auto; font-size:.62rem; line-height:1; padding:.18rem .32rem; white-space:nowrap; }
-#lines.cylinder-sale-mode th:nth-child(1){width:23%}
+#lines.cylinder-sale-mode th { font-size:.72rem !important; line-height:1.05; padding:.28rem .3rem; white-space:nowrap; }
+#lines.cylinder-sale-mode th:nth-child(1){width:21%}
 #lines.cylinder-sale-mode th:nth-child(2){width:16%}
-#lines.cylinder-sale-mode th:nth-child(3){width:9%}
-#lines.cylinder-sale-mode th:nth-child(4){width:12%}
-#lines.cylinder-sale-mode th:nth-child(5){width:13%}
-#lines.cylinder-sale-mode th:nth-child(6){width:14%}
-#lines.cylinder-sale-mode th:nth-child(7){width:9%}
-#lines.cylinder-sale-mode th:nth-child(8){width:4%}
+#lines.cylinder-sale-mode th:nth-child(3){width:8%}
+#lines.cylinder-sale-mode th:nth-child(4){width:8%}
+#lines.cylinder-sale-mode th:nth-child(5){width:15%}
+#lines.cylinder-sale-mode th:nth-child(6){width:15%}
+#lines.cylinder-sale-mode th:nth-child(7){width:10%; text-align:right}
+#lines.cylinder-sale-mode th:nth-child(8){width:7%; text-align:right}
+#lines.cylinder-sale-mode td:nth-child(5),
+#lines.cylinder-sale-mode td:nth-child(6) { min-width:0; }
+#lines.cylinder-sale-mode .input-group { min-width:0; width:100%; }
+#lines.cylinder-sale-mode .input-group-text { flex:0 0 auto; padding:.25rem .35rem; font-size:.72rem; }
+#lines.cylinder-sale-mode .input-group .form-control { min-width:0; width:1%; }
+#lines.cylinder-sale-mode td:nth-child(7) { text-align:right; white-space:nowrap; padding-left:.2rem; padding-right:.2rem; }
+#lines.cylinder-sale-mode td:nth-child(8) { text-align:right; white-space:nowrap; padding-left:.15rem; padding-right:.15rem; }
+#lines.cylinder-sale-mode td:nth-child(8) .remove { width:28px; height:28px; min-width:28px; min-height:28px; padding:0; font-size:.8rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
 #lines.gas-sale-mode .sourceCell { display:table-cell; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceCell { display:none; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceHead { display:none !important; }
@@ -126,6 +135,7 @@
 #lines tbody td { padding:.4rem .35rem; }
 #lines .form-select,#lines .form-control { min-height:38px; }
 #lines .input-group-sm > .form-control,#lines .input-group-sm > .input-group-text { min-height:34px; }
+#lines.cylinder-sale-mode .input-group-sm > .form-control { min-width:0; }
 .cylinderPickerRow { display:none; }
 .cylinderPickerRow.is-visible { display:table-row; }
 .cylinderPickerRow td { padding:.15rem .35rem !important; border-top:0 !important; }
