@@ -90,7 +90,7 @@ jobs:
             'LPG_DB_PASS=root' \
             'LPG_DB_DRIVER=MySQLi' \
             php spark migrations:run
-          curl -fsS http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
+          curl -fsS http://127.0.0.1:8080/ -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
           grep -qi 'password' /tmp/lpg-login-after-migrations.html
       - name: Login and application access
