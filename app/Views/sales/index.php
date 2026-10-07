@@ -342,6 +342,17 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="pos-summary-metric"><label class="form-label">OS Balance</label><div class="form-control bg-light"><span id="previousOs">0.00</span></div></div>
   <div class="pos-summary-metric"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="any" value="0" class="form-control"></div>
 </div>
+<div class="pos-summary-metrics" id="securityDepositSummary" style="display:<?= $initialTransactionType === 'security_deposit' ? 'grid' : 'none' ?>; margin-top:-.35rem;">
+  <div class="pos-summary-metric">
+    <label class="form-label fw-semibold">Security Deposit Amount</label>
+    <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="0.01" value="0" class="form-control">
+  </div>
+  <div class="pos-summary-metric">
+    <label class="form-label fw-semibold">Gas / Cylinder Balance</label>
+    <div class="form-control bg-light fw-semibold"><span id="combinedGasDue">0.00</span></div>
+  </div>
+  <div class="pos-summary-metric"></div>
+</div>
 <div class="mb-3" id="netReceivableBox">
   <label class="form-label" id="netReceivableLabel">Net Receivable Amount</label>
   <div class="form-control bg-light fw-bold"><span id="netPayable">0.00</span></div>
@@ -354,17 +365,6 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold" id="amountToCollectHelp">Amount to collect <span class="text-muted">(help)</span></button>
   <div id="amountToCollectHelpMessage" class="alert alert-info py-2 px-2 mt-2 mb-2 small d-none">
     The payment rows below are the actual amounts received. You can split one receipt across multiple methods, for example Rs. 500 Online + Rs. 500 Cash. The configured allocation rule keeps Gas / Cylinder and Security Deposit separate in the accounts.
-  </div>
-  <div class="row g-2 align-items-end mt-1">
-    <div class="col-6">
-      <label class="form-label small text-muted mb-1">Gas / Cylinder Balance</label>
-      <div class="form-control bg-light fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div>
-    </div>
-    <div class="col-6">
-      <label class="form-label small text-muted mb-1" for="securityDeposit">Security Deposit Amount</label>
-      <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="0.01" value="0" class="form-control">
-      <div class="form-text">Actual deposit collected now.</div>
-    </div>
   </div>
   <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
     <span class="fw-semibold">Amount Received</span><strong>Rs. <span id="combinedAmountReceivedTotal">0.00</span></strong>
@@ -593,6 +593,7 @@ function recalc(){
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
  document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
  document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';
+ document.getElementById('securityDepositSummary').style.display=t==='security_deposit'?'grid':'none';
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';
  document.getElementById('netReceivableLabel').textContent=t==='security_deposit'?'Gas / Cylinder Due':'Net Receivable Amount';
  document.getElementById('balanceLabel').textContent=t==='security_deposit'?'Gas / Cylinder Balance':'OS Balance';
