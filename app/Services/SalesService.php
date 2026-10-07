@@ -832,6 +832,7 @@ class SalesService
         // Combined collection is recorded as separate Sale and Security Deposit payment rows.
         // The cashier may enter one total payment; the shop setting controls how that amount is allocated.
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
+        $depositRequired=$deposit;
         $allocationRule=(string)($shopSettings['deposit_payment_allocation_rule']??'gas_first');
         if(!in_array($allocationRule,['gas_first','deposit_first','manual'],true))$allocationRule='gas_first';
         $depositPayments=[];$salePayments=[];
@@ -870,8 +871,8 @@ class SalesService
             }
         }
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
-        if(abs($depositPaid-(float)$deposit)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
-        if($deposit<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
+        if(abs($depositPaid-(float)$depositRequired)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
+        if($depositRequired<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
         $salePaymentTotal=array_sum(array_map(static fn($p)=>(float)$p['amount'],$salePayments));
         if($chargeTotal>0.00001){
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
