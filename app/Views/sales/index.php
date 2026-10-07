@@ -685,7 +685,8 @@ function resetTransactionFormState(){
   document.getElementById('securityDeposit').value='0';
   document.getElementById('refundAmount').value='0';
   document.getElementById('gasEntryMode').value='quantity';
-  document.getElementById('returnOverallRate')?.value='';
+  const returnOverallRate=document.getElementById('returnOverallRate');
+  if(returnOverallRate)returnOverallRate.value='';
   payments.innerHTML='';
   document.getElementById('posValidationAlert').classList.add('d-none');
   document.getElementById('posSuccessAlert').style.display='none';
