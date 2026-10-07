@@ -618,7 +618,26 @@ document.getElementById('gasEntryMode').onchange=()=>{
  const mode=document.getElementById('gasEntryMode').value;
  tbody.querySelectorAll('tr').forEach(tr=>{if(!tr.querySelector('.entryValue'))return;const rate=Number(tr.querySelector('.gasRate').value||0),q=Number(tr.querySelector('.qty').value||0),a=Number(tr.querySelector('.enteredAmount').value||0),input=tr.querySelector('.entryValue');tr.dataset.entryMode=mode;tr.querySelector('.gasRate').disabled=mode==='amount';if(mode==='amount'){const v=a>0?a:(rate>0?q*rate:0);tr.querySelector('.enteredAmount').value=v>0?v.toFixed(2):'';input.value=v>0?v.toFixed(2):'';input.placeholder='Amount';input.step='0.01';}else{const v=q>0?q:(rate>0&&a>0?a/rate:0);tr.querySelector('.qty').value=v>0?v.toFixed(3):'0';input.value=v>0?v.toFixed(3):'';input.placeholder='KG';input.step='any';tr.querySelector('.enteredAmount').value=rate>0&&v>0?(v*rate).toFixed(2):'';}refreshGasSourceLine(tr,false);});recalc();
 };
-document.getElementById('transactionType').onchange=refreshForm;
+let activeTransactionType=transactionType();
+document.getElementById('transactionType').addEventListener('change', function(){
+  const nextType=this.value;
+  // A transaction-type change starts an isolated POS detail context.
+  // Never carry line selections, deposit/return state, or payment amounts
+  // from one header-level transaction type into another.
+  if(nextType!==activeTransactionType){
+    issueLines=[];
+    returnLines=[];
+    clearLines();
+    lineHead.innerHTML='';
+    document.getElementById('discount').value='0';
+    document.getElementById('securityDeposit').value='0';
+    document.getElementById('refundAmount').value='0';
+    payments.innerHTML='';
+    addPayment();
+    activeTransactionType=nextType;
+  }
+  refreshForm();
+});
 document.getElementById('customer_id').onchange=()=>{
   const selected=selectedCustomerId();
   // A customer change starts a clean transaction context so no values from the
