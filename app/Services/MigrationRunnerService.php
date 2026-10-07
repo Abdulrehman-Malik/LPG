@@ -114,6 +114,7 @@ class MigrationRunnerService
             22 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_opening_balances' AND COLUMN_NAME='opening_batch_key') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_opening_balances' AND INDEX_NAME='uq_inventory_opening_batch')) ok",
             27 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='deposit_payment_allocation_rule'",
             28 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_HISTORY'",
+            29 => "SELECT IF(COUNT(*)=0,1,0) ok FROM shop_settings WHERE deposit_payment_allocation_rule='gas_first'",
         ];
 
         if (!isset($checks[$migration['seq']])) {
