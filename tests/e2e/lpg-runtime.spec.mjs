@@ -63,6 +63,11 @@ test('E2E-003a POS transaction type switch rebuilds isolated detail UI without p
   await expect(page.locator('#lines thead')).toContainText('Qty / KG');
   await expect(page.locator('#lines tbody .cyl')).toHaveCount(1);
 
+  await page.getByRole('link', { name: 'Sale History' }).click();
+  await expect(page).toHaveURL(/\/sales\/history/);
+  await expect(page.locator('#saleHistoryPanel')).toBeVisible();
+  await expect(page.locator('#historySearch')).toBeVisible();
+
   expect(pageErrors).toEqual([]);
 });
 test('E2E-004 Actual gas sale posts successfully', async ({ page }) => {
