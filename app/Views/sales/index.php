@@ -201,6 +201,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 .pos-summary-metrics{gap:.6rem}.pos-summary-metric .form-control{border-color:#d7e0e8;background:#f8fafc!important;font-weight:650}
 #combinedPaymentSection{background:#f8fafc;border-color:#dbe5ec!important}
 #combinedPaymentSection .fw-semibold{font-variant-numeric:tabular-nums}
+#combinedPaymentSection #combinedOsAfterPayment{font-variant-numeric:tabular-nums}
 #paymentSection{padding-top:.35rem!important}
 #paymentSection{border:1px solid #dbe5ec;border-radius:.375rem;padding:.5rem!important;background:#fff}
 #paymentSection .paymentCollectionTitle{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#475569;font-weight:600;margin-bottom:.35rem}
@@ -371,6 +372,9 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
     <span class="fw-semibold">Amount Received</span><strong>Rs. <span id="combinedAmountReceivedTotal">0.00</span></strong>
   </div>
+  <div class="d-flex justify-content-between align-items-center mt-1">
+    <span class="fw-semibold">OS After Payment</span><strong class="text-primary">Rs. <span id="combinedOsAfterPayment">0.00</span></strong>
+  </div>
 </div>
 <div id="paymentSection" style="display:block">
   <div id="paymentPurposeLabel" class="paymentCollectionTitle">Payment Collection</div>
@@ -404,17 +408,25 @@ function refreshCustomer(){
  if(osBox)osBox.textContent=(c?Math.max(0,c.balance):0).toFixed(2);
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
- if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.';return c;}
+ const depositBalance=Math.max(0,Number((window.depositBalances||{})[String(selectedCustomerId())]||0));
+ const appendDeposit=(base)=>base+' | Deposit Balance: Rs. '+depositBalance.toFixed(2);
+ if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.');return c;}
  if(creditLimitMode==='none'){
    if(c.limit>0){
      const available=Math.max(0,c.limit-c.balance);
-     if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}
-     box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+c.limit.toFixed(2)+' | Available: '+available.toFixed(2);return c;
+     if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
+     box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
    }
-   box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: Unlimited';return c;
+   box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Unlimited');return c;
  }
- if(creditLimitMode==='shop'){const available=Math.max(0,shopCreditLimit-shopOutstanding);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Shop credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+shopCreditLimit.toFixed(2)+' | Available: '+available.toFixed(2);return c;}
- const available=Math.max(0,c.limit-c.balance);if(available<=0){box.className='small mt-1 text-danger';box.textContent='Credit Sale: Not Allowed — Customer credit limit reached.';return c;}box.className='small mt-1 text-success';box.textContent='Credit Sale: Allowed — Credit Limit: '+c.limit.toFixed(2)+' | Available: '+available.toFixed(2);return c;
+ if(creditLimitMode==='shop'){
+   const available=Math.max(0,shopCreditLimit-shopOutstanding);
+   if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Shop credit limit reached.');return c;}
+   box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+shopCreditLimit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
+ }
+ const available=Math.max(0,c.limit-c.balance);
+ if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
+ box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
 }
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
@@ -586,6 +598,7 @@ function recalc(){
    balanceAfter=Math.max(0,gasReceivable-gasAlloc);
    document.getElementById('combinedGasDue').textContent=gasReceivable.toFixed(2);
    document.getElementById('combinedAmountReceivedTotal').textContent=received.toFixed(2);
+   document.getElementById('combinedOsAfterPayment').textContent=balanceAfter.toFixed(2);
  }else{
    const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
    paid=refundPaid;
