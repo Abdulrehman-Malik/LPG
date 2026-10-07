@@ -322,3 +322,15 @@ __________________________________________________________________
 - Receipt does not auto-print; Print must be explicitly selected from the preview.
 - Existing print layout remains available.
  | Other transaction types unaffected | Run Gas Sale, Cylinder Sale, and Cylinder Return | Existing payment workflows continue to validate/post correctly. | | |
+
+
+### POS-150 — Security Deposit paid immediately with remaining gas on credit
+- Select customer and cylinder(s) for Security Deposit / Issue Cylinder.
+- Enter the Security Deposit amount the customer pays at the counter.
+- If the receipt/payment amount covers the deposit only, allocate the deposit first; the remaining gas/cylinder amount becomes customer OS/credit subject to the same Allow Credit Sale and credit-limit rules as Gas Sale.
+- Verify the server validates projected OS as current transaction balance plus previous OS and rejects the transaction when the applicable credit limit is exceeded.
+- Verify Security Deposit itself is never posted as credit.
+
+### POS-151 — Zero/blank payment amount and reference note
+- Payment amount accepts blank/null, 0, 1, 1.23, and values up to two decimal places.
+- Reference / Note is displayed as a larger field below Add Payment and is persisted with payment records.
