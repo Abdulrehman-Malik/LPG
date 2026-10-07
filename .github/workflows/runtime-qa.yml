@@ -82,8 +82,9 @@ jobs:
           LPG_QA_BASE_URL: http://127.0.0.1:8080
         run: |
           set -e
-          npm exec --yes --package=@playwright/test -- playwright install --with-deps chromium
-          npm exec --yes --package=@playwright/test -- playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-003a" --workers=1
+          npm install --no-save --no-package-lock @playwright/test
+          npx playwright install --with-deps chromium
+          npx playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-003a" --workers=1
 
       - name: Run application migrations
         env:
