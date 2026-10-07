@@ -27,25 +27,31 @@
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
 /* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
-#lines.gas-sale-mode:not(.source-enabled) th { padding:.42rem .3rem; font-size:.74rem; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
+#lines.gas-sale-mode:not(.source-enabled) th { padding:.32rem .28rem; font-size:.68rem; line-height:1.05; white-space:normal; overflow-wrap:anywhere; }
 #lines.gas-sale-mode:not(.source-enabled) { min-width:720px; }
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:23%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:22%}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:14%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:17%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:22%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:20%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:20%}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:16%; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:8%; text-align:center; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:8%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7){width:8%; text-align:right; white-space:nowrap}
 #lines.gas-sale-mode:not(.source-enabled) td:nth-child(5){width:16%; text-align:right; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6){width:8%; text-align:center; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6) .remove { font-size:.72rem; padding:.25rem .42rem; white-space:nowrap; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6){width:8%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7){width:8%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) .remove { min-width:0; min-height:28px; width:auto; font-size:.62rem; line-height:1; padding:.18rem .32rem; white-space:nowrap; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7) { padding-right:.15rem; }
 #lines.gas-sale-mode:not(.source-enabled) th .gas-sale-header-wrap { display:inline-block; line-height:1.05; }
+#lines.gas-sale-mode.source-enabled th { font-size:.68rem; line-height:1.05; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1){width:18%}
-#lines.gas-sale-mode.source-enabled th:nth-child(2){width:22%}
+#lines.gas-sale-mode.source-enabled th:nth-child(2){width:21%}
 #lines.gas-sale-mode.source-enabled th:nth-child(3){width:11%}
 #lines.gas-sale-mode.source-enabled th:nth-child(4){width:13%}
-#lines.gas-sale-mode.source-enabled th:nth-child(5){width:19%}
-#lines.gas-sale-mode.source-enabled th:nth-child(6){width:12%}
-#lines.gas-sale-mode.source-enabled th:nth-child(7){width:5%}
+#lines.gas-sale-mode.source-enabled th:nth-child(5){width:18%}
+#lines.gas-sale-mode.source-enabled th:nth-child(6){width:13%}
+#lines.gas-sale-mode.source-enabled th:nth-child(7){width:6%; text-align:right}
+#lines.gas-sale-mode.source-enabled td:nth-child(7){text-align:right}
+#lines.gas-sale-mode.source-enabled td:nth-child(7) .remove { min-width:0; min-height:28px; width:auto; font-size:.62rem; line-height:1; padding:.18rem .32rem; white-space:nowrap; }
 #lines.cylinder-sale-mode th:nth-child(1){width:23%}
 #lines.cylinder-sale-mode th:nth-child(2){width:16%}
 #lines.cylinder-sale-mode th:nth-child(3){width:9%}
