@@ -27,22 +27,22 @@
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
 /* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
-#lines.gas-sale-mode:not(.source-enabled) th { padding:.28rem .24rem; font-size:.66rem !important; line-height:1.05; white-space:normal; overflow-wrap:anywhere; }
+#lines.gas-sale-mode:not(.source-enabled) th { padding:.32rem .28rem; font-size:.68rem; line-height:1.05; white-space:normal; overflow-wrap:anywhere; }
 #lines.gas-sale-mode:not(.source-enabled) { min-width:720px; }
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:24%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:0}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:16%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:22%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:14%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:20%}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:20%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:17%; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:15%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:16%; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:8%; text-align:right; white-space:nowrap}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(7){width:8%; text-align:right; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(5){width:17%; text-align:right; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6){width:15%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(5){width:16%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6){width:8%; text-align:right; white-space:nowrap}
 #lines.gas-sale-mode:not(.source-enabled) td:nth-child(7){width:8%; text-align:right; white-space:nowrap}
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) .remove { min-width:0; min-height:24px; width:24px; height:24px; font-size:.72rem; line-height:1; padding:0; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; }
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7) { padding-right:.1rem; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) .remove { min-width:0; min-height:28px; width:auto; font-size:.62rem; line-height:1; padding:.18rem .32rem; white-space:nowrap; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7) { padding-right:.15rem; }
 #lines.gas-sale-mode:not(.source-enabled) th .gas-sale-header-wrap { display:inline-block; line-height:1.05; }
-#lines.gas-sale-mode.source-enabled th { font-size:.66rem !important; line-height:1.05; }
+#lines.gas-sale-mode.source-enabled th { font-size:.68rem; line-height:1.05; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1){width:18%}
 #lines.gas-sale-mode.source-enabled th:nth-child(2){width:21%}
 #lines.gas-sale-mode.source-enabled th:nth-child(3){width:11%}
@@ -409,7 +409,7 @@ function refreshDuplicateTypeOptions(){
 }
 function addGasLine(){
  const tr=document.createElement('tr');
- tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><input class="form-control form-control-sm gasRate" type="number" min="0" step="any" aria-label="Gas Rate"></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove" title="Delete line" aria-label="Delete line">×</button></td>';
+ tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td class="sourceCell" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'"><select class="form-select sourceCyl" disabled><option value="">Select source filled cylinder</option></select></td><td><input class="form-control entryValue" type="number" min="0" step="any" value="0" placeholder="KG"><input class="qty" type="hidden" value="0"><input class="enteredAmount" type="hidden"></td><td><input class="form-control form-control-sm gasRate" type="number" min="0" step="any" aria-label="Gas Rate"></td><td><select class="form-select targetCyl" disabled></select></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">Delete</button></td>';
  const mode=()=>document.getElementById('gasEntryMode').value;
  tr.dataset.entryMode=mode();tr.querySelector('.gasRate').value=kgRate!==null?Number(kgRate).toFixed(2):'';tr.querySelector('.gasRate').disabled=mode()==='amount';
  tr.querySelector('.cyl').onchange=()=>{refreshDuplicateTypeOptions();refreshGasSourceLine(tr,true);const t=tr.querySelector('.targetCyl');t.disabled=!selectedCustomerId();t.innerHTML=refillLineOptions(tr.querySelector('.cyl').value);recalc();};
