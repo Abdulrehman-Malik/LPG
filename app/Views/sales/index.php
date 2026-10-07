@@ -336,7 +336,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="fw-semibold mb-2">Amount to Collect</div>
   <div class="small text-muted mb-2">Enter the total amount the customer is paying now. The POS will keep the gas/cylinder charge and refundable deposit separate in the accounts.</div>
   <div class="row g-2 mb-2">
-    <div class="col-6"><span class="small text-muted">Gas / Cylinder Sale</span><div class="fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div></div>
+    <div class="col-6"><span class="small text-muted">Gas / Cylinder + OS</span><div class="fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div></div>
     <div class="col-6"><span class="small text-muted">Security Deposit</span><div class="fw-semibold">Rs. <span id="combinedDepositDue">0.00</span></div></div>
   </div>
   <div class="border-top pt-2 mb-2 d-flex justify-content-between"><strong>Total Due</strong><strong>Rs. <span id="combinedTotalDue">0.00</span></strong></div>
@@ -527,7 +527,7 @@ function recalc(){
    }
    paid=gasAlloc+depositAlloc;
    balanceAfter=Math.max(0,gasReceivable-gasAlloc);
-   document.getElementById('combinedGasDue').textContent=saleTotal.toFixed(2);
+   document.getElementById('combinedGasDue').textContent=gasReceivable.toFixed(2);
    document.getElementById('combinedDepositDue').textContent=depositDue.toFixed(2);
    document.getElementById('combinedTotalDue').textContent=totalDue.toFixed(2);
    document.getElementById('combinedGasAllocated').textContent=gasAlloc.toFixed(2);
