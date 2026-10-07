@@ -860,6 +860,13 @@ class SalesService
         }
         $gasPreviousOs=$this->customerGasBalance($customerId);
         $gasDue=round($chargeTotal+$gasPreviousOs,2);
+        $combinedReceived=array_sum(array_map(static fn($p)=>(float)$p['amount'],$combinedPayments));
+        if($combinedPayments && $combinedReceived+0.01<$depositRequired){
+            throw new RuntimeException('Security Deposit / Issue Cylinder payment must be at least the Security Deposit amount of Rs. '.number_format($depositRequired,2,'.','').'.');
+        }
+        if($combinedPayments && $combinedReceived>$gasDue+$depositRequired+0.01){
+            throw new RuntimeException('Payment exceeds the combined Gas / Cylinder balance and Security Deposit amount.');
+        }
         if($combinedPayments){
             if($allocationRule==='manual')throw new RuntimeException('Manual payment allocation is enabled. Enter the Gas / Cylinder and Security Deposit allocations separately.');
             foreach($combinedPayments as $p){
@@ -877,6 +884,9 @@ class SalesService
         // Security deposit receipt is independent of the amount entered for the issue transaction.
         // Accept any non-negative receipt amount; only actual receipts increase the refundable balance.
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
+        if($combinedPayments && $depositPaid+0.01<$depositRequired){
+            throw new RuntimeException('Security Deposit payment must include at least the full Security Deposit amount.');
+        }
         if($chargeTotal>0.00001){
             if(!$salePayments)$salePayments=[['payment_mode'=>'credit','amount'=>0,'reference_no'=>null]];
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
@@ -905,16 +915,16 @@ class SalesService
             $this->db->table('sales')->insert([
                 'sale_no'=>$saleNo,'location_id'=>$locationId,'customer_id'=>$customerId,'transaction_type'=>'security_deposit','status'=>'posted',
                 'transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$chargeTotal,'discount_amount'=>0,'total_amount'=>$chargeTotal,
-                'security_deposit_amount'=>$deposit,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
+                'security_deposit_amount'=>$depositRequired,'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
                 'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>$paymentPlan['payment_total'],
                 'net_receivable_amount'=>$paymentPlan['net_receivable'],'os_balance'=>$overallOsAfter,'return_gas_ledger_amount'=>0,
                 'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId
             ]);
             $saleId=(int)$this->db->insertID();
 
-            $depositPerUnit=$deposit>0?round($deposit/count($prepared),2):0;$assigned=0;
+            $depositPerUnit=$depositRequired>0?round($depositRequired/count($prepared),2):0;$assigned=0;
             foreach($prepared as $idx=>$item){
-                $row=$item['row'];$unitId=(int)$row['id'];$share=($idx===count($prepared)-1)?round($deposit-$assigned,2):$depositPerUnit;$assigned+=$share;
+                $row=$item['row'];$unitId=(int)$row['id'];$share=($idx===count($prepared)-1)?round($depositRequired-$assigned,2):$depositPerUnit;$assigned+=$share;
                 $this->cylinders->moveToCustody($unitId,$customerId,$saleId,$userId);
                 $custody=$this->db->table('cylinder_custody')->where(['cylinder_unit_id'=>$unitId,'status'=>'issued'])->orderBy('id','DESC')->get()->getRowArray();
                 if(!$custody)throw new RuntimeException('Custody record could not be created for '.$row['unit_code'].'.');
