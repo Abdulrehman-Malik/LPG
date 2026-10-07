@@ -829,13 +829,21 @@ class SalesService
         }
         $chargeTotal=round($subtotal,2);
 
-        // Deposit and gas/cylinder payments are explicitly classified by the POS.
-        // They must never be allocated from one payment pool because the deposit is
-        // an independent liability and must not settle the customer's gas OS.
+        // Combined collection is recorded as separate Sale and Security Deposit payment rows.
+        // The cashier may enter one total payment; the shop setting controls how that amount is allocated.
+        $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
+        $allocationRule=(string)($shopSettings['deposit_payment_allocation_rule']??'gas_first');
+        if(!in_array($allocationRule,['gas_first','deposit_first','manual'],true))$allocationRule='gas_first';
         $depositPayments=[];$salePayments=[];
+        $combinedPayments=[];
         foreach($payments as $p){
             $type=(string)($p['payment_type']??'');
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
+            if($type==='combined'){
+                if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid combined payment.');
+                $combinedPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
+                continue;
+            }
             if(!in_array($type,['security_deposit','sale'],true))throw new RuntimeException('Every Security Deposit payment must be classified as Security Deposit or Gas / Cylinder.');
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
             if($type==='security_deposit'){
@@ -845,19 +853,37 @@ class SalesService
                 $salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
             }
         }
+        $gasPreviousOs=$this->customerGasBalance($customerId);
+        $gasDue=round($chargeTotal+$gasPreviousOs,2);
+        if($combinedPayments){
+            if($allocationRule==='manual')throw new RuntimeException('Manual payment allocation is enabled. Enter the Gas / Cylinder and Security Deposit allocations separately.');
+            foreach($combinedPayments as $p){
+                $remaining=(float)$p['amount'];
+                if($allocationRule==='gas_first'){
+                    $toGas=min($remaining,$gasDue); if($toGas>0){$salePayments[]=['payment_mode'=>$p['payment_mode'],'amount'=>$toGas,'reference_no'=>$p['reference_no']??null];$gasDue-=$toGas;$remaining-=$toGas;}
+                    $toDeposit=min($remaining,$deposit); if($toDeposit>0){$depositPayments[]=['payment_mode'=>$p['payment_mode'],'amount'=>$toDeposit,'reference_no'=>$p['reference_no']??null];$deposit-=$toDeposit;$remaining-=$toDeposit;}
+                }else{
+                    $toDeposit=min($remaining,$deposit); if($toDeposit>0){if($p['payment_mode']==='credit')throw new RuntimeException('Security Deposit cannot be received on credit.');$depositPayments[]=['payment_mode'=>$p['payment_mode'],'amount'=>$toDeposit,'reference_no'=>$p['reference_no']??null];$deposit-=$toDeposit;$remaining-=$toDeposit;}
+                    $toGas=min($remaining,$gasDue); if($toGas>0){$salePayments[]=['payment_mode'=>$p['payment_mode'],'amount'=>$toGas,'reference_no'=>$p['reference_no']??null];$gasDue-=$toGas;$remaining-=$toGas;}
+                }
+                if($remaining>0.01)throw new RuntimeException('Payment exceeds the combined amount due.');
+            }
+        }
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
-        if(abs($depositPaid-$deposit)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
+        if(abs($depositPaid-(float)$deposit)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
         if($deposit<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
-
+        $salePaymentTotal=array_sum(array_map(static fn($p)=>(float)$p['amount'],$salePayments));
         if($chargeTotal>0.00001){
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
+            if(abs($paymentPlan['payment_total']-$gasPreviousOs-$chargeTotal)>0.01)throw new RuntimeException('Gas / Cylinder payment allocation must equal the gas/cylinder charge plus previous customer OS.');
         }else{
-            if($salePayments)throw new RuntimeException('No gas/cylinder amount is payable; payment rows cannot be allocated to the issue charge.');
-            $gasOs=$this->customerGasBalance($customerId);
-            $paymentPlan=['sale_payments'=>[],'settlements'=>[],'credit_amount'=>0,'previous_os'=>$gasOs,'payment_total'=>0,'net_receivable'=>$gasOs,'remaining_os'=>$gasOs];
+            if($salePayments)throw new RuntimeException('No gas/cylinder amount is payable; sale payment rows are not allowed.');
+            $paymentPlan=['sale_payments'=>[],'settlements'=>[],'credit_amount'=>0,'previous_os'=>$gasPreviousOs,'payment_total'=>0,'net_receivable'=>$gasPreviousOs,'remaining_os'=>$gasPreviousOs];
         }
-        if(abs($paymentPlan['payment_total']-$chargeTotal)>0.01)throw new RuntimeException('Gas/cylinder payment total must equal the gas/cylinder charge only.');
-
+        if($allocationRule==='manual'){
+            // Manual mode is represented by explicit payment_type rows from the POS.
+            if($combinedPayments)throw new RuntimeException('Manual allocation requires separate payment rows.');
+        }
         $this->db->transBegin();
         try{
             $this->acquireInventoryLocks($locationId,array_map(static fn($x)=>['type'=>$x['status']==='filled'?'filled_cylinder':'empty_cylinder','cylinder_type_id'=>(int)$x['row']['cylinder_type_id']],$prepared));
