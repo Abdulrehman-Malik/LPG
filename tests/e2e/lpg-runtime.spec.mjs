@@ -38,6 +38,12 @@ test('E2E-003a POS transaction type switch rebuilds isolated detail UI without p
 
   await expect(page.locator('#transactionType')).toHaveValue('gas_sale');
   await expect(page.locator('#lines thead')).toContainText('Qty / KG');
+
+  await page.locator('#saleHistoryTab').click();
+  await expect(page.locator('#saleHistoryPanel')).toBeVisible();
+  await expect(page.locator('#saleForm')).toBeHidden();
+  await page.locator('#newSaleTab').click();
+  await expect(page.locator('#saleForm')).toBeVisible();
   await expect(page.locator('#lines thead')).toContainText('Gas Rate');
 
   await page.locator('#transactionType').selectOption('cylinder_sale');
