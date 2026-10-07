@@ -583,7 +583,6 @@ function recalc(){
        :Math.min(received,gasReceivable));
    balanceAfter=Math.max(0,gasReceivable-gasAlloc);
    document.getElementById('combinedGasDue').textContent=gasReceivable.toFixed(2);
-   document.getElementById('combinedDepositDue').textContent=deposit.toFixed(2);
    document.getElementById('combinedAmountReceivedTotal').textContent=received.toFixed(2);
  }else{
    const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
@@ -592,7 +591,6 @@ function recalc(){
  }
  document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
- document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
  document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';
