@@ -41,7 +41,8 @@ Security Deposit is a **separate financial transaction/component** from the gas/
 - Deposit is received independently from the gas/cylinder amount.
 - Deposit uses existing POS payment methods, but deposit payment records must be identifiable as Security Deposit Receive and must not be inserted as payment against the gas/cylinder sale amount.
 - Deposit has its own customer security-deposit ledger/balance.
-- Deposit received increases the customer's refundable security-deposit balance.
+- Only the actual sum of deposit receipt payments increases the customer's refundable security-deposit balance; the Security Deposit Amount field may be any non-negative amount and does not force a matching receipt.
+- Deposit receipt is not required to equal the amount entered or attached to cylinder custody. No equality/minimum/maximum receipt validation applies (ordinary valid payment methods and non-negative amounts still apply).
 - If Shop Settings enables **Include Security Deposit in Party OS**, the deposit receipt independently increases Party OS by the deposit amount.
 - If disabled, the deposit receipt does not affect Party OS.
 - The deposit OS impact must be recorded separately so that a later refund can reverse only the deposit OS impact.
@@ -157,6 +158,7 @@ Every deposit receipt/refund and every gas/cylinder OS movement must remain inde
 - Lock/revalidate physical cylinder IDs during posting to prevent double issue/return.
 - Reject duplicate selections and returns for cylinders not pending for the selected customer.
 - Validate gas/cylinder payments independently from Security Deposit Receive.
+- Never require the Security Deposit receipt total to equal the Security Deposit Amount. Customer deposit balance is based only on actual deposit receipts minus actual refunds, not the amount entered for cylinder custody.
 - Validate return-gas/cylinder return financial effects independently from Security Deposit Refund.
 - Do not allow one component's payment/refund amount to silently satisfy another component's validation.
 
