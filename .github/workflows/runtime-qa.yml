@@ -63,7 +63,7 @@ jobs:
           EOF
       - name: Start web application
         run: |
-          nohup php spark serve --host 0.0.0.0 --port 8080 > /tmp/lpg-server.log 2>&1 &
+          env 'LPG_DB_HOST=127.0.0.1' 'LPG_DB_PORT=3306' 'LPG_DB_NAME=perfect_lpg' 'LPG_DB_USER=root' 'LPG_DB_PASS=root' 'LPG_DB_DRIVER=MySQLi' nohup php spark serve --host 0.0.0.0 --port 8080 > /tmp/lpg-server.log 2>&1 &
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:8080/ > /tmp/lpg-login.html; then exit 0; fi
             sleep 2
