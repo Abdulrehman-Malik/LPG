@@ -28,13 +28,16 @@
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
 /* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
 #lines.gas-sale-mode:not(.source-enabled) th { padding:.42rem .3rem; font-size:.74rem; line-height:1.1; white-space:normal; overflow-wrap:anywhere; }
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:25%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:15%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:15%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:25%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:15%; white-space:normal}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:5%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6) .remove { font-size:.72rem; padding:.2rem .38rem; white-space:nowrap; }
+#lines.gas-sale-mode:not(.source-enabled) { min-width:720px; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:23%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:14%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:17%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:22%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:16%; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:8%; text-align:center; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(5){width:16%; text-align:right; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6){width:8%; text-align:center; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6) .remove { font-size:.72rem; padding:.25rem .42rem; white-space:nowrap; }
 #lines.gas-sale-mode:not(.source-enabled) th .gas-sale-header-wrap { display:inline-block; line-height:1.05; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1){width:18%}
 #lines.gas-sale-mode.source-enabled th:nth-child(2){width:22%}
@@ -411,7 +414,7 @@ function addGasLine(){
 }
 function rebuildLines(){
  clearLines();const t=transactionType();lineHead.innerHTML='';document.getElementById('lines').classList.remove('gas-sale-mode','cylinder-sale-mode','source-enabled');
- if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');if(allowPosSourceCylinderSelection)document.getElementById('lines').classList.add('source-enabled');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th><span class="gas-sale-header-wrap">Customer<br>Cylinder</span></th><th>Amount</th><th></th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
+ if(t==='gas_sale'){document.getElementById('lines').classList.add('gas-sale-mode');if(allowPosSourceCylinderSelection)document.getElementById('lines').classList.add('source-enabled');lineHead.innerHTML='<tr><th>Cylinder Type</th><th class="sourceHead" style="display:'+(allowPosSourceCylinderSelection?'table-cell':'none')+'">Source Filled Cylinder</th><th>Qty / KG</th><th>Gas Rate</th><th><span class="gas-sale-header-wrap">Customer<br>Cylinder</span></th><th>Amount</th><th>Action</th></tr>';addGasLine();document.getElementById('addLine').style.display='inline-block';}
  else if(t==='cylinder_sale'){document.getElementById('lines').classList.add('cylinder-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
