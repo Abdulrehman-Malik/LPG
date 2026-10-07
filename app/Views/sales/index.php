@@ -675,10 +675,38 @@ function recalc(){
  document.getElementById('balanceBox').style.display=t==='security_deposit'?'none':'block';
  updateRefund();
 }
+let resettingTransactionType=false;
+function resetTransactionFormState(){
+  clearLines();
+  lineHead.innerHTML='';
+  issueLines=[];
+  returnLines=[];
+  document.getElementById('discount').value='0';
+  document.getElementById('securityDeposit').value='0';
+  document.getElementById('refundAmount').value='0';
+  document.getElementById('gasEntryMode').value='quantity';
+  document.getElementById('returnOverallRate')?.value='';
+  payments.innerHTML='';
+  document.getElementById('posValidationAlert').classList.add('d-none');
+  document.getElementById('posSuccessAlert').style.display='none';
+  window.lastPostedReceiptUrl='';
+  const previewFrame=document.getElementById('receiptPreviewFrame');
+  if(previewFrame)previewFrame.src='about:blank';
+  refreshWalkInCustomerOption();
+  if(transactionType()==='security_deposit'||transactionType()==='cylinder_return'){
+    const select=document.getElementById('customer_id');
+    if(select){
+      const firstCustomer=[...select.options].find(o=>o.value!==''&&!o.dataset.walkinOption);
+      select.value=firstCustomer?firstCustomer.value:'';
+    }
+  }else{
+    document.getElementById('customer_id').value='';
+  }
+  addPayment();
+}
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
  refreshWalkInCustomerOption();
- refreshCustomer();
  if(workspace)workspace.className='row g-3 pos-workspace mode-'+t;
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?(depositPaymentAllocationRule==='manual'?'sale':'combined'):(t==='cylinder_return'?'security_deposit_refund':'sale');pt.classList.toggle('is-hidden',t!=='security_deposit'||depositPaymentAllocationRule!=='manual');});
  document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
@@ -690,7 +718,24 @@ function refreshForm(){
  document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
  document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
  if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}
- setCustodyLists();refreshPaymentModes();recalc();
+ setCustodyLists();refreshPaymentModes();refreshCustomer();recalc();
+}
+function handleTransactionTypeChange(){
+ if(resettingTransactionType)return;
+ resettingTransactionType=true;
+ try{
+   resetTransactionFormState();
+   refreshForm();
+   const c=selectedCustomer();
+   const previousOs=c?Math.max(0,c.balance):0;
+   document.getElementById('previousOs').textContent=previousOs.toFixed(2);
+   document.getElementById('customerOsBalanceValue').textContent=previousOs.toFixed(2);
+   setCustodyLists();
+   refreshCustomer();
+   recalc();
+ }finally{
+   resettingTransactionType=false;
+ }
 }
 
 let issueLines=[],returnLines=[];
@@ -809,7 +854,7 @@ document.getElementById('gasEntryMode').onchange=()=>{
  const mode=document.getElementById('gasEntryMode').value;
  tbody.querySelectorAll('tr').forEach(tr=>{if(!tr.querySelector('.entryValue'))return;const rate=Number(tr.querySelector('.gasRate').value||0),q=Number(tr.querySelector('.qty').value||0),a=Number(tr.querySelector('.enteredAmount').value||0),input=tr.querySelector('.entryValue');tr.dataset.entryMode=mode;tr.querySelector('.gasRate').disabled=mode==='amount';if(mode==='amount'){const v=a>0?a:(rate>0?q*rate:0);tr.querySelector('.enteredAmount').value=v>0?v.toFixed(2):'';input.value=v>0?v.toFixed(2):'';input.placeholder='Amount';input.step='0.01';}else{const v=q>0?q:(rate>0&&a>0?a/rate:0);tr.querySelector('.qty').value=v>0?v.toFixed(3):'0';input.value=v>0?v.toFixed(3):'';input.placeholder='KG';input.step='any';tr.querySelector('.enteredAmount').value=rate>0&&v>0?(v*rate).toFixed(2):'';}refreshGasSourceLine(tr,false);});recalc();
 };
-document.getElementById('transactionType').onchange=refreshForm;
+document.getElementById('transactionType').onchange=handleTransactionTypeChange;
 document.getElementById('customer_id').onchange=()=>{
   const selected=selectedCustomerId();
   // A customer change starts a clean transaction context so no values from the
@@ -929,7 +974,7 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
   tx.value = initial;
   addPayment();
   refreshCustomer();
-  tx.dispatchEvent(new Event('change', {bubbles:true}));
+  handleTransactionTypeChange();
 })();
 </script>
 <?= $this->endSection() ?>
