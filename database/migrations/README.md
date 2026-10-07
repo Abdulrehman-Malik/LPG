@@ -40,6 +40,7 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 026 | `026_20261007_backup_email_settings_idempotent.sql` | Safely reconcile backup email SMTP columns for databases where migration 021 was already applied |
 | 027 | `027_20261007_payment_allocation_rule.sql` | Configurable allocation rule for combined Security Deposit + Gas/Cylinder payment collection |
 | 028 | `028_20261007_sale_history_permission.sql` | Dedicated Sale History permission and default role mappings |
+| 029 | `029_20261007_security_deposit_first.sql` | Makes Security Deposit the default allocation target before Gas/Cylinder |
 
 ## Deployment rules
 
@@ -50,7 +51,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 027 → 028**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 027 → 028 → 029**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases. Its refresh list is authoritative for transactional/test state: whenever a later migration introduces a new transactional table, update the controlled refresh script/rule so that table is reset too, while master/configuration data remains preserved.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
