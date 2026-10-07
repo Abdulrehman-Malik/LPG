@@ -60,6 +60,22 @@
 .pos-header-row { margin-bottom:.5rem !important; row-gap:.45rem !important; }
 .pos-header-row .form-label { margin-bottom:.25rem; }
 .pos-header-row .credit-status-row { margin-top:-.15rem; }
+.pos-workspace,
+.pos-workspace .form-control,
+.pos-workspace .form-select,
+.pos-workspace .btn,
+.pos-workspace th,
+.pos-workspace td,
+.pos-workspace .input-group-text {
+  font-size:var(--app-font-size) !important;
+}
+.pos-workspace .form-label,
+.pos-workspace .form-text,
+.pos-workspace .small {
+  font-size:calc(var(--app-font-size) * .86) !important;
+}
+.pos-workspace h6 { font-size:calc(var(--app-font-size) * 1.05) !important; }
+.pos-workspace .badge { font-size:calc(var(--app-font-size) * .75) !important; }
 #standardTransaction { margin-top:0 !important; padding-top:0 !important; }
 #standardTransaction .table-responsive { overflow-x:auto; }
 #securityTransaction, #returnTransaction { width:100%; }
@@ -140,6 +156,14 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 </style>
 <?= $this->endSection() ?>
 <?= $this->section('content') ?>
+
+<?php
+$posVisibleTypes = (new \App\Models\ShopSettingsModel())->visibleTransactionTypes($shopSettings);
+$initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleTypes, true)
+    ? (string)$defaultTransactionType
+    : (string)($posVisibleTypes[0] ?? 'gas_sale');
+?>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <?php if($cashSession): ?><div class="small text-success fw-semibold">Cash session: OPEN — <?=esc($cashSession["register_code"])?></div>
@@ -173,7 +197,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 <input type="hidden" name="payments_json" id="payments_json">
 <input type="hidden" name="stock_override_confirmed" id="stock_override_confirmed" value="0">
 
-<div class="row g-3 pos-workspace mode-gas_sale" id="posWorkspace">
+<div class="row g-3 pos-workspace mode-<?= esc($initialTransactionType) ?>" id="posWorkspace">
 <div class="col-lg-9 pos-lines-panel"><div class="card"><div class="card-body">
 
 <div class="row g-2 pos-header-row mb-2">
@@ -182,12 +206,12 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
     <select name="transaction_type" id="transactionType" class="form-select">
       <?php foreach(\App\Models\ShopSettingsModel::TRANSACTION_TYPE_LABELS as $value=>$label): ?>
         <?php if (in_array($value, (new \App\Models\ShopSettingsModel())->visibleTransactionTypes($shopSettings), true)): ?>
-          <option value="<?= esc($value) ?>"><?= esc($label) ?></option>
+          <option value="<?= esc($value) ?>" <?= $value === $initialTransactionType ? 'selected' : '' ?>><?= esc($label) ?></option>
         <?php endif; ?>
       <?php endforeach; ?>
     </select>
   </div>
-  <div class="col-md-3">
+  <div class="col-md-3" id="gasEntryModeWrap" style="display:<?= $initialTransactionType === 'gas_sale' ? 'block' : 'none' ?>">
     <label class="form-label fw-semibold">Gas Entry</label>
     <select id="gasEntryMode" class="form-select"><option value="quantity">KG</option><option value="amount">Amount</option></select>
   </div>
@@ -207,7 +231,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   </div>
 </div>
 
-<div id="standardTransaction">
+<div id="standardTransaction" style="display:<?= in_array($initialTransactionType,['gas_sale','cylinder_sale'],true) ? 'block' : 'none' ?>">
   <div class="table-responsive">
     <table class="table table-sm align-middle" id="lines">
       <thead id="lineHead"></thead>
@@ -217,7 +241,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <button type="button" class="btn btn-outline-primary" id="addLine">Add Line</button>
 </div>
 
-<div id="securityTransaction" style="display:none">
+<div id="securityTransaction" style="display:<?= $initialTransactionType === 'security_deposit' ? 'block' : 'none' ?>">
   <div class="card border-warning">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Security Deposit / Issue Cylinder</h6><button type="button" class="btn btn-sm btn-primary" id="openIssuePicker">Add Line / Select Cylinders</button></div>
@@ -228,7 +252,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   </div>
 </div>
 
-<div id="returnTransaction" style="display:none">
+<div id="returnTransaction" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'block' : 'none' ?>">
   <div class="card border-info">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Cylinder Return / Refund Deposit</h6><button type="button" class="btn btn-sm btn-primary" id="openReturnPicker">Select Cylinders</button></div>
@@ -269,7 +293,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <div class="pos-summary-metric"><label class="form-label">OS Balance</label><div class="form-control bg-light"><span id="previousOs">0.00</span></div></div>
   <div class="pos-summary-metric"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="any" value="0" class="form-control"></div>
 </div>
-<div class="mb-3" id="securityDepositBox" style="display:none">
+<div class="mb-3" id="securityDepositBox" style="display:<?= $initialTransactionType === 'security_deposit' ? 'block' : 'none' ?>">
   <label class="form-label fw-semibold">Security Deposit Amount</label>
   <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
 </div>
@@ -279,9 +303,9 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 </div>
 <div class="mb-3"><label class="form-label">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
 <div class="mb-3"><label class="form-label fw-semibold">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
-<div class="mb-3" id="refundBox" style="display:none"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
+<div class="mb-3" id="refundBox" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'block' : 'none' ?>"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
 
-<div id="paymentSection">
+<div id="paymentSection" style="display:<?= $initialTransactionType === 'cylinder_return' ? 'none' : 'block' ?>">
   <div id="paymentPurposeLabel" class="small fw-semibold text-muted mb-2">Sale Payment</div>
   <div id="payments"></div>
   <button type="button" class="btn btn-outline-secondary mb-3" id="addPayment">Add Payment</button>
@@ -477,7 +501,7 @@ function recalc(){
 function refreshForm(){
  const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t);
  payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?'security_deposit':(t==='cylinder_return'?'security_deposit_refund':'sale');});
- document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
+ document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
  document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
@@ -718,6 +742,12 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const data=await response.json().catch(()=>({}));if(!response.ok||data.success!==true)throw new Error(data.error||'Unable to post transaction.');window.location.href=data.redirect||'<?=site_url('sales')?>';}catch(err){saveBtn.disabled=false;saveBtn.textContent=old;return fail(err.message);}
  return false;
 };
-document.getElementById('transactionType').value=defaultTransactionType;addPayment();refreshCustomer();refreshForm();
+(() => {
+  const tx = document.getElementById('transactionType');
+  const allowed = [...tx.options].map(o => o.value);
+  const initial = allowed.includes(defaultTransactionType) ? defaultTransactionType : (allowed[0] || 'gas_sale');
+  tx.value = initial;
+  tx.dispatchEvent(new Event('change', {bubbles:true}));
+})();
 </script>
 <?= $this->endSection() ?>
