@@ -346,7 +346,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
         <div class="col-md-4 col-lg-3"><label class="form-label mb-1 fw-semibold">Overall Return Gas Rate</label><input id="returnOverallRate" type="number" min="0" step="0.01" class="form-control form-control-sm"></div>
         <div class="col-auto"><button type="button" class="btn btn-sm btn-outline-primary" id="applyReturnRate">Apply to All</button></div>
       </div>
-      <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><?php if((int)($shopSettings['allow_return_gas_qty']??0)===1): ?><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><?php endif; ?><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       <div id="returnEmpty" class="text-muted small py-3">No cylinders selected. Click Select Cylinders.</div>
     </div>
   </div>
@@ -431,6 +431,7 @@ const availableCustodyUnits=<?=json_encode($availableCustodyUnits)?>,allCustomer
 const allowPosSourceCylinderSelection=<?=json_encode((int)($allowPosSourceCylinderSelection??0))?>===1;
 const defaultTransactionType=<?=json_encode($defaultTransactionType??'gas_sale')?>,defaultPaymentMode=<?=json_encode($shopSettings['default_payment_mode']??'cash')?>;
 const depositPaymentAllocationRule=<?=json_encode($shopSettings['deposit_payment_allocation_rule']??'deposit_first')?>;
+const allowReturnGasQty=<?=json_encode((int)($shopSettings['allow_return_gas_qty']??0))?>===1;
 const tbody=document.querySelector('#lines tbody'),lineHead=document.getElementById('lineHead'),payments=document.getElementById('payments');
 
 function transactionType(){return document.getElementById('transactionType').value;}
@@ -757,11 +758,24 @@ function returnPickerRender(){
  box.innerHTML=units.map(u=>'<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative"><input type="checkbox" class="returnPickCheck" value="'+u.unit_id+'" style="position:absolute;opacity:0"><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.unit_code)+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_code||u.cylinder_name||'')+'</span><span class="cylinder-gas"><strong>Issued '+Number(u.issued_gas_weight_kg??u.gas_weight_kg??0).toFixed(3)+' KG</strong> · '+(Number(u.gas_weight_kg||0)>0?'Filled/Partial':'Empty')+'</span></span></label>').join('');
 }
 function renderReturnLines(){
- const body=document.getElementById('returnLinesBody'),empty=document.getElementById('returnEmpty'),allowGas=<?=json_encode((int)($shopSettings['allow_return_gas_qty']??0))?>===1;
- body.innerHTML=returnLines.map((l,i)=>{const issued=Number(l.issued_gas_weight_kg||0),ret=Number(l.return_gas_kg||0),cons=Math.max(0,issued-ret);return '<tr><td><strong>'+escapeHtml(l.unit_code)+'</strong><br><span class="small text-muted">'+escapeHtml(l.cylinder_code||'')+'</span></td><td>'+issued.toFixed(3)+'</td><td><input class="form-control form-control-sm returnGasInput" data-index="'+i+'" type="number" min="0" step="0.001" value="'+ret.toFixed(3)+'" '+(allowGas?'':'disabled')+'></td><td><input class="form-control form-control-sm returnRateInput" data-index="'+i+'" type="number" min="0" step="0.01" value="'+Number(l.return_gas_rate||0).toFixed(2)+'" '+(ret>0?'':'disabled')+'></td><td class="consumedCell">'+cons.toFixed(3)+'</td><td class="statusCell">'+(ret>0?'Partially Filled':'Empty')+'</td><td><button type="button" class="btn btn-sm btn-outline-danger" onclick="returnLines.splice('+i+',1);renderReturnLines();recalc();">×</button></td></tr>';}).join('');
+ const body=document.getElementById('returnLinesBody'),empty=document.getElementById('returnEmpty');
+ body.innerHTML=returnLines.map((l,i)=>{
+   const issued=Number(l.issued_gas_weight_kg||0),ret=Number(l.return_gas_kg||0),cons=Math.max(0,issued-ret);
+   const gasCells=allowReturnGasQty
+     ? '<td><input class="form-control form-control-sm returnGasInput" data-index="'+i+'" type="number" min="0" step="0.001" value="'+ret.toFixed(3)+'"></td><td><input class="form-control form-control-sm returnRateInput" data-index="'+i+'" type="number" min="0" step="0.01" value="'+Number(l.return_gas_rate||0).toFixed(2)+'" '+(ret>0?'':'disabled')+'></td><td class="consumedCell">'+cons.toFixed(3)+'</td>'
+     : '';
+   return '<tr><td><strong>'+escapeHtml(l.unit_code)+'</strong><br><span class="small text-muted">'+escapeHtml(l.cylinder_code||'')+'</span></td><td>'+issued.toFixed(3)+'</td>'+gasCells+'<td class="statusCell">'+(ret>0?'Partially Filled':'Empty')+'</td><td><button type="button" class="btn btn-sm btn-outline-danger" onclick="returnLines.splice('+i+',1);renderReturnLines();recalc();">×</button></td></tr>';
+ }).join('');
  empty.style.display=returnLines.length?'none':'block';
- body.querySelectorAll('.returnGasInput').forEach(el=>el.oninput=()=>{const i=Number(el.dataset.index);returnLines[i].return_gas_kg=Math.max(0,Number(el.value||0));if(returnLines[i].return_gas_kg>0&&Number(returnLines[i].return_gas_rate||0)<=0)returnLines[i].return_gas_rate=Number(returnLines[i].issued_gas_rate||0);renderReturnLines();recalc();});
- body.querySelectorAll('.returnRateInput').forEach(el=>el.oninput=()=>{returnLines[Number(el.dataset.index)].return_gas_rate=Math.max(0,Number(el.value||0));recalc();});
+ body.querySelectorAll('.returnGasInput').forEach(el=>el.oninput=()=>{
+   const i=Number(el.dataset.index);
+   returnLines[i].return_gas_kg=Math.max(0,Number(el.value||0));
+   if(returnLines[i].return_gas_kg>0&&Number(returnLines[i].return_gas_rate||0)<=0)returnLines[i].return_gas_rate=Number(returnLines[i].issued_gas_rate||0);
+   renderReturnLines();recalc();
+ });
+ body.querySelectorAll('.returnRateInput').forEach(el=>el.oninput=()=>{
+   returnLines[Number(el.dataset.index)].return_gas_rate=Math.max(0,Number(el.value||0));recalc();
+ });
 }
 function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer first.');return;}document.getElementById('returnPickerType').value='';document.getElementById('returnPickerStatus').value='';returnPickerRender();bootstrap.Modal.getOrCreateInstance(document.getElementById('returnPickerModal')).show();}
 function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
