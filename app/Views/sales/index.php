@@ -200,11 +200,15 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 #combinedPaymentSection{background:#f8fafc;border-color:#dbe5ec!important}
 #combinedPaymentSection .fw-semibold{font-variant-numeric:tabular-nums}
 #paymentSection{padding-top:.35rem!important}
-#payments .payment{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 34px;gap:.35rem;margin-bottom:.35rem!important}
+#paymentSection{border:1px solid #dbe5ec;border-radius:.375rem;padding:.5rem!important;background:#fff}
+#paymentSection .paymentCollectionTitle{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#475569;font-weight:600;margin-bottom:.35rem}
+#payments .payment{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px;gap:.35rem;margin-bottom:.35rem!important;width:100%}
 #payments .payment .paymentType{grid-column:1/-1}
-#payments .payment .form-control,#payments .payment .form-select{min-height:34px;padding:.25rem .4rem}
-#payments .payment .remove{min-width:34px;padding:0}
+#payments .payment .form-control,#payments .payment .form-select{min-height:34px;padding:.25rem .4rem;width:100%;box-sizing:border-box}
+#payments .payment .remove{width:40px;min-width:40px;height:34px;padding:0;font-size:.8rem;line-height:1;display:flex;align-items:center;justify-content:center}
 #payments .payment .paymentType.is-hidden{display:none}
+#paymentSection #addPayment{margin-bottom:.35rem!important}
+#paymentSection .payment-reference{width:100%;min-height:72px;resize:vertical}
 #amountToCollectHelpMessage{margin-bottom:.35rem!important}
 
 #saleTotal,#netPayable,#receiptAmountValue,#customerOsBalanceValue{font-variant-numeric:tabular-nums}
@@ -363,7 +367,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   </div>
 </div>
 <div id="paymentSection" style="display:block">
-  <div id="paymentPurposeLabel" class="small fw-semibold text-muted mb-2">Sale Payment</div>
+  <div id="paymentPurposeLabel" class="paymentCollectionTitle">Payment Collection</div>
   <div id="payments"></div>
   <button type="button" class="btn btn-outline-secondary btn-sm mb-2" id="addPayment">Add Payment</button><div class="mt-1"><label class="form-label small fw-semibold mb-1">Reference / Note</label><textarea id="paymentReferenceNote" class="form-control payment-reference" rows="2" placeholder="Reference / Note (optional)"></textarea></div>
 </div>
