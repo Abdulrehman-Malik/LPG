@@ -19,4 +19,3 @@
 
 - Preserve a responsive, non-overflowing layout for every transaction type.
 - Never introduce a fixed table width, hidden column, or global CSS rule that reserves space for fields not displayed for the current transaction type.
-
