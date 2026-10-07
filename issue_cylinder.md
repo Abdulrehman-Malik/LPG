@@ -25,6 +25,7 @@ Security Deposit is a **separate financial transaction/component** from the gas/
 - Filled and empty cylinders may be issued together. At least one cylinder is required.
 - Filled cylinder issue gas = its full current gas quantity/capacity; partially-filled = exact current gas quantity; empty = 0 kg.
 - Gas rate follows existing POS rules and total follows current cylinder-sale pricing logic.
+- **The user may manually change the Gas Rate at the time of issuing the cylinder.** The edited rate is used for that issue transaction and any applicable party-OS calculation; the configured/default rate remains the initial value.
 - At issue time, filled/partially-filled gas stock is reduced by the exact issued gas quantity; the physical cylinder moves to customer custody/pending status and its ID remains tracked.
 - Empty cylinders move to customer custody with 0 kg gas.
 - Custody is temporary; the shop remains owner.
