@@ -65,7 +65,7 @@ jobs:
         run: |
           env 'LPG_DB_HOST=127.0.0.1' 'LPG_DB_PORT=3306' 'LPG_DB_NAME=perfect_lpg' 'LPG_DB_USER=root' 'LPG_DB_PASS=root' 'LPG_DB_DRIVER=MySQLi' nohup php spark serve --host 0.0.0.0 --port 8080 > /tmp/lpg-server.log 2>&1 &
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:8080/ > /tmp/lpg-login.html; then exit 0; fi
+            if curl -fsS http://localhost:8080/ > /tmp/lpg-login.html; then exit 0; fi
             sleep 2
           done
           cat /tmp/lpg-server.log
@@ -90,22 +90,22 @@ jobs:
             'LPG_DB_PASS=root' \
             'LPG_DB_DRIVER=MySQLi' \
             php spark migrations:run
-          curl -fsS http://127.0.0.1:8080/ -o /tmp/lpg-login-after-migrations.html
+          curl -fsS http://localhost:8080/ -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
           grep -qi 'password' /tmp/lpg-login-after-migrations.html
       - name: Login and application access
         run: |
           set -e
           rm -f /tmp/lpg-cookies.txt
-          curl -fsS -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/login -o /tmp/lpg-login.html
+          curl -fsS -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt http://localhost:8080/login -o /tmp/lpg-login.html
           grep -qi 'name="login"' /tmp/lpg-login.html
           grep -qi 'name="password"' /tmp/lpg-login.html
           csrf_name=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\1/')
           csrf_value=$(grep -oE 'name="[^"]+" value="[^"]+"' /tmp/lpg-login.html | grep -E 'csrf|token' | head -1 | sed -E 's/.*name="([^"]+)" value="([^"]+)".*/\2/')
           test -n "$csrf_name" && test -n "$csrf_value"
-          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt --data-urlencode "login=admin" --data-urlencode "password=admin123" --data-urlencode "$csrf_name=$csrf_value" http://127.0.0.1:8080/login -o /tmp/dashboard.html
+          curl -fsS -L -c /tmp/lpg-cookies.txt -b /tmp/lpg-cookies.txt --data-urlencode "login=admin" --data-urlencode "password=admin123" --data-urlencode "$csrf_name=$csrf_value" http://localhost:8080/login -o /tmp/dashboard.html
           grep -qiE 'dashboard|welcome back' /tmp/dashboard.html
-          curl -fsS -b /tmp/lpg-cookies.txt http://127.0.0.1:8080/dashboard -o /tmp/dashboard-direct.html
+          curl -fsS -b /tmp/lpg-cookies.txt http://localhost:8080/dashboard -o /tmp/dashboard-direct.html
           grep -qi 'dashboard' /tmp/dashboard-direct.html
 
       - name: Upload runtime logs
