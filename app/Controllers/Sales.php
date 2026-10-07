@@ -61,7 +61,7 @@ class Sales extends Controller
             if ($this->request->isAJAX() || str_contains(strtolower((string)$this->request->getHeaderLine('Accept')), 'application/json')) {
                 session()->setFlashdata('success','Transaction '.$result['sale_no'].' posted successfully.');
                 session()->setFlashdata('receipt_url',site_url('sales/receipt/'.$result['id']));
-                return $this->response->setJSON(['success'=>true,'sale_no'=>$result['sale_no'],'id'=>$result['id'],'redirect'=>site_url('sales')]);
+                return $this->response->setJSON(['success'=>true,'sale_no'=>$result['sale_no'],'id'=>$result['id'],'receipt_url'=>site_url('sales/receipt/'.$result['id']),'redirect'=>site_url('sales')]);
             }
             return redirect()->to('/sales')
                 ->with('success','Transaction '.$result['sale_no'].' posted successfully.')
