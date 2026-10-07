@@ -19,3 +19,14 @@
 
 - Preserve a responsive, non-overflowing layout for every transaction type.
 - Never introduce a fixed table width, hidden column, or global CSS rule that reserves space for fields not displayed for the current transaction type.
+
+## Runtime QA Rule — MUST FOLLOW
+
+- Whenever a fix, feature, layout change, JavaScript change, backend change, or other modification is made to any screen, automatically identify **all impacted screens and workflows** and execute the **LPG Runtime QA** workflow for those screens.
+- The user does **not** need to explicitly ask for QA. Running the appropriate runtime QA is mandatory after every screen-level change.
+- Runtime QA must exercise the actual affected screen through the browser, including relevant controls, navigation, interactions, validation, and impacted business flows—not only static syntax or code checks.
+- If Runtime QA finds any failure, JavaScript error, UI issue, broken interaction, regression, or unexpected behavior, fix it and run the impacted Runtime QA again.
+- Continue the fix → runtime QA → fix cycle until the impacted screen/workflow works correctly and the relevant Runtime QA passes.
+- For changes affecting multiple screens, run QA coverage for **each impacted screen**, plus regression coverage for directly related workflows.
+- Do not report a screen-level fix as complete until the corresponding impacted-screen Runtime QA has passed.
+- Never rely on a previous QA result from an older commit when the current change could affect the tested screen; QA must validate the current commit.
