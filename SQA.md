@@ -372,6 +372,14 @@ A localhost URL is suitable for local SQA execution but is not itself a remote s
 
 ### New current-model SQA focus
 
+#### Combined Security Deposit + Gas/Cylinder payment allocation
+1. Shop Settings → verify allocation rule options: Gas / Cylinder First, Security Deposit First, Manual Allocation.
+2. Security Deposit / Issue Cylinder with a gas charge and deposit → enter one Amount Received; verify the POS shows Total Due, allocations, and Remaining clearly.
+3. Gas-first rule → verify payment records are split into Sale and Security Deposit classifications without netting the deposit into the sale.
+4. Deposit-first rule → verify deposit is classified first and gas/cylinder payment remains separate.
+5. Manual rule → enter separate gas/deposit allocations; verify their sum equals Amount Received and each allocation cannot exceed its due amount.
+6. Verify Gas Sale, Cylinder Sale, and Cylinder Return continue using their existing payment workflows.
+
 Before considering the application release-ready, explicitly execute and record:
 1. Default POS transaction type from Shop Settings.
 2. Gas Sale / Refill using KG quantities.
