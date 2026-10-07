@@ -199,6 +199,10 @@ class Database extends Config
         $readEnv = static function (string $key, $fallback) {
             $value = env($key, null);
             if ($value === null || $value === '') $value = getenv($key);
+            if ($value === false || $value === null || $value === '') {
+                $map = ['database.default.hostname'=>'LPG_DB_HOST','database.default.username'=>'LPG_DB_USER','database.default.password'=>'LPG_DB_PASS','database.default.database'=>'LPG_DB_NAME','database.default.DBDriver'=>'LPG_DB_DRIVER','database.default.port'=>'LPG_DB_PORT'];
+                if (isset($map[$key])) $value = getenv($map[$key]);
+            }
             return ($value === false || $value === null || $value === '') ? $fallback : $value;
         };
         $this->default['hostname'] = $readEnv('database.default.hostname', $this->default['hostname']);
