@@ -873,10 +873,9 @@ class SalesService
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
         if(abs($depositPaid-(float)$depositRequired)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
         if($depositRequired<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
-        $salePaymentTotal=array_sum(array_map(static fn($p)=>(float)$p['amount'],$salePayments));
         if($chargeTotal>0.00001){
+            if(!$salePayments)$salePayments=[['payment_mode'=>'credit','amount'=>0,'reference_no'=>null]];
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
-            if(abs($paymentPlan['payment_total']-$gasPreviousOs-$chargeTotal)>0.01)throw new RuntimeException('Gas / Cylinder payment allocation must equal the gas/cylinder charge plus previous customer OS.');
         }else{
             if($salePayments)throw new RuntimeException('No gas/cylinder amount is payable; sale payment rows are not allowed.');
             $paymentPlan=['sale_payments'=>[],'settlements'=>[],'credit_amount'=>0,'previous_os'=>$gasPreviousOs,'payment_total'=>0,'net_receivable'=>$gasPreviousOs,'remaining_os'=>$gasPreviousOs];
@@ -1075,9 +1074,8 @@ class SalesService
         foreach($payments as $p){
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<0)throw new RuntimeException('Invalid payment.');
-            if($amount<=0 && !($mode==='credit' && $customerId)){
-                throw new RuntimeException('Payment amount must be greater than zero unless this is an unpaid customer credit sale.');
-            }
+            // Empty/zero payment rows are allowed in the POS. They carry no collection;
+            // a zero Credit row may also explicitly represent an unpaid customer sale.
             if(!$customerId&&$mode!=='cash')throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer.':'Walk-in transactions are cash only.');
             $paymentTotal+=$amount;
         }
