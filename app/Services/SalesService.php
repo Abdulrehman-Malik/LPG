@@ -850,10 +850,10 @@ class SalesService
                 continue;
             }
             if(!in_array($type,['security_deposit','sale'],true))throw new RuntimeException('Every Security Deposit payment must be classified as Security Deposit or Gas / Cylinder.');
-            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
+            if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<0)throw new RuntimeException('Invalid payment.');
             if($type==='security_deposit'){
-                if($mode==='credit')throw new RuntimeException('Security Deposit cannot be received on credit.');
-                $depositPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
+                if($mode==='credit' && $amount>0)throw new RuntimeException('Security Deposit cannot be received on credit.');
+                if($amount>0)$depositPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
             }else{
                 $salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
             }
