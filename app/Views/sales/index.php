@@ -1,13 +1,29 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('styles') ?>
 <style>
-.pos-workspace { align-items:flex-start; }
-.pos-workspace > .pos-lines-panel { flex:1 1 auto; min-width:0; max-width:none; }
-.pos-workspace > .pos-summary-panel { flex:0 0 310px; max-width:310px; min-width:280px; }
-.pos-workspace.mode-security_deposit > .pos-summary-panel,
-.pos-workspace.mode-cylinder_return > .pos-summary-panel { flex-basis:330px; max-width:330px; }
+.pos-workspace {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 310px;
+  align-items:start;
+  gap:1rem;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+.pos-workspace > .pos-lines-panel,
+.pos-workspace > .pos-summary-panel {
+  width:auto !important;
+  max-width:none !important;
+  min-width:0;
+  padding-left:0 !important;
+  padding-right:0 !important;
+  flex:none !important;
+}
+.pos-workspace.mode-security_deposit,
+.pos-workspace.mode-cylinder_return {
+  grid-template-columns:minmax(0,1fr) 330px;
+}
 .pos-workspace.mode-security_deposit > .pos-lines-panel,
-.pos-workspace.mode-cylinder_return > .pos-lines-panel { flex-basis:0; }
+.pos-workspace.mode-cylinder_return > .pos-lines-panel { min-width:0; }
 #lines { width:100%; table-layout:fixed; }
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
 /* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
@@ -107,7 +123,17 @@
 .custody-list { max-height:250px; overflow:auto; }
 .custody-list option { padding:4px; }
 @media (max-width:1199.98px){
-  .pos-workspace > .pos-lines-panel,.pos-workspace > .pos-summary-panel{flex:0 0 100%;max-width:100%;min-width:0}
+  .pos-workspace {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .pos-workspace.mode-security_deposit,
+  .pos-workspace.mode-cylinder_return {
+    grid-template-columns:minmax(0,1fr);
+  }
+  .pos-workspace > .pos-lines-panel,
+  .pos-workspace > .pos-summary-panel {
+    width:100% !important;
+  }
 }
 input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
