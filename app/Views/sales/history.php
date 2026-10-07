@@ -34,7 +34,6 @@ const historyBody=document.getElementById('saleHistoryBody');
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
 
 document.addEventListener('wheel',e=>{if(document.activeElement?.matches('input[type="number"]'))e.preventDefault();},{passive:false});
-const historyBody=document.getElementById('saleHistoryBody');
 const historyTypeLabel=t=>({gas_sale:'Gas Sale',cylinder_sale:'Cylinder Sale',security_deposit:'Security Deposit',cylinder_return:'Cylinder Return',refill_service:'Refill Service',cylinder_exchange:'Cylinder Exchange',filled_cylinder:'Filled Cylinder',empty_sale:'Empty Cylinder',mixed:'Mixed'}[t]||t||'-');
 function historyQuery(){const p=new URLSearchParams({from:document.getElementById('historyFrom').value,to:document.getElementById('historyTo').value,sale_no:document.getElementById('historySaleNo').value,customer:document.getElementById('historyCustomer').value,transaction_type:document.getElementById('historyType').value,status:document.getElementById('historyStatus').value});return p.toString();}
 function csvCell(v){const s=String(v??'');return '"'+s.replace(/"/g,'""')+'"';}
