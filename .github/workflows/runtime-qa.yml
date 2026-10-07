@@ -83,12 +83,12 @@ jobs:
         run: |
           set -e
           env \
-            'database.default.hostname=127.0.0.1' \
-            'database.default.port=3306' \
-            'database.default.database=perfect_lpg' \
-            'database.default.username=root' \
-            'database.default.password=root' \
-            'database.default.DBDriver=MySQLi' \
+            'LPG_DB_HOST=127.0.0.1' \
+            'LPG_DB_PORT=3306' \
+            'LPG_DB_NAME=perfect_lpg' \
+            'LPG_DB_USER=root' \
+            'LPG_DB_PASS=root' \
+            'LPG_DB_DRIVER=MySQLi' \
             php spark migrations:run
           curl -fsS http://127.0.0.1:8080/login -o /tmp/lpg-login-after-migrations.html
           grep -qi 'login' /tmp/lpg-login-after-migrations.html
