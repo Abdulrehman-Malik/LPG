@@ -111,7 +111,7 @@ jobs:
 
       - name: Run POS browser smoke test
         env:
-          LPG_QA_BASE_URL: http://127.0.0.1:8080
+          LPG_QA_BASE_URL: http://localhost:8080
         run: |
           set -e
           npm install --no-save --no-package-lock @playwright/test
