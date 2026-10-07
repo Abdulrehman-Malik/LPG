@@ -176,7 +176,6 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 #issueEmpty,#returnEmpty{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:.5rem;padding:.75rem!important;text-align:center}
 .cylinder-option{border:1px solid #d5dee8!important;box-shadow:0 1px 3px rgba(15,23,42,.04)}.cylinder-option:hover{border-color:#94a3b8!important}.cylinder-option:has(input:checked){border-color:var(--pos-accent)!important;background:#ecfdf5;box-shadow:0 0 0 2px color-mix(in srgb,var(--pos-accent) 15%,transparent)}
 #addLine,#openIssuePicker,#openReturnPicker{font-weight:600}#saveBtn{min-height:46px;font-size:1rem;box-shadow:0 5px 12px rgba(15,23,42,.1)}
-#newSaleTab,#saleHistoryTab{min-width:110px;font-weight:600}#saleHistoryPanel .card{box-shadow:none}#saleHistoryPanel .table thead th{white-space:nowrap}
 @media(max-width:1199.98px){.pos-summary-card{position:static}}@media(max-width:767.98px){.pos-header-row{padding:.65rem .55rem .25rem}.pos-summary-metrics{grid-template-columns:1fr}.pos-workspace .btn{min-height:40px}#saveBtn{min-height:48px}}
 </style>
 <?= $this->endSection() ?>
