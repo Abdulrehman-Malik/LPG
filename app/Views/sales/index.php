@@ -605,15 +605,6 @@ function recalc(){
  document.getElementById('customerOsBalanceValue').textContent=(t==='security_deposit'&&<?=json_encode((int)($shopSettings['include_security_deposit_in_os']??0))?>===1?previousOs+deposit:(t==='cylinder_return'?previousOs:Math.max(0,expected-paid))).toFixed(2);
  document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
 }
-function refreshForm(){
- const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
- workspace.className='row g-3 pos-workspace mode-'+t;
- document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryMode').closest('.col-md-3').style.display=t==='gas_sale'?'block':'none';
- document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('securityDeposit').disabled=t!=='security_deposit';document.getElementById('discount').disabled=!standard;if(!standard)document.getElementById('discount').value='0';if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
- document.getElementById('paymentSection').style.display=t==='cylinder_return'?'none':'block';document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
- if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}setCustodyLists();refreshPaymentModes();recalc();
-}
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
 document.getElementById('returnPickerType').onchange=returnPickerRender;document.getElementById('returnPickerStatus').onchange=returnPickerRender;document.getElementById('openReturnPicker').onclick=openReturnPicker;document.getElementById('confirmReturnPicker').onclick=addReturnSelection;
 document.getElementById('refundAmount').oninput=recalc;
