@@ -159,7 +159,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
   <div class="card border-info">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Cylinder Return / Refund Deposit</h6><button type="button" class="btn btn-sm btn-primary" id="openReturnPicker">Select Cylinders</button></div>
-      <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.</div>
+      <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.<div class="row g-2 mb-2"><div class="col-md-4"><label class="form-label mb-1">Overall Return Gas Rate</label><input id="returnOverallRate" type="number" min="0" step="0.01" class="form-control form-control-sm"></div><div class="col-md-2 d-flex align-items-end"><button type="button" class="btn btn-sm btn-outline-primary w-100" id="applyReturnRate">Apply to All</button></div></div></div>
       <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
       <div id="returnEmpty" class="text-muted small py-3">No cylinders selected. Click Select Cylinders.</div>
     </div>
@@ -386,13 +386,14 @@ function refreshForm(){
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('paymentSection').style.display=t==='cylinder_return'?'none':'block';
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?(refund>0?'block':'none'):'block';
  document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
  if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}
  setCustodyLists();refreshPaymentModes();recalc();
 }
 
 let issueLines=[],returnLines=[];
+window.depositBalances=<?=json_encode($depositBalances??[],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
 
 function issueSelectedIds(){return issueLines.flatMap(x=>x.selected_cylinder_unit_ids||[]).map(Number);}
 function returnSelectedIds(){return returnLines.map(x=>Number(x.unit_id));}
@@ -447,7 +448,7 @@ function renderReturnLines(){
 function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer first.');return;}document.getElementById('returnPickerType').value='';document.getElementById('returnPickerStatus').value='';returnPickerRender();bootstrap.Modal.getOrCreateInstance(document.getElementById('returnPickerModal')).show();}
 function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
 function setCustodyLists(){renderIssueLines();renderReturnLines();updateRefund();}
-function updateRefund(){const available=Number(<?=json_encode(0)?>);document.getElementById('refundAvailable').textContent=available.toFixed(2);if(Number(document.getElementById('refundAmount').value||0)<0)document.getElementById('refundAmount').value='0';}
+function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=available.toFixed(2);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
 function recalc(){
  let saleTotal=0,gasRequired=0;const t=transactionType();
  if(t==='gas_sale'||t==='cylinder_sale'){
@@ -476,6 +477,7 @@ function refreshForm(){
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
 document.getElementById('returnPickerType').onchange=returnPickerRender;document.getElementById('returnPickerStatus').onchange=returnPickerRender;document.getElementById('openReturnPicker').onclick=openReturnPicker;document.getElementById('confirmReturnPicker').onclick=addReturnSelection;
 document.getElementById('refundAmount').oninput=recalc;
+document.getElementById('applyReturnRate').onclick=()=>{const rate=Math.max(0,Number(document.getElementById('returnOverallRate').value||0));returnLines.forEach(l=>l.return_gas_rate=rate);renderReturnLines();recalc();};
 document.getElementById('customer_id').onchange=()=>{issueLines=[];returnLines=[];clearLines();lineHead.innerHTML='';document.getElementById('discount').value='0';document.getElementById('securityDeposit').value='0';document.getElementById('refundAmount').value='0';payments.innerHTML='';addPayment();refreshCustomer();refreshForm();};
 document.getElementById('gasEntryMode').onchange=()=>{
  const mode=document.getElementById('gasEntryMode').value;
