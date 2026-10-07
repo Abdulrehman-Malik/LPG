@@ -157,6 +157,27 @@
 }
 input[type="number"]::-webkit-outer-spin-button,input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
+
+/* POS visual refresh — no business logic changes. */
+.pos-workspace{--pos-accent:var(--lpg-accent,#0f766e)}
+.pos-workspace>.pos-lines-panel>.card,.pos-summary-card{box-shadow:0 4px 18px rgba(15,23,42,.055)}
+.pos-header-row{background:#f8fafc;border:1px solid #e7edf3;border-radius:.65rem;padding:.7rem .7rem .35rem}
+.pos-header-row .form-label{color:#334155}.pos-header-row .form-select,.pos-header-row .form-control{background:#fff}
+#standardTransaction{padding-top:.35rem!important}#lines thead th{background:#f1f5f9;color:#475569;font-size:.76rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;border-bottom:1px solid #dbe3ec}
+#lines tbody tr{border-bottom:1px solid #edf1f5}#lines tbody tr:hover{background:#f8fafc}
+#lines .form-control,#lines .form-select{background:#fff;border-color:#cbd5e1}
+#lines .lineTotal{font-weight:700;color:#172033}.pos-summary-card{position:sticky;top:5.2rem}.pos-summary-card .card-body{padding:1rem}
+.pos-summary-metrics{gap:.6rem}.pos-summary-metric .form-control{border-color:#d7e0e8;background:#f8fafc!important;font-weight:650}
+#saleTotal,#netPayable,#receiptAmountValue,#customerOsBalanceValue{font-variant-numeric:tabular-nums}
+#saleTotal{color:#0f766e}#netPayable{color:#172033}#customerOsBalanceValue{color:#2563eb!important}
+#paymentSection{border-top:1px solid #e5eaf0;padding-top:.8rem}#paymentPurposeLabel{color:#475569!important;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem!important}
+#securityTransaction .card,#returnTransaction .card{border:1px solid #dbe5ec!important;box-shadow:none}#securityTransaction .card{border-top:3px solid #d97706!important}#returnTransaction .card{border-top:3px solid #0e7490!important}
+#securityTransaction .table thead th,#returnTransaction .table thead th{background:#f8fafc;color:#475569;font-size:.75rem;text-transform:uppercase;letter-spacing:.02em}
+#issueEmpty,#returnEmpty{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:.5rem;padding:.75rem!important;text-align:center}
+.cylinder-option{border:1px solid #d5dee8!important;box-shadow:0 1px 3px rgba(15,23,42,.04)}.cylinder-option:hover{border-color:#94a3b8!important}.cylinder-option:has(input:checked){border-color:var(--pos-accent)!important;background:#ecfdf5;box-shadow:0 0 0 2px color-mix(in srgb,var(--pos-accent) 15%,transparent)}
+#addLine,#openIssuePicker,#openReturnPicker{font-weight:600}#saveBtn{min-height:46px;font-size:1rem;box-shadow:0 5px 12px rgba(15,23,42,.1)}
+#newSaleTab,#saleHistoryTab{min-width:110px;font-weight:600}#saleHistoryPanel .card{box-shadow:none}#saleHistoryPanel .table thead th{white-space:nowrap}
+@media(max-width:1199.98px){.pos-summary-card{position:static}}@media(max-width:767.98px){.pos-header-row{padding:.65rem .55rem .25rem}.pos-summary-metrics{grid-template-columns:1fr}.pos-workspace .btn{min-height:40px}#saveBtn{min-height:48px}}
 </style>
 <?= $this->endSection() ?>
 <?= $this->section('content') ?>
