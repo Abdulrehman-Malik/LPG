@@ -483,3 +483,13 @@ Before considering the application release-ready, explicitly execute and record:
 | R35 | Rs. mode stock validation | Entered amount is converted to KG and remains subject to source/type stock validation and physical-cylinder locking | NOT EXECUTED |
 | R36 | Gas entry server authority | Server recalculates KG from Rs. amount and current effective rate; KG mode remains quantity-based and client cannot bypass stock validation | NOT EXECUTED |
 
+
+
+## Security Deposit Payment UI Regression
+- Confirm the right payment panel is compact and does not show a redundant Total Due field.
+- Confirm only one Amount Received summary is shown.
+- Confirm multiple payment tenders can be entered for one Security Deposit transaction.
+- Confirm each payment has a single Reference / Note input.
+- Confirm Gas First, Deposit First, and Manual allocation rules still produce separate gas/cylinder and deposit accounting records.
+- Confirm credit-sale eligibility and credit-limit rules remain enforced server-side for the gas/cylinder portion.
+- Confirm successful posting opens the receipt as a preview and does not auto-print.
