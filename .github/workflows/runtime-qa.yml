@@ -77,6 +77,14 @@ jobs:
         run: |
           set -e
           php -r '$m = new mysqli("127.0.0.1", "root", "root", "perfect_lpg", 3306); if ($m->connect_error) { fwrite(STDERR, "PHP_MYSQLI_CONNECT_FAILED: ".$m->connect_error."\n"); exit(1); } echo "PHP_MYSQLI_CONNECT_PASS\n"; echo "PHP_MYSQLI_SERVER=".$m->server_info."\n";'
+      - name: Run POS browser smoke test
+        env:
+          LPG_QA_BASE_URL: http://127.0.0.1:8080
+        run: |
+          set -e
+          npm exec --yes --package=@playwright/test -- playwright install --with-deps chromium
+          npm exec --yes --package=@playwright/test -- playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-003a" --workers=1
+
       - name: Run application migrations
         env:
           CI_ENVIRONMENT: development
