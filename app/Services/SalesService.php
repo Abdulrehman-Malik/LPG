@@ -829,22 +829,25 @@ class SalesService
         }
         $chargeTotal=round($subtotal,2);
 
-        // Deposit and gas/cylinder payments are validated and stored independently.
-        // The existing POS payload remains compatible: amounts are allocated to the
-        // deposit first, then the remaining payment rows are applied only to the gas/cylinder charge.
-        $depositPayments=[];$salePayments=[];$remainingDeposit=$deposit;
+        // Deposit and gas/cylinder payments are explicitly classified by the POS.
+        // They must never be allocated from one payment pool because the deposit is
+        // an independent liability and must not settle the customer's gas OS.
+        $depositPayments=[];$salePayments=[];
         foreach($payments as $p){
+            $type=(string)($p['payment_type']??'');
             $mode=(string)($p['payment_mode']??'');$amount=(float)($p['amount']??0);
+            if(!in_array($type,['security_deposit','sale'],true))throw new RuntimeException('Every Security Deposit payment must be classified as Security Deposit or Gas / Cylinder.');
             if(!in_array($mode,['cash','cheque','online','credit'],true)||$amount<=0)throw new RuntimeException('Invalid payment.');
-            if($mode==='credit'&&$remainingDeposit>0.00001)throw new RuntimeException('Security Deposit cannot be received on credit.');
-            $take=min($amount,$remainingDeposit);
-            if($take>0){
-                $depositPayments[]=['payment_mode'=>$mode,'amount'=>$take,'reference_no'=>$p['reference_no']??null];
-                $remainingDeposit-=$take;$amount-=$take;
+            if($type==='security_deposit'){
+                if($mode==='credit')throw new RuntimeException('Security Deposit cannot be received on credit.');
+                $depositPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
+            }else{
+                $salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
             }
-            if($amount>0)$salePayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>$p['reference_no']??null];
         }
-        if($remainingDeposit>0.00001)throw new RuntimeException('Security Deposit must be fully received separately from the gas/cylinder amount.');
+        $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
+        if(abs($depositPaid-$deposit)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
+        if($deposit<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
 
         if($chargeTotal>0.00001){
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
@@ -930,6 +933,9 @@ class SalesService
         $lines=is_array($payload['lines']??null)?$payload['lines']:[];
         if(!$returnUnitIds&&!$lines)throw new RuntimeException('Select at least one customer custody cylinder to return.');
         $payments=is_array($payload['payments']??null)?$payload['payments']:[];
+        foreach($payments as $p){
+            if((string)($p['payment_type']??'')!=='security_deposit_refund')throw new RuntimeException('Cylinder Return payments must be classified as Security Deposit Refund.');
+        }
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
         $allowGas=(int)($shopSettings['allow_return_gas_qty']??0)===1;
         $affectsOs=(int)($shopSettings['return_gas_affects_os']??0)===1;
@@ -1033,6 +1039,10 @@ class SalesService
 
     protected function prepareSalePaymentPlan(array $payments,?int $customerId,float $saleTotal): array
     {
+        foreach($payments as $p){
+            $type=(string)($p['payment_type']??'sale');
+            if($type!=='sale')throw new RuntimeException('Gas/cylinder sale payments must be classified as Sale.');
+        }
         if(!$payments)throw new RuntimeException('At least one payment is required.');
         $paymentTotal=0;
         foreach($payments as $p){
