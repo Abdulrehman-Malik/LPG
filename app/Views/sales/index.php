@@ -511,16 +511,43 @@ function recalc(){
  document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
  document.getElementById('previousOs').textContent=previousOs.toFixed(2);
  document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
- const depositPaid=t==='security_deposit'?paymentTotal('security_deposit'):0;
- const salePaid=t==='security_deposit'?paymentTotal('sale'):(t==='cylinder_return'?0:paymentTotal('sale'));
- const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):0;
- const paid=t==='security_deposit'?(depositPaid+salePaid):refundPaid;
  const gasReceivable=t==='security_deposit'?(saleTotal+previousOs):(t==='cylinder_return'?0:(saleTotal+previousOs));
- const balanceAfter=t==='security_deposit'?Math.max(0,gasReceivable-salePaid):Math.max(0,netReceivable-paid);
+ let paid=0,balanceAfter=0;
+ if(t==='security_deposit'){
+   const depositDue=deposit, totalDue=gasReceivable+depositDue, received=Number(document.getElementById('combinedAmountReceived')?.value||0), rule=depositPaymentAllocationRule;
+   let gasAlloc=0,depositAlloc=0;
+   if(rule==='manual'){
+     gasAlloc=Math.max(0,Number(document.getElementById('manualGasAmount')?.value||0));
+     depositAlloc=Math.max(0,Number(document.getElementById('manualDepositAmount')?.value||0));
+   }else if(rule==='deposit_first'){
+     depositAlloc=Math.min(received,depositDue);gasAlloc=Math.min(Math.max(0,received-depositAlloc),gasReceivable);
+   }else{
+     gasAlloc=Math.min(received,gasReceivable);depositAlloc=Math.min(Math.max(0,received-gasAlloc),depositDue);
+   }
+   paid=gasAlloc+depositAlloc;
+   balanceAfter=Math.max(0,gasReceivable-gasAlloc);
+   document.getElementById('combinedGasDue').textContent=saleTotal.toFixed(2);
+   document.getElementById('combinedDepositDue').textContent=depositDue.toFixed(2);
+   document.getElementById('combinedTotalDue').textContent=totalDue.toFixed(2);
+   document.getElementById('combinedGasAllocated').textContent=gasAlloc.toFixed(2);
+   document.getElementById('combinedDepositAllocated').textContent=depositAlloc.toFixed(2);
+   document.getElementById('combinedRemaining').textContent='Rs. '+Math.max(0,totalDue-received).toFixed(2);
+   document.getElementById('combinedRemaining').className=Math.abs(totalDue-received)<0.01?'text-success':'text-danger';
+ }else{
+   const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):0;
+   paid=refundPaid;
+   balanceAfter=Math.max(0,netReceivable-paid);
+ }
  document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
  document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';
- document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payments are separated: Security Deposit and Gas / Cylinder':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
+ document.getElementById('paymentPurposeLabel').textContent=t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment';
+ document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):(t==='security_deposit'?'none':'block');
+ document.getElementById('manualAllocationBox').style.display=(t==='security_deposit'&&depositPaymentAllocationRule==='manual')?'block':'none';
+ document.getElementById('netReceivableLabel').textContent=t==='security_deposit'?'Total Due':'Net Receivable Amount';
+ document.getElementById('receiptAmountLabel').textContent='Amount Received';
+ document.getElementById('balanceLabel').textContent=t==='security_deposit'?'Gas / Cylinder Balance':'OS Balance';
  updateRefund();
 }
 function refreshForm(){
@@ -533,7 +560,7 @@ function refreshForm(){
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payments are separated: Security Deposit and Gas / Cylinder':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):(t==='security_deposit'?'none':'block');document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';document.getElementById('manualAllocationBox').style.display=(t==='security_deposit'&&depositPaymentAllocationRule==='manual')?'block':'none';document.getElementById('paymentPurposeLabel').textContent=t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment';
  document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
  if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}
  setCustodyLists();refreshPaymentModes();recalc();
@@ -651,6 +678,9 @@ document.getElementById('customer_id').onchange=()=>{
   lineHead.innerHTML='';
   document.getElementById('discount').value='0';
   document.getElementById('securityDeposit').value='0';
+  document.getElementById('combinedAmountReceived').value='';
+  document.getElementById('manualGasAmount').value='';
+  document.getElementById('manualDepositAmount').value='';
   payments.innerHTML='';
   addPayment();
   refreshCustomer();
@@ -667,7 +697,7 @@ document.getElementById('customer_id').onchange=()=>{
   recalc();
 };
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
-document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
+document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('combinedAmountReceived').oninput=recalc;document.getElementById('manualGasAmount').oninput=recalc;document.getElementById('manualDepositAmount').oninput=recalc;document.getElementById('combinedPaymentMode').onchange=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();
  const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
