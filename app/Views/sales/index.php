@@ -747,6 +747,8 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
   const allowed = [...tx.options].map(o => o.value);
   const initial = allowed.includes(defaultTransactionType) ? defaultTransactionType : (allowed[0] || 'gas_sale');
   tx.value = initial;
+  addPayment();
+  refreshCustomer();
   tx.dispatchEvent(new Event('change', {bubbles:true}));
 })();
 </script>
