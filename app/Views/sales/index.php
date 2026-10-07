@@ -28,11 +28,11 @@
 #lines th,#lines td { padding:.65rem .5rem; vertical-align:middle; }
 /* Each standard transaction type owns its own table geometry. Hidden source cells do not reserve width. */
 #lines.gas-sale-mode:not(.source-enabled) th { padding:.42rem .35rem; font-size:.76rem; line-height:1.15; white-space:normal; overflow-wrap:normal; }
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:50%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:10%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:10%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:15%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:10%; white-space:nowrap}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:25%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(2){width:15%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:15%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:25%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(5){width:15%; white-space:nowrap}
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:5%}
 #lines.gas-sale-mode.source-enabled th:nth-child(1){width:18%}
 #lines.gas-sale-mode.source-enabled th:nth-child(2){width:22%}
