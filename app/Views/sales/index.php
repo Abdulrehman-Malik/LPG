@@ -190,6 +190,11 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 #lines .form-control,#lines .form-select{background:#fff;border-color:#cbd5e1}
 #lines .lineTotal{font-weight:700;color:#172033}.pos-summary-card{position:sticky;top:5.2rem}.pos-summary-card .card-body{padding:1rem}
 .pos-summary-metrics{gap:.6rem}.pos-summary-metric .form-control{border-color:#d7e0e8;background:#f8fafc!important;font-weight:650}
+#combinedPaymentSection{background:#f8fafc;border-color:#dbe5ec!important}
+#combinedPaymentSection .form-control-lg{font-size:1.05rem;font-weight:700}
+#combinedPaymentSection .fw-semibold{font-variant-numeric:tabular-nums}
+#combinedRemaining.text-success{font-weight:700}
+
 #saleTotal,#netPayable,#receiptAmountValue,#customerOsBalanceValue{font-variant-numeric:tabular-nums}
 #saleTotal{color:#0f766e}#netPayable{color:#172033}#customerOsBalanceValue{color:#2563eb!important}
 #paymentSection{border-top:1px solid #e5eaf0;padding-top:.8rem}#paymentPurposeLabel{color:#475569!important;text-transform:uppercase;letter-spacing:.04em;font-size:.72rem!important}
