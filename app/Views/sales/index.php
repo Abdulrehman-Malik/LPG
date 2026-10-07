@@ -677,32 +677,76 @@ function recalc(){
 }
 let resettingTransactionType=false;
 function resetTransactionFormState(){
+  // Switching transaction type starts a completely clean transaction context.
+  // Keep the newly selected transaction type itself, but reset every other
+  // input/select/line/picker/payment state so nothing leaks between workflows.
   clearLines();
   lineHead.innerHTML='';
   issueLines=[];
   returnLines=[];
-  document.getElementById('discount').value='0';
-  document.getElementById('securityDeposit').value='0';
-  document.getElementById('refundAmount').value='0';
-  document.getElementById('gasEntryMode').value='quantity';
-  const returnOverallRate=document.getElementById('returnOverallRate');
-  if(returnOverallRate)returnOverallRate.value='';
+
+  const resetValue=(id,value)=>{
+    const el=document.getElementById(id);
+    if(el)el.value=value;
+  };
+  resetValue('customer_id','');
+  resetValue('discount','0');
+  resetValue('securityDeposit','0');
+  resetValue('refundAmount','0');
+  resetValue('gasEntryMode','quantity');
+  resetValue('returnOverallRate','');
+  resetValue('issuePickerType','');
+  resetValue('issuePickerStatus','filled');
+  resetValue('returnPickerType','');
+  resetValue('returnPickerStatus','');
+  resetValue('paymentReferenceNote','');
+  resetValue('stock_override_confirmed','0');
+
+  // Reset transaction time to the current local time for the new transaction.
+  const timeInput=document.querySelector('input[name="transaction_at"]');
+  if(timeInput){
+    const now=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    timeInput.value=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+  }
+
+  // Close any open cylinder picker so old selections cannot remain visible.
+  ['issuePickerModal','returnPickerModal'].forEach(id=>{
+    const modal=document.getElementById(id);
+    if(modal && window.bootstrap?.Modal){
+      const instance=window.bootstrap.Modal.getInstance(modal);
+      if(instance)instance.hide();
+    }
+  });
+
+  // Clear picker result areas/counts too; the filters above will be restored
+  // to their workflow defaults when the picker is opened again.
+  const issueCards=document.getElementById('issuePickerCards');
+  const issueCount=document.getElementById('issuePickerCount');
+  const returnCards=document.getElementById('returnPickerCards');
+  const returnCount=document.getElementById('returnPickerCount');
+  if(issueCards)issueCards.innerHTML='';
+  if(issueCount)issueCount.textContent='';
+  if(returnCards)returnCards.innerHTML='';
+  if(returnCount)returnCount.textContent='';
+
   payments.innerHTML='';
   document.getElementById('posValidationAlert').classList.add('d-none');
   document.getElementById('posSuccessAlert').style.display='none';
   window.lastPostedReceiptUrl='';
+
   const previewFrame=document.getElementById('receiptPreviewFrame');
   if(previewFrame)previewFrame.src='about:blank';
-  refreshWalkInCustomerOption();
-  if(transactionType()==='security_deposit'||transactionType()==='cylinder_return'){
-    const select=document.getElementById('customer_id');
-    if(select){
-      const firstCustomer=[...select.options].find(o=>o.value!==''&&!o.dataset.walkinOption);
-      select.value=firstCustomer?firstCustomer.value:'';
-    }
-  }else{
-    document.getElementById('customer_id').value='';
+  const receiptOverlay=document.getElementById('receiptPreviewOverlay');
+  if(receiptOverlay){
+    receiptOverlay.classList.remove('is-visible');
+    receiptOverlay.setAttribute('aria-hidden','true');
   }
+
+  const help=document.getElementById('amountToCollectHelpMessage');
+  if(help)help.classList.add('d-none');
+
+  refreshWalkInCustomerOption();
   addPayment();
 }
 function refreshForm(){
