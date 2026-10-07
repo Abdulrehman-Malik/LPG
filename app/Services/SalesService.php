@@ -942,7 +942,7 @@ class SalesService
             $id=(int)($line['unit_id']??0);if($id<=0)continue;
             if(isset($returnById[$id]))throw new RuntimeException('Cylinder '.$id.' appears more than once in the return.');
             $qty=max(0,(float)($line['return_gas_kg']??0));
-            if(!$allowGas)$qty=0;
+            if(!$allowGas && $qty>0.00001) throw new RuntimeException('Return gas quantity is disabled in Shop Settings.');
             $rate=max(0,(float)($line['return_gas_rate']??0));
             $returnById[$id]=['gas'=>$qty,'rate'=>$rate];
         }
