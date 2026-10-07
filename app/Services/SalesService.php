@@ -874,9 +874,9 @@ class SalesService
                 if($remaining>0.01)throw new RuntimeException('Payment exceeds the combined amount due.');
             }
         }
+        // Security deposit receipt is independent of the amount entered for the issue transaction.
+        // Accept any non-negative receipt amount; only actual receipts increase the refundable balance.
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
-        if(abs($depositPaid-(float)$depositRequired)>0.01)throw new RuntimeException('Security Deposit payment total must equal the Security Deposit amount.');
-        if($depositRequired<=0 && $depositPayments)throw new RuntimeException('No Security Deposit amount is payable, so Security Deposit payment rows are not allowed.');
         if($chargeTotal>0.00001){
             if(!$salePayments)$salePayments=[['payment_mode'=>'credit','amount'=>0,'reference_no'=>null]];
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
@@ -898,7 +898,7 @@ class SalesService
 
             $gasOsAfter=$paymentPlan['remaining_os'];
             $depositBalanceBefore=$this->securityDepositBalance($locationId,$customerId);
-            $depositBalanceAfter=$depositBalanceBefore+$deposit;
+            $depositBalanceAfter=$depositBalanceBefore+$depositPaid;
             $overallOsAfter=$includeDepositOs?($gasOsAfter+$depositBalanceAfter):$gasOsAfter;
 
             $saleNo=$this->nextSaleNo($transactionAt,$locationId);
