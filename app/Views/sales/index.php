@@ -448,18 +448,30 @@ function rebuildLines(){
 }
 function setCustodyLists(){
  const sel=document.getElementById('custodyUnits');
- const current=[...sel.selectedOptions].map(o=>o.value);
- sel.innerHTML=availableCustodyUnits.map(u=>'<option value="'+u.id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+(u.status==='filled'?'Filled '+Number(u.gas_weight_kg||0).toFixed(2)+' KG':'Empty')+'</option>').join('');
- current.forEach(v=>{const o=[...sel.options].find(x=>x.value===v);if(o)o.selected=true;});
- const ret=document.getElementById('returnUnits'),old=[...ret.selectedOptions].map(o=>o.value);
- ret.innerHTML=allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — Gas '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
- old.forEach(v=>{const o=[...ret.options].find(x=>x.value===v);if(o)o.selected=true;});
+ const ret=document.getElementById('returnUnits');
+ // The current POS uses the cylinder picker cards/issueLines/returnLines. Older
+ // hidden multi-select controls may not exist, so never let them block a
+ // transaction-type refresh.
+ if(sel){
+   const current=[...sel.selectedOptions].map(o=>o.value);
+   sel.innerHTML=availableCustodyUnits.map(u=>'<option value="'+u.id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+(u.status==='filled'?'Filled '+Number(u.gas_weight_kg||0).toFixed(2)+' KG':'Empty')+'</option>').join('');
+   current.forEach(v=>{const o=[...sel.options].find(x=>x.value===v);if(o)o.selected=true;});
+ }
+ if(ret){
+   const old=[...ret.selectedOptions].map(o=>o.value);
+   ret.innerHTML=allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — Gas '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
+   old.forEach(v=>{const o=[...ret.options].find(x=>x.value===v);if(o)o.selected=true;});
+ }
  updateRefund();
 }
 function updateRefund(){
- const ids=[...document.getElementById('returnUnits').selectedOptions].map(o=>Number(o.value));
+ const ret=document.getElementById('returnUnits');
+ const ids=ret?[...ret.selectedOptions].map(o=>Number(o.value)):[];
  const refund=allCustomerCustody.filter(u=>ids.includes(Number(u.unit_id))).reduce((s,u)=>s+Number(u.deposit_amount||0),0);
- document.getElementById('refundPreview').textContent=refund.toFixed(2);document.getElementById('refundAmount').value=refund.toFixed(2);
+ const preview=document.getElementById('refundPreview');
+ if(preview)preview.textContent=refund.toFixed(2);
+ const refundInput=document.getElementById('refundAmount');
+ if(refundInput && transactionType()==='cylinder_return' && refundInput.value==='0')refundInput.value=refund.toFixed(2);
  document.getElementById('paymentSection').style.display=transactionType()==='cylinder_return'?(refund>0?'block':'none'):'block';
 }
 function refreshPaymentModes(){const walkIn=!selectedCustomerId(),customer=selectedCustomer();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash'||(!walkIn&&!customer?.allowCredit&&o.value==='credit'));if(walkIn||(!customer?.allowCredit&&m.value==='credit'))m.value='cash';});}
