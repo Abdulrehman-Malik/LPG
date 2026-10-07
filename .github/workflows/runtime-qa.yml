@@ -77,15 +77,6 @@ jobs:
         run: |
           set -e
           php -r '$m = new mysqli("127.0.0.1", "root", "root", "perfect_lpg", 3306); if ($m->connect_error) { fwrite(STDERR, "PHP_MYSQLI_CONNECT_FAILED: ".$m->connect_error."\n"); exit(1); } echo "PHP_MYSQLI_CONNECT_PASS\n"; echo "PHP_MYSQLI_SERVER=".$m->server_info."\n";'
-      - name: Run POS browser smoke test
-        env:
-          LPG_QA_BASE_URL: http://127.0.0.1:8080
-        run: |
-          set -e
-          npm install --no-save --no-package-lock @playwright/test
-          npx playwright install --with-deps chromium
-          npx playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-003a" --workers=1
-
       - name: Run application migrations
         env:
           CI_ENVIRONMENT: development
@@ -117,6 +108,15 @@ jobs:
           grep -qiE 'dashboard|welcome back' /tmp/dashboard.html
           curl -fsS -b /tmp/lpg-cookies.txt http://localhost:8080/dashboard -o /tmp/dashboard-direct.html
           grep -qi 'dashboard' /tmp/dashboard-direct.html
+
+      - name: Run POS browser smoke test
+        env:
+          LPG_QA_BASE_URL: http://127.0.0.1:8080
+        run: |
+          set -e
+          npm install --no-save --no-package-lock @playwright/test
+          npx playwright install --with-deps chromium
+          npx playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-003a" --workers=1
 
       - name: Upload runtime logs
         if: always()
