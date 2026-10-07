@@ -138,6 +138,7 @@ class ShopSettings extends Controller
                 'allow_pos_source_cylinder_selection' => $allowPosSourceCylinderSelection,
                 'include_security_deposit_in_os' => $this->request->getPost('include_security_deposit_in_os') ? 1 : 0,
                 'deposit_payment_allocation_rule' => in_array((string)$this->request->getPost('deposit_payment_allocation_rule'), ['gas_first','deposit_first','manual'], true) ? (string)$this->request->getPost('deposit_payment_allocation_rule') : 'gas_first',
+                'deposit_payment_allocation_rule' => in_array((string)$this->request->getPost('deposit_payment_allocation_rule'), ['gas_first','deposit_first','manual'], true) ? (string)$this->request->getPost('deposit_payment_allocation_rule') : 'gas_first',
                 'allow_return_gas_qty' => $this->request->getPost('allow_return_gas_qty') ? 1 : 0,
                 'return_gas_affects_os' => $this->request->getPost('return_gas_affects_os') ? 1 : 0,
                 'allow_empty_issued_return_gas' => $this->request->getPost('allow_empty_issued_return_gas') ? 1 : 0,
