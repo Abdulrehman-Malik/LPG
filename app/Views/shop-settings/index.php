@@ -88,6 +88,15 @@
                         <div class="form-text">ON: the system maintains stock at physical-cylinder level, including each cylinder's gas quantity/status. OFF: stock remains managed at cylinder-type level. Enable this before enabling Source Filled Cylinder Selection on POS.</div>
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label">Security Deposit + Sale Payment Allocation</label>
+                        <select name="deposit_payment_allocation_rule" id="depositPaymentAllocationRule" class="form-select">
+                            <option value="gas_first" <?= ($settings['deposit_payment_allocation_rule'] ?? 'gas_first') === 'gas_first' ? 'selected' : '' ?>>Gas / Cylinder Sale First</option>
+                            <option value="deposit_first" <?= ($settings['deposit_payment_allocation_rule'] ?? 'gas_first') === 'deposit_first' ? 'selected' : '' ?>>Security Deposit First</option>
+                            <option value="manual" <?= ($settings['deposit_payment_allocation_rule'] ?? 'gas_first') === 'manual' ? 'selected' : '' ?>>Manual Allocation</option>
+                        </select>
+                        <div class="form-text">When one payment is received for both the gas/cylinder charge and refundable security deposit, the POS allocates the amount using this rule. Manual Allocation lets the cashier enter each allocation.</div>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">Credit Limit Validation</label>
                         <select name="credit_limit_validation_mode" id="creditLimitMode" class="form-select">
                             <option value="none" <?= ($settings['credit_limit_validation_mode'] ?? 'none') === 'none' ? 'selected' : '' ?>>None — no credit limit validation</option>
