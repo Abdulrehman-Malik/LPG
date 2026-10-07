@@ -202,12 +202,13 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 #paymentSection{padding-top:.35rem!important}
 #paymentSection{border:1px solid #dbe5ec;border-radius:.375rem;padding:.5rem!important;background:#fff}
 #paymentSection .paymentCollectionTitle{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#475569;font-weight:600;margin-bottom:.35rem}
-#payments .payment{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px;gap:.35rem;margin-bottom:.35rem!important;width:100%}
-#payments .payment .paymentType{grid-column:1/-1}
-#payments .payment .form-control,#payments .payment .form-select{min-height:34px;padding:.25rem .4rem;width:100%;box-sizing:border-box}
-#payments .payment .remove{width:40px;min-width:40px;height:34px;padding:0;font-size:.8rem;line-height:1;display:flex;align-items:center;justify-content:center}
+#payments{width:100%}
+#payments .payment{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px;gap:.4rem;margin-bottom:.4rem!important;width:100%;align-items:center}
+#payments .payment .paymentType,#payments .payment .mode,#payments .payment .payment-amount{min-width:0;width:100%;box-sizing:border-box}
+#payments .payment .form-control,#payments .payment .form-select{min-height:36px;padding:.3rem .45rem;width:100%;box-sizing:border-box}
+#payments .payment .remove{width:40px;min-width:40px;height:36px;padding:0;font-size:.8rem;line-height:1;display:flex;align-items:center;justify-content:center}
 #payments .payment .paymentType.is-hidden{display:none}
-#paymentSection #addPayment{margin-bottom:.35rem!important}
+#paymentSection #addPayment{display:block;width:100%;margin:.45rem 0 .5rem!important}
 #paymentSection .payment-reference{width:100%;min-height:72px;resize:vertical}
 #amountToCollectHelpMessage{margin-bottom:.35rem!important}
 
@@ -341,10 +342,6 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div class="pos-summary-metric"><label class="form-label">OS Balance</label><div class="form-control bg-light"><span id="previousOs">0.00</span></div></div>
   <div class="pos-summary-metric"><label class="form-label">Discount</label><input name="discount_amount" id="discount" type="number" min="0" step="any" value="0" class="form-control"></div>
 </div>
-<div class="mb-3" id="securityDepositBox" style="display:<?= $initialTransactionType === 'security_deposit' ? 'block' : 'none' ?>">
-  <label class="form-label fw-semibold">Security Deposit Amount</label>
-  <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="any" value="0" class="form-control">
-</div>
 <div class="mb-3" id="netReceivableBox">
   <label class="form-label" id="netReceivableLabel">Net Receivable Amount</label>
   <div class="form-control bg-light fw-bold"><span id="netPayable">0.00</span></div>
@@ -358,9 +355,16 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   <div id="amountToCollectHelpMessage" class="alert alert-info py-2 px-2 mt-2 mb-2 small d-none">
     The payment rows below are the actual amounts received. You can split one receipt across multiple methods, for example Rs. 500 Online + Rs. 500 Cash. The configured allocation rule keeps Gas / Cylinder and Security Deposit separate in the accounts.
   </div>
-  <div class="row g-2 align-items-center mt-1">
-    <div class="col-6"><span class="small text-muted">Gas / Cylinder + OS</span><div class="fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div></div>
-    <div class="col-6"><span class="small text-muted">Security Deposit Amount</span><div class="fw-semibold">Rs. <span id="combinedDepositDue">0.00</span></div></div>
+  <div class="row g-2 align-items-end mt-1">
+    <div class="col-6">
+      <label class="form-label small text-muted mb-1">Gas / Cylinder Balance</label>
+      <div class="form-control bg-light fw-semibold">Rs. <span id="combinedGasDue">0.00</span></div>
+    </div>
+    <div class="col-6">
+      <label class="form-label small text-muted mb-1" for="securityDeposit">Security Deposit Amount</label>
+      <input name="security_deposit_amount" id="securityDeposit" type="number" min="0" step="0.01" value="0" class="form-control">
+      <div class="form-text">Actual deposit collected now.</div>
+    </div>
   </div>
   <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
     <span class="fw-semibold">Amount Received</span><strong>Rs. <span id="combinedAmountReceivedTotal">0.00</span></strong>
