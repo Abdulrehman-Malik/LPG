@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.use({ baseURL: process.env.LPG_QA_BASE_URL || 'http://127.0.0.1:8080' });
+test.use({ baseURL: process.env.LPG_QA_BASE_URL || 'http://localhost:8080' });
 async function login(page) {
   await page.goto('/login', { waitUntil: 'networkidle' });
   await page.locator('input[name="login"], #login').first().fill('admin');
