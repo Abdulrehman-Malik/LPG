@@ -386,7 +386,7 @@ function refreshForm(){
  document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
  if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
  document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
- document.getElementById('paymentSection').style.display=t==='cylinder_return'?(refund>0?'block':'none'):'block';
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';
  document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
  if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}
  setCustodyLists();refreshPaymentModes();recalc();
