@@ -341,7 +341,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   </div>
   <div class="border-top pt-2 mb-2 d-flex justify-content-between"><strong>Total Due</strong><strong>Rs. <span id="combinedTotalDue">0.00</span></strong></div>
   <div class="mb-2"><label class="form-label fw-semibold">Payment Method</label><select id="combinedPaymentMode" class="form-select"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select></div>
-  <div class="mb-2"><label class="form-label fw-semibold">Amount Received</label><input id="combinedAmountReceived" type="number" min="0" step="0.01" class="form-control form-control-lg" placeholder="Enter amount received"></div>
+  <div class="mb-2"><label class="form-label fw-semibold">Amount Received</label><input id="combinedAmountReceived" type="number" min="0" step="0.01" class="form-control form-control-lg" placeholder="Enter amount received" data-auto="1"></div>
   <div class="mb-2"><label class="form-label">Reference <span class="text-muted">(optional)</span></label><input id="combinedReference" class="form-control" placeholder="Reference / Cheque No."></div>
   <div id="manualAllocationBox" class="border rounded p-2 mb-2" style="display:none">
     <div class="small fw-semibold mb-2">Manual Allocation</div>
@@ -515,7 +515,7 @@ function recalc(){
  const gasReceivable=t==='security_deposit'?(saleTotal+previousOs):(t==='cylinder_return'?0:(saleTotal+previousOs));
  let paid=0,balanceAfter=0;
  if(t==='security_deposit'){
-   const depositDue=deposit, totalDue=gasReceivable+depositDue, receivedInput=document.getElementById('combinedAmountReceived'), rule=depositPaymentAllocationRule; if(receivedInput && receivedInput.value==='') receivedInput.value=totalDue.toFixed(2); const received=Number(receivedInput?.value||0);
+   const depositDue=deposit, totalDue=gasReceivable+depositDue, receivedInput=document.getElementById('combinedAmountReceived'), rule=depositPaymentAllocationRule; if(receivedInput && (receivedInput.value==='' || receivedInput.dataset.auto==='1')) { receivedInput.value=totalDue.toFixed(2); receivedInput.dataset.auto='1'; } const received=Number(receivedInput?.value||0);
    let gasAlloc=0,depositAlloc=0;
    if(rule==='manual'){
      gasAlloc=Math.max(0,Number(document.getElementById('manualGasAmount')?.value||0));
@@ -679,7 +679,7 @@ document.getElementById('customer_id').onchange=()=>{
   lineHead.innerHTML='';
   document.getElementById('discount').value='0';
   document.getElementById('securityDeposit').value='0';
-  document.getElementById('combinedAmountReceived').value='';
+  document.getElementById('combinedAmountReceived').value='';document.getElementById('combinedAmountReceived').dataset.auto='1';
   document.getElementById('manualGasAmount').value='';
   document.getElementById('manualDepositAmount').value='';
   payments.innerHTML='';
@@ -699,7 +699,7 @@ document.getElementById('customer_id').onchange=()=>{
   recalc();
 };
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
-document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('combinedAmountReceived').oninput=recalc;document.getElementById('manualGasAmount').oninput=recalc;document.getElementById('manualDepositAmount').oninput=recalc;document.getElementById('combinedPaymentMode').onchange=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
+document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;document.getElementById('combinedAmountReceived').oninput=()=>{document.getElementById('combinedAmountReceived').dataset.auto='0';recalc();};document.getElementById('manualGasAmount').oninput=recalc;document.getElementById('manualDepositAmount').oninput=recalc;document.getElementById('combinedPaymentMode').onchange=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=addPayment;
 document.getElementById('saleForm').onsubmit=async(e)=>{
  e.preventDefault();
  const errorBox=document.getElementById('posValidationAlert'),saveBtn=document.getElementById('saveBtn');
