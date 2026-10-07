@@ -446,6 +446,179 @@ function rebuildLines(){
  else if(t==='cylinder_sale'){document.getElementById('lines').classList.add('cylinder-sale-mode');lineHead.innerHTML='<tr><th>Cylinder Type</th><th>Status</th><th>Qty</th><th>Gas KG</th><th>Gas Rate</th><th>Cylinder Rate</th><th>Amount</th><th></th></tr>';addCylinderSaleLine();document.getElementById('addLine').style.display='inline-block';}
  else {document.getElementById('addLine').style.display='none';}
 }
+function refreshPaymentModes(){const walkIn=!selectedCustomerId(),customer=selectedCustomer();payments.querySelectorAll('.payment').forEach(p=>{const m=p.querySelector('.mode');[...m.options].forEach(o=>o.disabled=walkIn&&o.value!=='cash'||(!walkIn&&!customer?.allowCredit&&o.value==='credit'));if(walkIn||(!customer?.allowCredit&&m.value==='credit'))m.value='cash';});}
+function paymentTypeOptions(){
+ const t=transactionType();
+ if(t==='security_deposit')return '<option value="security_deposit">Security Deposit</option><option value="sale">Gas / Cylinder</option>';
+ if(t==='cylinder_return')return '<option value="security_deposit_refund">Security Deposit Refund</option>';
+ return '<option value="sale">Sale</option>';
+}
+function addPayment(paymentType){
+ const div=document.createElement('div');div.className='input-group mb-2 payment';
+ div.innerHTML='<select class="form-select paymentType" style="max-width:170px">'+paymentTypeOptions()+'</select><select class="form-select mode"><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="online">Online</option><option value="credit">Credit</option></select><input class="form-control amount" type="number" min="0.01" step="any" placeholder="Amount"><input class="form-control ref" placeholder="Ref"><button type="button" class="btn btn-outline-danger remove">×</button>';
+ payments.appendChild(div);
+ const type=paymentType||((transactionType()==='security_deposit')?'security_deposit':(transactionType()==='cylinder_return'?'security_deposit_refund':'sale'));
+ div.querySelector('.paymentType').value=type;
+ div.querySelector('.paymentType').onchange=recalc;
+ div.querySelector('.mode').value=defaultPaymentMode;
+ div.querySelector('.mode').onchange=()=>{refreshPaymentModes();recalc();};
+ div.querySelector('.amount').oninput=recalc;div.querySelector('.remove').onclick=()=>{div.remove();recalc();};refreshPaymentModes();
+}
+function paymentTotal(type=null){return [...payments.querySelectorAll('.payment')].reduce((s,p)=>{const pt=p.querySelector('.paymentType')?.value||'sale';return s+(type===null||pt===type?Number(p.querySelector('.amount').value||0):0);},0);}
+function statusForCylinderSale(tr){return tr.querySelector('.cylStatus')?.value||'empty';}
+function cylinderTypeById(typeId){return types.find(t=>String(t.id)===String(typeId))||null;}
+function selectedFilledUnits(tr){const ids=Array.isArray(tr._selectedUnitIds)?tr._selectedUnitIds:[],typeId=tr.querySelector('.cyl').value,available=filledUnits[typeId]||[];return ids.map(id=>available.find(u=>String(u.id)===String(id))).filter(Boolean);}
+function renderFilledCylinderPicker(tr){const typeId=tr.querySelector('.cyl').value,picker=tr._pickerRow.querySelector('.cylinderPicker'),status=tr.querySelector('.cylStatus').value;if(status!=='filled'||!typeId){picker.innerHTML='<div class="text-muted small">Select a cylinder type to view available physical cylinders.</div>';return;}const units=(filledUnits[typeId]||[]).filter(u=>Number(u.gas_weight_kg||0)>0.00001);if(!units.length){picker.innerHTML='<div class="alert alert-warning py-2 mb-0">No filled/partially filled cylinders are currently available for this cylinder type.</div>';tr._selectedUnitIds=[];return;}const selected=new Set((tr._selectedUnitIds||[]).map(String));picker.innerHTML='<div class="d-flex justify-content-between align-items-center cylinder-picker-title"><strong>Select physical cylinder(s)</strong><span class="small text-muted">'+units.length+' available</span></div><div class="d-flex flex-wrap cylinder-options">'+units.map(u=>{const checked=selected.has(String(u.id))?' checked':'';const gas=Number(u.gas_weight_kg||0),cap=Number(u.capacity_kg||0);const statusLabel=gas>=cap-0.00001?'Filled':'Partially Filled';const statusClass=statusLabel==='Filled'?'text-success':'text-warning';return '<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative"><input class="filledUnitCheck" type="checkbox" value="'+u.id+'"'+checked+'><svg class="cylinder-art" viewBox="0 0 40 50" aria-hidden="true"><rect x="9" y="6" width="22" height="38" rx="7" fill="currentColor" opacity=".12"></rect><rect x="11" y="8" width="18" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="2"></rect><path d="M15 8V4h10v4M17 4V1h6v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path><path d="M14 14h12M14 18h12" stroke="currentColor" stroke-width="1.5" opacity=".65"></path></svg><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.cylinder_code||u.unit_code||'Cylinder')+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_name||'')+'</span><span class="cylinder-gas"><strong>'+gas.toFixed(3)+' / '+cap.toFixed(3)+' KG</strong> <span class="cylinder-status '+statusClass+'">'+statusLabel+'</span></span></span></label>';}).join('')+'</div>';picker.querySelectorAll('.filledUnitCheck').forEach(cb=>cb.onchange=()=>{tr._selectedUnitIds=[...picker.querySelectorAll('.filledUnitCheck:checked')].map(x=>Number(x.value));syncFilledCylinderLine(tr);});}
+function syncFilledCylinderLine(tr){if(statusForCylinderSale(tr)!=='filled'){recalc();return;}const selected=selectedFilledUnits(tr),qty=tr.querySelector('.qty'),gas=tr.querySelector('.gasQty');qty.value=selected.length;gas.value=selected.reduce((s,u)=>s+Number(u.gas_weight_kg||0),0).toFixed(3);recalc();}
+function addCylinderSaleLine(){const tr=document.createElement('tr');tr._selectedUnitIds=[];tr.innerHTML='<td><select class="form-select cyl">'+cylinderTypeOptions()+'</select></td><td><select class="form-select cylStatus"><option value="filled">Filled / Partially Filled</option><option value="empty">Empty</option></select></td><td><input class="form-control qty" type="number" min="0" step="1" value="0"></td><td><input class="form-control gasQty" type="number" value="0.000" readonly></td><td><div class="input-group input-group-sm gasWrap"><span class="input-group-text">Rs/KG</span><input class="form-control gasRate" type="number" min="0" step="any"></div></td><td><div class="input-group input-group-sm"><span class="input-group-text">Rs</span><input class="form-control cylRate" type="number" min="0" step="any"></div></td><td class="lineTotal">0.00</td><td><button type="button" class="btn btn-sm btn-outline-danger remove">×</button></td>';const pickerRow=document.createElement('tr');pickerRow.className='cylinderPickerRow';pickerRow.innerHTML='<td colspan="8"><div class="bg-light border rounded p-1 cylinderPicker"><div class="text-muted small">Select a cylinder type to view available physical cylinders.</div></div></td>';tr.querySelector('.cyl').onchange=()=>{tr._selectedUnitIds=[];refreshCylinderSaleLine.call(tr);};tr.querySelector('.cylStatus').onchange=()=>{tr._selectedUnitIds=[];refreshCylinderSaleLine.call(tr);};tr.querySelector('.qty').oninput=recalc;tr.querySelector('.gasRate').oninput=recalc;tr.querySelector('.cylRate').oninput=recalc;tr.querySelector('.remove').onclick=()=>{tr.remove();pickerRow.remove();refreshDuplicateTypeOptions();recalc();};tbody.appendChild(tr);tbody.appendChild(pickerRow);tr._pickerRow=pickerRow;refreshCylinderSaleLine.call(tr);}
+function refreshCylinderSaleLine(){const tr=this.tagName==='TR'?this:tbody.querySelector('tr:not(.cylinderPickerRow):last-child'),typeId=tr.querySelector('.cyl').value,status=tr.querySelector('.cylStatus').value,type=cylinderTypeById(typeId),pickerRow=tr._pickerRow,picker=pickerRow.querySelector('.cylinderPicker');pickerRow.classList.toggle('is-visible',!!typeId);tr.querySelector('.gasWrap').style.display=status==='filled'?'flex':'none';tr.querySelector('.gasRate').disabled=status!=='filled';tr.querySelector('.gasRate').value=status==='filled'&&kgRate!==null?Number(kgRate).toFixed(2):'';const configuredCylinderPrice=Number(rates[typeId]??0);const masterCylinderPrice=Number(type?.empty_cylinder_price??0);const defaultCylinderPrice=configuredCylinderPrice>0?configuredCylinderPrice:(masterCylinderPrice>0?masterCylinderPrice:0);tr.querySelector('.cylRate').value=defaultCylinderPrice.toFixed(2);if(status==='filled'){tr.querySelector('.qty').readOnly=true;tr.querySelector('.gasQty').title='Calculated from selected physical cylinder(s).';renderFilledCylinderPicker(tr);}else{tr.querySelector('.qty').readOnly=false;tr.querySelector('.qty').max=Number(emptyStock[typeId]||0);if(Number(tr.querySelector('.qty').value||0)>Number(emptyStock[typeId]||0))tr.querySelector('.qty').value=Number(emptyStock[typeId]||0);tr.querySelector('.gasQty').value='0.000';picker.innerHTML='<div class="text-muted small">Empty cylinder sale: enter quantity only. Gas stock is not affected.</div>';}syncFilledCylinderLine(tr);}
+function gasForCylinderSale(tr){
+ const status=statusForCylinderSale(tr),typeId=tr.querySelector('.cyl').value;
+ if(status!=='filled'||!typeId)return 0;
+ return selectedFilledUnits(tr).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);
+}
+function recalc(){
+ let saleTotal=0,gasRequired=0;
+ const t=transactionType();
+ const usedByType={};
+ tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{
+   const qty=Math.max(0,Number(tr.querySelector('.qty')?.value||0));
+   let amount=0,gas=0;
+   if(t==='gas_sale'){gas=qty;const typeId=tr.querySelector('.cyl').value;const mode=document.getElementById('gasEntryMode')?.value||'quantity';if(mode==='amount'){const amountEntered=Number(tr.querySelector('.enteredAmount')?.value||0);const rate=Number(tr.querySelector('.gasRate')?.value||0);gas=rate>0&&amountEntered>0?amountEntered/rate:0;tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';}else{tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';}const available=(filledUnits[typeId]||[]).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);const prior=Number(usedByType[typeId]||0);const remaining=Math.max(0,available-prior);tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));tr.querySelector('.qty').max=Math.max(0,remaining);if(gas>remaining && tr.dataset.entryMode!=='amount'){tr.querySelector('.qty').value=remaining;gas=remaining;tr.querySelector('.enteredAmount').value=(remaining*Number(tr.querySelector('.gasRate').value||0)).toFixed(2);}if(gas>remaining && tr.dataset.entryMode==='amount'){tr.querySelector('.entryValue').setCustomValidity('Amount exceeds available gas stock.');}else{tr.querySelector('.entryValue').setCustomValidity('');}usedByType[typeId]=(prior+gas);const rate=Number(tr.querySelector('.gasRate').value||0);amount=gas*rate;}
+   else if(t==='cylinder_sale'){gas=gasForCylinderSale(tr);const gr=Number(tr.querySelector('.gasRate').value||0),cr=Number(tr.querySelector('.cylRate').value||0),q=Math.floor(qty);amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;}
+   gasRequired+=gas;saleTotal+=amount;tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
+ });
+ if(t==='security_deposit'){
+   issueLines.forEach(l=>{const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;saleTotal+=l.status==='filled'?(gas*Number(l.gas_rate||0)+q*Number(l.cylinder_rate||0)):q*Number(l.cylinder_rate||0);gasRequired+=gas;});
+ }else if(t==='cylinder_return'){
+   returnLines.forEach(l=>{gasRequired+=Number(l.return_gas_kg||0);});
+ }
+ const discount=Math.max(0,Number(document.getElementById('discount').value||0));saleTotal=Math.max(0,saleTotal-discount);
+ const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
+ const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
+ const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:(saleTotal+previousOs));
+ document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
+ document.getElementById('previousOs').textContent=previousOs.toFixed(2);
+ document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
+ const depositPaid=t==='security_deposit'?paymentTotal('security_deposit'):0;
+ const salePaid=t==='security_deposit'?paymentTotal('sale'):(t==='cylinder_return'?0:paymentTotal('sale'));
+ const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):0;
+ const paid=t==='security_deposit'?(depositPaid+salePaid):refundPaid;
+ const gasReceivable=t==='security_deposit'?(saleTotal+previousOs):(t==='cylinder_return'?0:(saleTotal+previousOs));
+ const balanceAfter=t==='security_deposit'?Math.max(0,gasReceivable-salePaid):Math.max(0,netReceivable-paid);
+ document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
+ document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
+ document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none';
+ document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payments are separated: Security Deposit and Gas / Cylinder':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
+ updateRefund();
+}
+function refreshForm(){
+ const t=transactionType(),standard=['gas_sale','cylinder_sale'].includes(t),workspace=document.getElementById('posWorkspace');
+ if(workspace)workspace.className='row g-3 pos-workspace mode-'+t;
+ payments.querySelectorAll('.payment').forEach(p=>{const pt=p.querySelector('.paymentType');if(!pt)return;pt.innerHTML=paymentTypeOptions();pt.value=t==='security_deposit'?'security_deposit':(t==='cylinder_return'?'security_deposit_refund':'sale');});
+ document.getElementById('standardTransaction').style.display=standard?'block':'none';document.getElementById('gasEntryModeWrap').style.display=t==='gas_sale'?'block':'none';
+ document.getElementById('securityTransaction').style.display=t==='security_deposit'?'block':'none';
+ document.getElementById('returnTransaction').style.display=t==='cylinder_return'?'block':'none';
+ document.getElementById('securityDeposit').disabled=t!=='security_deposit'; document.getElementById('securityDepositBox').style.display=t==='security_deposit'?'block':'none'; document.getElementById('discount').disabled=!standard; if(!standard)document.getElementById('discount').value='0';
+ if(t!=='security_deposit')document.getElementById('securityDeposit').value='0';
+ document.getElementById('refundBox').style.display=t==='cylinder_return'?'block':'none';
+ document.getElementById('paymentSection').style.display=t==='cylinder_return'?(Number(document.getElementById('refundAmount').value||0)>0?'block':'none'):'block';document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payments are separated: Security Deposit and Gas / Cylinder':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
+ document.getElementById('saveBtn').textContent=t==='cylinder_return'?'Return Cylinder / Refund Deposit':t==='security_deposit'?'Receive Deposit / Issue Cylinder':'Post Transaction';
+ if(standard)rebuildLines();else{clearLines();lineHead.innerHTML='';}
+ setCustodyLists();refreshPaymentModes();recalc();
+}
+
+let issueLines=[],returnLines=[];
+window.depositBalances=<?=json_encode($depositBalances??[],JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT)?>;
+
+function issueSelectedIds(){return issueLines.flatMap(x=>x.selected_cylinder_unit_ids||[]).map(Number);}
+function returnSelectedIds(){return returnLines.map(x=>Number(x.unit_id));}
+function issueRateDefaults(typeId){const t=cylinderTypeById(typeId);const cylCfg=Number(rates[typeId]??0);const cylMaster=Number(t?.empty_cylinder_price??0);return {gas:kgRate!==null?Number(kgRate):0,cyl:cylCfg>0?cylCfg:cylMaster};}
+function issuePickerRender(){
+ const typeSelect=document.getElementById('issuePickerType'),typeId=typeSelect.value,status=document.getElementById('issuePickerStatus').value,box=document.getElementById('issuePickerCards'),used=new Set(issueSelectedIds());
+ const selectedType=typeSelect.options[typeSelect.selectedIndex];
+ if(selectedType&&typeId){const typeObj=cylinderTypeById(typeId),unitsForType=availableCustodyUnits.filter(u=>String(u.cylinder_type_id)===String(typeId)),gasForType=(filledUnits[typeId]||[]).reduce((s,u)=>s+Number(u.gas_weight_kg||0),0);selectedType.textContent=(typeObj?.code||'')+' — '+(typeObj?.name||'')+' — Available Stock: '+gasForType.toFixed(2)+' KG ('+unitsForType.length+' cylinder'+(unitsForType.length===1?'':'s')+')';}
+ let units=availableCustodyUnits.filter(u=>String(u.cylinder_type_id)===String(typeId)&&!used.has(Number(u.id)));
+ units=units.filter(u=>status==='filled'?Number(u.gas_weight_kg||0)>0.00001:u.status==='empty');
+ document.getElementById('issuePickerCount').textContent=units.length+' available';
+ if(!typeId){box.innerHTML='<div class="text-muted">Select a cylinder type.</div>';return;}
+ if(!units.length){box.innerHTML='<div class="alert alert-warning w-100">No available cylinders match this filter.</div>';return;}
+ box.innerHTML=units.map(u=>{const gas=Number(u.gas_weight_kg||0),cap=Number(u.capacity_kg||0),label=status==='filled'?(gas>=cap-0.00001?'Filled':'Partially Filled'):'Empty';return '<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative"><input type="checkbox" class="issuePickCheck" value="'+u.id+'" style="position:absolute;opacity:0"><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.unit_code)+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_name||u.cylinder_code||'')+'</span><span class="cylinder-gas"><strong>'+gas.toFixed(3)+' KG</strong> <span class="cylinder-status">'+label+'</span></span></span></label>';}).join('');
+}
+function renderIssueLines(){
+ const body=document.getElementById('issueLinesBody'),empty=document.getElementById('issueEmpty');
+ if(!body||!empty)return;
+ body.innerHTML=issueLines.map((l,i)=>{
+   const gas=Number(l.gas_weight_kg||0);
+   const amount=l.status==='filled'
+     ?(gas*Number(l.gas_rate||0)+Number(l.cylinder_rate||0)*l.selected_cylinder_unit_ids.length)
+     :(Number(l.cylinder_rate||0)*l.selected_cylinder_unit_ids.length);
+   const physical=(l.selected_cylinder_unit_ids||[]).map(id=>{
+     const u=availableCustodyUnits.find(x=>Number(x.id)===Number(id));
+     return '<span class="badge text-bg-light border me-1">'+escapeHtml(u?.unit_code||id)+'</span>';
+   }).join('');
+   const gasRate=l.status==='filled'
+     ?'<input class="form-control form-control-sm issueGasRateInput" data-index="'+i+'" type="number" min="0" step="0.01" value="'+Number(l.gas_rate||0).toFixed(2)+'">'
+     :'';
+   return '<tr>'
+     +'<td><strong>'+escapeHtml(l.type_label)+'</strong><br><span class="badge text-bg-'+(l.status==='filled'?'success':'secondary')+'">'+(l.status==='filled'?'Filled / Partial':'Empty')+'</span></td>'
+     +'<td>'+physical+'</td>'
+     +'<td class="text-end">'+gas.toFixed(3)+'</td>'
+     +'<td class="text-end">'+gasRate+'</td>'
+     +'<td class="text-end">'+Number(l.cylinder_rate||0).toFixed(2)+'</td>'
+     +'<td class="text-end fw-semibold">'+amount.toFixed(2)+'</td>'
+     +'<td><button type="button" class="btn btn-sm btn-outline-danger issue-line-remove" data-index="'+i+'">×</button></td>'
+     +'</tr>';
+ }).join('');
+ empty.style.display=issueLines.length?'none':'block';
+ body.querySelectorAll('.issueGasRateInput').forEach(el=>el.oninput=()=>{
+   const i=Number(el.dataset.index);
+   if(!issueLines[i])return;
+   issueLines[i].gas_rate=Math.max(0,Number(el.value||0));
+   recalc();
+ });
+ body.querySelectorAll('.issue-line-remove').forEach(btn=>btn.onclick=()=>{
+   const i=Number(btn.dataset.index);
+   issueLines.splice(i,1);
+   renderIssueLines();
+   recalc();
+ });
+}
+function openIssuePicker(){
+ if(!selectedCustomerId()){alert('Select a customer first.');return;}
+ document.getElementById('issuePickerType').value='';
+ document.getElementById('issuePickerStatus').value='filled';
+ issuePickerRender();
+ bootstrap.Modal.getOrCreateInstance(document.getElementById('issuePickerModal')).show();
+}
+function addIssueSelection(){
+ const typeId=Number(document.getElementById('issuePickerType').value||0),status=document.getElementById('issuePickerStatus').value,ids=[...document.querySelectorAll('.issuePickCheck:checked')].map(x=>Number(x.value));
+ if(!typeId||!ids.length){alert('Select a cylinder type and at least one physical cylinder.');return;}
+ const combo=typeId+'|'+status;if(issueLines.some(x=>x.combo===combo)){alert('This Cylinder Type + Filled/Empty combination is already in the issue transaction. Remove it before adding another line.');return;}
+ const units=ids.map(id=>availableCustodyUnits.find(u=>Number(u.id)===id)).filter(Boolean),def=issueRateDefaults(typeId),type=cylinderTypeById(typeId);
+ const gas=units.reduce((s,u)=>s+Number(u.gas_weight_kg||0),0);
+ issueLines.push({combo,type_id:typeId,type_label:(type?.code||'')+' — '+(type?.name||''),status,selected_cylinder_unit_ids:ids,gas_weight_kg:gas,gas_rate:status==='filled'?def.gas:0,cylinder_rate:def.cyl});
+ renderIssueLines();recalc();bootstrap.Modal.getInstance(document.getElementById('issuePickerModal')).hide();
+}
+function returnPickerRender(){
+ const typeId=document.getElementById('returnPickerType').value,status=document.getElementById('returnPickerStatus').value,box=document.getElementById('returnPickerCards'),used=new Set(returnSelectedIds()),cid=selectedCustomerId();
+ let units=allCustomerCustody.filter(u=>String(u.customer_id)===String(cid)&&!used.has(Number(u.unit_id)));
+ if(typeId)units=units.filter(u=>String(u.cylinder_type_id)===String(typeId));
+ if(status)units=units.filter(u=>status==='filled'?Number(u.gas_weight_kg||0)>0.00001:Number(u.gas_weight_kg||0)<=0.00001);
+ document.getElementById('returnPickerCount').textContent=units.length+' available';
+ if(!cid){box.innerHTML='<div class="alert alert-warning w-100">Select a customer first.</div>';return;}
+ if(!units.length){box.innerHTML='<div class="alert alert-warning w-100">No pending cylinders match this filter.</div>';return;}
+ box.innerHTML=units.map(u=>'<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative"><input type="checkbox" class="returnPickCheck" value="'+u.unit_id+'" style="position:absolute;opacity:0"><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.unit_code)+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_code||u.cylinder_name||'')+'</span><span class="cylinder-gas"><strong>Issued '+Number(u.issued_gas_weight_kg??u.gas_weight_kg??0).toFixed(3)+' KG</strong> · '+(Number(u.gas_weight_kg||0)>0?'Filled/Partial':'Empty')+'</span></span></label>').join('');
+}
+function renderReturnLines(){
+ const body=document.getElementById('returnLinesBody'),empty=document.getElementById('returnEmpty'),allowGas=<?=json_encode((int)($shopSettings['allow_return_gas_qty']??0))?>===1;
+ body.innerHTML=returnLines.map((l,i)=>{const issued=Number(l.issued_gas_weight_kg||0),ret=Number(l.return_gas_kg||0),cons=Math.max(0,issued-ret);return '<tr><td><strong>'+escapeHtml(l.unit_code)+'</strong><br><span class="small text-muted">'+escapeHtml(l.cylinder_code||'')+'</span></td><td>'+issued.toFixed(3)+'</td><td><input class="form-control form-control-sm returnGasInput" data-index="'+i+'" type="number" min="0" step="0.001" value="'+ret.toFixed(3)+'" '+(allowGas?'':'disabled')+'></td><td><input class="form-control form-control-sm returnRateInput" data-index="'+i+'" type="number" min="0" step="0.01" value="'+Number(l.return_gas_rate||0).toFixed(2)+'" '+(ret>0?'':'disabled')+'></td><td class="consumedCell">'+cons.toFixed(3)+'</td><td class="statusCell">'+(ret>0?'Partially Filled':'Empty')+'</td><td><button type="button" class="btn btn-sm btn-outline-danger" onclick="returnLines.splice('+i+',1);renderReturnLines();recalc();">×</button></td></tr>';}).join('');
+ empty.style.display=returnLines.length?'none':'block';
+ body.querySelectorAll('.returnGasInput').forEach(el=>el.oninput=()=>{const i=Number(el.dataset.index);returnLines[i].return_gas_kg=Math.max(0,Number(el.value||0));if(returnLines[i].return_gas_kg>0&&Number(returnLines[i].return_gas_rate||0)<=0)returnLines[i].return_gas_rate=Number(returnLines[i].issued_gas_rate||0);renderReturnLines();recalc();});
+ body.querySelectorAll('.returnRateInput').forEach(el=>el.oninput=()=>{returnLines[Number(el.dataset.index)].return_gas_rate=Math.max(0,Number(el.value||0));recalc();});
+}
+function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer first.');return;}document.getElementById('returnPickerType').value='';document.getElementById('returnPickerStatus').value='';returnPickerRender();bootstrap.Modal.getOrCreateInstance(document.getElementById('returnPickerModal')).show();}
+function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
 function setCustodyLists(){renderIssueLines();renderReturnLines();updateRefund();}
 function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=available.toFixed(2);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
 
