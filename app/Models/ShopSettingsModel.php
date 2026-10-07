@@ -65,7 +65,7 @@ class ShopSettingsModel extends Model
             'individual_cylinder_tracking' => 0,
             'allow_pos_source_cylinder_selection' => 0,
             'include_security_deposit_in_os' => 0,
-            'deposit_payment_allocation_rule' => 'gas_first',
+            'deposit_payment_allocation_rule' => 'deposit_first',
             'allow_return_gas_qty' => 0,
             'return_gas_affects_os' => 0,
             'allow_empty_issued_return_gas' => 0,
