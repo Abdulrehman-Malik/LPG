@@ -65,5 +65,5 @@ $typeLabel=$typeLabels[$sale['transaction_type']]??ucwords(str_replace('_',' ',$
 <?php if($sale['transaction_type']==='security_deposit'): ?><div class="row total"><span>Net Amount Payable</span><span>Rs. <?=number_format((float)$sale['security_deposit_amount'],2)?></span></div><?php elseif($sale['transaction_type']==='cylinder_return'): ?><div class="row total"><span>Customer Receives</span><span>Rs. <?=number_format((float)$sale['security_deposit_refund_amount'],2)?></span></div><?php endif;?>
 <div class="rule"></div><div class="footer"><?=nl2br(esc($shopSettings['receipt_footer']??'Thank you'))?></div>
 <div class="actions"><button type="button" onclick="window.print()">Print</button><button type="button" onclick="window.close()">Close</button></div>
-<script>window.addEventListener('load',function(){setTimeout(function(){window.print()},150)});window.addEventListener('afterprint',function(){setTimeout(function(){window.close()},150)});</script>
+<script>/* Receipt opens as a preview; print only when the user clicks Print. */</script>
 </body></html>
