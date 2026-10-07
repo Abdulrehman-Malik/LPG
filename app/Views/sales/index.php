@@ -147,11 +147,10 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 <div id="securityTransaction" style="display:none">
   <div class="card border-warning">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0">Cylinder Custody — Issue</h6><span class="badge text-bg-warning">Issued / Held</span>
-      </div>
-      <label class="form-label">Company Cylinder(s) to Issue on Custody</label>
-      <select name="custody_unit_ids[]" id="custodyUnits" class="form-select custody-list" multiple></select>
+      <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Security Deposit / Issue Cylinder</h6><button type="button" class="btn btn-sm btn-primary" id="openIssuePicker">Add Line / Select Cylinders</button></div>
+      <div class="small text-muted mb-2">Select physical cylinders by type and Filled / Empty. Filled includes partially-filled cylinders. The same Type + condition cannot be added twice.</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Type / Status</th><th>Physical Cylinder(s)</th><th class="text-end">Gas KG</th><th class="text-end">Gas Rate</th><th class="text-end">Cylinder Rate</th><th class="text-end">Amount</th><th></th></tr></thead><tbody id="issueLinesBody"></tbody></table></div>
+      <div id="issueEmpty" class="text-muted small py-3">No cylinders selected. Click Add Line / Select Cylinders.</div>
     </div>
   </div>
 </div>
@@ -159,15 +158,31 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 <div id="returnTransaction" style="display:none">
   <div class="card border-info">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0">Cylinder Custody — Return</h6><span class="badge text-bg-info">Returned</span>
-      </div>
-      <label class="form-label">Customer Custody Cylinder(s)</label>
-      <select name="return_unit_ids[]" id="returnUnits" class="form-select custody-list" multiple></select>
-      <div class="mt-3 p-2 bg-light rounded">Refundable Deposit: <strong><span id="refundPreview">0.00</span></strong></div>
+      <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0">Cylinder Return / Refund Deposit</h6><button type="button" class="btn btn-sm btn-primary" id="openReturnPicker">Select Cylinders</button></div>
+      <div class="small text-muted mb-2">Only the selected customer's pending cylinders are available. Return gas is entered separately per cylinder.</div>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Issued KG</th><th>Return KG</th><th>Return Rate</th><th>Consumed KG</th><th>Status</th><th></th></tr></thead><tbody id="returnLinesBody"></tbody></table></div>
+      <div id="returnEmpty" class="text-muted small py-3">No cylinders selected. Click Select Cylinders.</div>
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="issuePickerModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Select Cylinders to Issue</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label">Cylinder Type</label><select id="issuePickerType" class="form-select"><option value="">Select</option><?php foreach($types as $t): ?><option value="<?= (int)$t['id'] ?>"><?= esc($t['code'].' — '.$t['name']) ?></option><?php endforeach; ?></select></div><div class="col-md-4"><label class="form-label">Filled / Empty</label><select id="issuePickerStatus" class="form-select"><option value="filled">Filled / Partially Filled</option><option value="empty">Empty</option></select></div><div class="col-md-3 d-flex align-items-end"><span class="small text-muted" id="issuePickerCount"></span></div></div>
+    <div id="issuePickerCards" class="d-flex flex-wrap gap-2"></div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="confirmIssuePicker">OK / Add Line</button></div>
+</div></div></div>
+
+<div class="modal fade" id="returnPickerModal" tabindex="-1"><div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title">Select Customer Cylinders to Return</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label">Cylinder Type</label><select id="returnPickerType" class="form-select"><option value="">All Types</option><?php foreach($types as $t): ?><option value="<?= (int)$t['id'] ?>"><?= esc($t['code'].' — '.$t['name']) ?></option><?php endforeach; ?></select></div><div class="col-md-4"><label class="form-label">Filled / Empty</label><select id="returnPickerStatus" class="form-select"><option value="">All</option><option value="filled">Filled / Partially Filled</option><option value="empty">Empty</option></select></div><div class="col-md-3 d-flex align-items-end"><span class="small text-muted" id="returnPickerCount"></span></div></div>
+    <div id="returnPickerCards" class="d-flex flex-wrap gap-2"></div>
+  </div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="confirmReturnPicker">OK / Add Selected</button></div>
+</div></div></div></div>
 
 </div></div></div>
 
@@ -187,9 +202,7 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 </div>
 <div class="mb-3"><label class="form-label">Receipt Amount</label><div class="form-control bg-light fw-bold"><span id="receiptAmountValue">0.00</span></div></div>
 <div class="mb-3"><label class="form-label fw-semibold">OS Balance</label><div class="form-control bg-light fw-bold text-primary"><span id="customerOsBalanceValue">0.00</span></div></div>
-<div class="mb-3" id="refundBox" style="display:none">
-  <div class="form-control bg-light text-danger fw-semibold">Customer Refund: <span id="refundAmount">0.00</span></div>
-</div>
+<div class="mb-3" id="refundBox" style="display:none"><label class="form-label fw-semibold">Security Deposit Refund</label><input name="security_deposit_refund_amount" id="refundAmount" type="number" min="0" step="0.01" value="0" class="form-control"><div class="form-text">Refundable deposit balance: Rs. <span id="refundAvailable">0.00</span></div></div>
 
 <div id="paymentSection">
   <div id="payments"></div>
