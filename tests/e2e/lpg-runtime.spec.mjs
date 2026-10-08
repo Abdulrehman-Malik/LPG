@@ -239,8 +239,8 @@ test('E2E-011 All application screens load without HTTP, PHP, or browser errors'
     const response = await page.goto(path, { waitUntil: 'networkidle' });
     console.log('SCREEN_QA:', path, response?.status());
     expect(response, path).not.toBeNull();
-    expect(response.status(), path).toBeLessThan(400);
     const bodyText = await page.locator('body').innerText();
+    if (response.status() >= 400) throw new Error('SCREEN_QA_HTTP_FAILED ' + path + ' status=' + response.status() + '\n' + bodyText.slice(0, 5000));
     const errorMatch = bodyText.match(/(Whoops!|Exception|Fatal error|Undefined variable|Call to undefined|Database Error)/i);
     if (errorMatch) throw new Error('SCREEN_QA_FAILED ' + path + ': ' + errorMatch[0] + '\n' + bodyText.slice(0, 1200));
   }
