@@ -113,12 +113,7 @@ test('E2E-010 Dashboard summary cards drill down and preserve stock tab', async 
   const toDate = new Date();
   const fromDate = new Date(toDate);
   fromDate.setDate(fromDate.getDate() - 6);
-  const isoDate = (date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return \`${y}-${m}-${d}\`;
-  };
+  const isoDate = (date) => date.toISOString().slice(0, 10);
   await page.locator('#dashboardDateFilter input[name="from"]').fill(isoDate(fromDate));
   await page.locator('#dashboardDateFilter input[name="to"]').fill(isoDate(toDate));
   await page.getByRole('button', {name:'Apply Filter'}).click();
