@@ -17,7 +17,7 @@ test('E2E-001 Login succeeds', async ({ page }) => {
 test('E2E-002 Dashboard business summary loads', async ({ page }) => {
   await login(page);
   const body = await page.locator('body').innerText();
-  for (const label of ['Total Sale','Cash Sale','Credit Sale','Payments','Stock Purchased']) expect(body.toLowerCase()).toContain(label.toLowerCase());
+  for (const label of ['Available Gas KG','Empty Gas Cylinders in Shop','Issued Cylinders','Sales','Cash Counter','Credit Sales / Accounts Receivable','Expenses']) expect(body.toLowerCase()).toContain(label.toLowerCase());
 });
 test('E2E-003 POS screen exposes configured gas-sale transaction', async ({ page }) => {
   await login(page); await page.goto('/sales',{waitUntil:'networkidle'});
