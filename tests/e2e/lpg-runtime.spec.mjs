@@ -106,7 +106,22 @@ test('E2E-010 Dashboard summary cards drill down and preserve stock tab', async 
     await page.locator('#dashboardDetailModal .btn-close').click();
   }
 
-  await page.getByRole('link', {name:'7 Days'}).click();
+  // Date filter is hidden by default; open it and exercise the actual From/To + Apply workflow.
+  await page.getByRole('button', {name:'Show Date Filter'}).click();
+  await expect(page.locator('#dashboardDateFilter')).toBeVisible();
+
+  const toDate = new Date();
+  const fromDate = new Date(toDate);
+  fromDate.setDate(fromDate.getDate() - 6);
+  const isoDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return \`${y}-${m}-${d}\`;
+  };
+  await page.locator('#dashboardDateFilter input[name="from"]').fill(isoDate(fromDate));
+  await page.locator('#dashboardDateFilter input[name="to"]').fill(isoDate(toDate));
+  await page.getByRole('button', {name:'Apply Filter'}).click();
   await page.waitForLoadState('networkidle');
   await expect(page.locator('.dashboard-card').filter({hasText:'Sales'}).first()).toBeVisible();
 
