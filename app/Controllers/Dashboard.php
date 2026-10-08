@@ -231,7 +231,7 @@ class Dashboard extends Controller
         return view('dashboard/index',[
             'title'=>'Dashboard','range'=>$range,
             'summary'=>['sales'=>$saleSummary['total'],'sale_count'=>$saleSummary['count'],'cash_sale'=>$saleSummary['cash'],'credit_sale'=>$saleSummary['credit']],
-            'gasTypes'=>$gasTypes,'availableGasKg'=>$availableGasKg,
+            'gasRows'=>$gasRows,'gasTypes'=>$gasTypes,'availableGasKg'=>$availableGasKg,
             'emptyTypes'=>$emptyTypes,'emptyCylinderCount'=>count($emptyRows),
             'issuedCustomers'=>$issuedCustomers,'issuedCylinderCount'=>count($issuedRows),'issuedDepositTotal'=>array_sum(array_map(static fn($x)=>(float)$x['deposit_amount'],$issuedRows)),
             'saleSummary'=>$saleSummary,'salesRows'=>$salesRows,
