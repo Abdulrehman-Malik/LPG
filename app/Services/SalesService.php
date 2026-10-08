@@ -815,11 +815,19 @@ class SalesService
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
         foreach($rows as $row){
             $cfg=$lineByUnit[(int)$row['id']];
+            // Security Deposit / Issue Cylinder allows the cashier to use the gas rate
+            // already supplied on the issue line. Only require an effective configured rate
+            // when no usable rate was supplied by the POS. This keeps the custody workflow
+            // independent from the normal gas-sale rate validation while preserving the
+            // configured rate as the default.
             $stdGas=$cfg['status']==='filled'?$this->rates->currentKgRate($transactionAt):0;
-            if($cfg['status']==='filled'&&$stdGas===null)throw new RuntimeException('No effective gas/kg rate exists.');
+            $enteredGasRate=$cfg['status']==='filled'?(float)$cfg['gas_rate']:0;
+            if($cfg['status']==='filled'&&$enteredGasRate<=0&&$stdGas===null){
+                throw new RuntimeException('No effective gas/kg rate exists.');
+            }
             $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt);
             $stdCyl=($stdCyl!==null&&$stdCyl>0)?$stdCyl:(float)$row['empty_cylinder_price'];
-            $gasRate=$cfg['gas_rate']>0?$cfg['gas_rate']:$stdGas;
+            $gasRate=$enteredGasRate>0?$enteredGasRate:($stdGas??0);
             $cylRate=$cfg['cylinder_rate']>0?$cfg['cylinder_rate']:$stdCyl;
             $gas=(float)$row['gas_weight_kg'];
             $lineTotal=$cfg['status']==='filled'?($gas*$gasRate+$cylRate):$cylRate;
