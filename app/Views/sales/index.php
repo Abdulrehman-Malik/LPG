@@ -237,7 +237,31 @@ input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
 #securityTransaction .card,#returnTransaction .card{border:1px solid #dbe5ec!important;box-shadow:none}#securityTransaction .card{border-top:3px solid #d97706!important}#returnTransaction .card{border-top:3px solid #0e7490!important}
 #securityTransaction .table thead th,#returnTransaction .table thead th{background:#f8fafc;color:#475569;font-size:.75rem;text-transform:uppercase;letter-spacing:.02em}
 #issueEmpty,#returnEmpty{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:.5rem;padding:.75rem!important;text-align:center}
-.cylinder-option{border:1px solid #d5dee8!important;box-shadow:0 1px 3px rgba(15,23,42,.04)}.cylinder-option:hover{border-color:#94a3b8!important}.cylinder-option:has(input:checked){border-color:var(--pos-accent)!important;background:#ecfdf5;box-shadow:0 0 0 2px color-mix(in srgb,var(--pos-accent) 15%,transparent)}
+/* Issue-cylinder picker: status-driven visual cards. Styling only; selection/data logic is unchanged. */
+#issuePickerCards{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.65rem!important;align-items:stretch}
+#issuePickerCards .cylinder-option{width:100%;min-width:0!important;max-width:none;min-height:92px;padding:.65rem .7rem!important;border:1px solid #d7dee7!important;border-left:5px solid #94a3b8!important;border-radius:.7rem!important;box-shadow:0 2px 7px rgba(15,23,42,.055);background:#fff;display:flex;align-items:center;gap:.65rem;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}
+#issuePickerCards .cylinder-option:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(15,23,42,.1);border-color:#94a3b8!important}
+#issuePickerCards .cylinder-option:focus-within{outline:2px solid #94a3b8;outline-offset:1px}
+#issuePickerCards .cylinder-option .cylinder-art{flex:0 0 34px;width:34px;height:48px;border-radius:12px 12px 9px 9px;background:linear-gradient(90deg,#cbd5e1,#f8fafc,#cbd5e1);border:1px solid #94a3b8;box-shadow:inset 0 0 0 4px rgba(255,255,255,.55);position:relative}
+#issuePickerCards .cylinder-option .cylinder-art:before{content:"";position:absolute;top:-5px;left:9px;width:14px;height:7px;border-radius:3px 3px 1px 1px;background:#64748b}
+#issuePickerCards .cylinder-option .cylinder-copy{flex:1;min-width:0;line-height:1.15}
+#issuePickerCards .cylinder-option .cylinder-code{display:block;font-size:.82rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#172033}
+#issuePickerCards .cylinder-option .cylinder-name{display:block;font-size:.68rem;font-weight:600;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.12rem}
+#issuePickerCards .cylinder-option .cylinder-gas{display:block;font-size:.68rem;margin-top:.3rem;white-space:nowrap;color:#334155}
+#issuePickerCards .cylinder-option .cylinder-status{display:inline-flex;align-items:center;margin-left:.25rem;padding:.12rem .38rem;border-radius:999px;font-size:.6rem;font-weight:800;letter-spacing:.01em}
+#issuePickerCards .cylinder-option.issue-status-filled{border-left-color:#16a34a!important}
+#issuePickerCards .cylinder-option.issue-status-filled .cylinder-art{border-color:#16a34a}
+#issuePickerCards .cylinder-option.issue-status-filled .cylinder-status{background:#dcfce7;color:#166534}
+#issuePickerCards .cylinder-option.issue-status-partial{border-left-color:#d97706!important}
+#issuePickerCards .cylinder-option.issue-status-partial .cylinder-art{border-color:#d97706}
+#issuePickerCards .cylinder-option.issue-status-partial .cylinder-status{background:#fef3c7;color:#92400e}
+#issuePickerCards .cylinder-option.issue-status-empty{border-left-color:#64748b!important;background:#f8fafc}
+#issuePickerCards .cylinder-option.issue-status-empty .cylinder-art{border-color:#64748b;opacity:.72}
+#issuePickerCards .cylinder-option.issue-status-empty .cylinder-status{background:#e2e8f0;color:#475569}
+#issuePickerCards .cylinder-option:has(input:checked){border-color:var(--pos-accent)!important;background:#ecfdf5;box-shadow:0 0 0 2px color-mix(in srgb,var(--pos-accent) 15%,transparent),0 6px 16px rgba(15,23,42,.08)}
+#issuePickerCards .cylinder-option:has(input:checked) .cylinder-art{border-color:var(--pos-accent)}
+#issuePickerCards .cylinder-option:has(input:checked):after{content:"✓";position:absolute;top:.45rem;right:.45rem;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--pos-accent);color:#fff;font-size:.75rem;font-weight:800}
+@media(max-width:575.98px){#issuePickerCards{grid-template-columns:1fr 1fr}#issuePickerCards .cylinder-option{min-height:88px;padding:.55rem!important}#issuePickerCards .cylinder-option .cylinder-art{flex-basis:29px;width:29px;height:43px}}
 #addLine,#openIssuePicker,#openReturnPicker{font-weight:600}#saveBtn{min-height:46px;font-size:1rem;box-shadow:0 5px 12px rgba(15,23,42,.1)}
 @media(max-width:1199.98px){.pos-summary-card{position:static}}@media(max-width:767.98px){.pos-header-row{padding:.65rem .55rem .25rem}.pos-summary-metrics{grid-template-columns:1fr}.pos-workspace .btn{min-height:40px}#saveBtn{min-height:48px}}
 </style>
@@ -800,7 +824,7 @@ function issuePickerRender(){
  document.getElementById('issuePickerCount').textContent=units.length+' available';
  if(!typeId){box.innerHTML='<div class="text-muted">Select a cylinder type.</div>';return;}
  if(!units.length){box.innerHTML='<div class="alert alert-warning w-100">No available cylinders match this filter.</div>';return;}
- box.innerHTML=units.map(u=>{const gas=Number(u.gas_weight_kg||0),cap=Number(u.capacity_kg||0),label=status==='filled'?(gas>=cap-0.00001?'Filled':'Partially Filled'):'Empty';return '<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative"><input type="checkbox" class="issuePickCheck" value="'+u.id+'" style="position:absolute;opacity:0"><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.unit_code)+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_name||u.cylinder_code||'')+'</span><span class="cylinder-gas"><strong>'+gas.toFixed(3)+' KG</strong> <span class="cylinder-status">'+label+'</span></span></span></label>';}).join('');
+ box.innerHTML=units.map(u=>{const gas=Number(u.gas_weight_kg||0),cap=Number(u.capacity_kg||0),isEmpty=gas<=0.00001,isFull=!isEmpty&&gas>=cap-0.00001,label=isEmpty?'Empty':(isFull?'Filled':'Partially Filled'),statusClass=isEmpty?'issue-status-empty':(isFull?'issue-status-filled':'issue-status-partial');return '<label class="btn btn-sm btn-outline-secondary text-start cylinder-option position-relative '+statusClass+'"><input type="checkbox" class="issuePickCheck" value="'+u.id+'" style="position:absolute;opacity:0"><span class="cylinder-art" aria-hidden="true"></span><span class="cylinder-copy"><span class="cylinder-code">'+escapeHtml(u.unit_code)+'</span><span class="cylinder-name">'+escapeHtml(u.cylinder_name||u.cylinder_code||'')+'</span><span class="cylinder-gas"><strong>'+gas.toFixed(3)+' KG</strong> <span class="cylinder-status">'+label+'</span></span></span></label>';}).join('');
 }
 function renderIssueLines(){
  const body=document.getElementById('issueLinesBody'),empty=document.getElementById('issueEmpty');
