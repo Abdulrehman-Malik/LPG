@@ -76,6 +76,47 @@ test('E2E-009 Inventory adjustment screen is usable and enforces shop-available 
 
   expect(pageErrors).toEqual([]);
 });
+
+test('E2E-010 Dashboard summary cards drill down and preserve stock tab', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
+
+  await login(page);
+  await page.goto('/dashboard',{waitUntil:'networkidle'});
+
+  for (const label of [
+    'Available Gas KG','Empty Gas Cylinders in Shop','Issued Cylinders','Sales',
+    'Cash Counter','Credit Sales / Accounts Receivable','Expenses'
+  ]) await expect(page.locator('.dashboard-card').filter({hasText:label}).first()).toBeVisible();
+
+  const checks = [
+    ['Available Gas KG','Available Gas KG — Cylinder Type & Individual Cylinders'],
+    ['Empty Gas Cylinders in Shop','Empty Gas Cylinders in Shop — Type & Individual Cylinders'],
+    ['Issued Cylinders','Issued Cylinders — Customers & Cylinder Details'],
+    ['Sales','Sales — Payment & Transaction Details'],
+    ['Cash Counter','Cash Counter — Register In / Out Movements'],
+    ['Credit Sales / Accounts Receivable','Credit Sales / Accounts Receivable — Customer OS'],
+    ['Expenses','Expenses — Category & Transaction Details']
+  ];
+  for (const [card,title] of checks) {
+    await page.locator('.dashboard-card').filter({hasText:card}).first().click();
+    await expect(page.locator('#dashboardDetailModal')).toBeVisible();
+    await expect(page.locator('#dashboardDetailTitle')).toHaveText(title);
+    await page.locator('#dashboardDetailModal .btn-close').click();
+  }
+
+  await page.getByRole('link', {name:'7 Days'}).click();
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.dashboard-card').filter({hasText:'Sales'}).first()).toBeVisible();
+
+  await page.locator('#stock-tab').click();
+  await expect(page.locator('#stock-pane')).toBeVisible();
+  await expect(page.locator('#stock-pane')).toContainText('Current Stock Details');
+
+  expect(pageErrors).toEqual([]);
+});
+
 test('E2E-003a POS transaction type switch rebuilds isolated detail UI without page errors', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
