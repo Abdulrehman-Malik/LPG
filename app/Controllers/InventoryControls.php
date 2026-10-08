@@ -35,8 +35,10 @@ class InventoryControls extends Controller
   $db=Database::connect(); $loc=(int)session()->get('location_id');
   $types=$db->table('cylinder_types')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
   $units=$db->table('cylinder_units cu')->select('cu.id,cu.unit_code,cu.gas_weight_kg,ct.code,ct.name')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cu.location_id'=>$loc,'cu.status'=>'filled'])->where('cu.gas_weight_kg >',0)->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
-  $svc=new InventoryControlService(); $rows=$svc->wastage($loc,$this->request->getGet('from'),$this->request->getGet('to'),$this->request->getGet('cylinder_type_id')!==null?(int)$this->request->getGet('cylinder_type_id'):null);
-  return view('inventory/wastage',['title'=>'Gas Wastage Report & Adjustment','types'=>$types,'units'=>$units,'rows'=>$rows]);
+  $filterFrom=(string)($this->request->getGet('from') ?? ''); $filterTo=(string)($this->request->getGet('to') ?? ''); $filterType=(string)($this->request->getGet('cylinder_type_id') ?? '');
+  $typeId=$filterType!==''?(int)$filterType:null;
+  $svc=new InventoryControlService(); $rows=$svc->wastage($loc,$filterFrom ?: null,$filterTo ?: null,$typeId);
+  return view('inventory/wastage',['title'=>'Gas Wastage Report & Adjustment','types'=>$types,'units'=>$units,'rows'=>$rows,'filterFrom'=>$filterFrom,'filterTo'=>$filterTo,'filterType'=>$filterType]);
  }
  public function recordWastage(){
   if($r=$this->guard()) return $r;
