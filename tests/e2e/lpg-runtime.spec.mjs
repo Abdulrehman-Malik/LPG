@@ -26,6 +26,56 @@ test('E2E-003 POS screen exposes configured gas-sale transaction', async ({ page
   await expect(page.locator('#saveBtn')).toContainText('Post Transaction');
 });
 
+
+test('E2E-009 Inventory adjustment screen is usable and enforces shop-available cylinder choices', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
+
+  await login(page);
+  await page.goto('/inventory/adjustments',{waitUntil:'networkidle'});
+  await expect(page.locator('h4')).toContainText('Stock Adjustment');
+
+  // New Adjustment and How It Works tabs.
+  await expect(page.locator('[data-adjust-panel="new"]')).toBeVisible();
+  await page.locator('[data-adjust-tab="guide"]').click();
+  await expect(page.locator('[data-adjust-panel="guide"]')).toBeVisible();
+  await page.locator('[data-adjust-tab="new"]').click();
+  await expect(page.locator('[data-adjust-panel="new"]')).toBeVisible();
+
+  // Color legend is present for gas, filled and empty stock.
+  await expect(page.locator('.stock-color-box.gas')).toHaveCount(1);
+  await expect(page.locator('.stock-color-box.filled')).toHaveCount(1);
+  await expect(page.locator('.stock-color-box.empty')).toHaveCount(1);
+
+  // Visible stock numbers use two decimal places.
+  const summaryNumbers = await page.locator('.row.g-2.mb-3 .fs-5').allInnerTexts();
+  for (const value of summaryNumbers) expect(value).toMatch(/\d+\.\d{2}(?: KG)?$/);
+
+  // Every cylinder type offered for adjustment has shop stock.
+  const typeOptions = await page.locator('#adjustCylinderType option').evaluateAll(opts =>
+    opts.filter(o => o.value).map(o => ({ text: o.textContent || '', shop: (o.textContent || '').match(/· (\d+) in shop/)?.[1] }))
+  );
+  for (const option of typeOptions) expect(Number(option.shop || 0)).toBeGreaterThan(0);
+
+  // Physical-cylinder selection contains only cylinders currently in the shop.
+  await page.locator('#adjustType').selectOption('filled_cylinder');
+  const typeValue = await page.locator('#adjustCylinderType option[value]').first().getAttribute('value');
+  if (typeValue) {
+    await page.locator('#adjustCylinderType').selectOption(typeValue);
+    const visibleUnits = await page.locator('#sourceCylinder option').evaluateAll(opts =>
+      opts.filter(o => o.value && !o.hidden).map(o => o.textContent || '')
+    );
+    for (const text of visibleUnits) expect(text).not.toMatch(/\bcustody\b|\bissued\b/i);
+  }
+
+  // Stock Visibility tab is available and readable.
+  await page.locator('[data-history-tab="visibility"]').click();
+  await expect(page.locator('[data-history-panel="visibility"]')).toBeVisible();
+  await expect(page.locator('[data-history-panel="visibility"] table')).toBeVisible();
+
+  expect(pageErrors).toEqual([]);
+});
 test('E2E-003a POS transaction type switch rebuilds isolated detail UI without page errors', async ({ page }) => {
   const pageErrors = [];
   page.on('pageerror', error => pageErrors.push(error.message));
