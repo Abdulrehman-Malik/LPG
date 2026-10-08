@@ -288,22 +288,56 @@ class Inventory extends Controller
     {
         if($r=$this->guard()) return $r;
         $db=Database::connect(); $locationId=$this->locationId();
-        $types=$db->table('cylinder_types')->select('id,code,name,capacity_kg,is_active,sort_order')->where('is_active',1)->orderBy('sort_order')->get()->getResultArray();
+
+        $types=$db->query(
+            "SELECT ct.id,ct.code,ct.name,ct.capacity_kg,ct.is_active,ct.sort_order,
+                    COALESCE(SUM(CASE WHEN cu.status IN ('filled','empty') THEN 1 ELSE 0 END),0) shop_count,
+                    COALESCE(SUM(CASE WHEN cu.status='filled' THEN 1 ELSE 0 END),0) shop_filled,
+                    COALESCE(SUM(CASE WHEN cu.status='empty' THEN 1 ELSE 0 END),0) shop_empty,
+                    COALESCE(SUM(CASE WHEN cu.status='custody' THEN 1 ELSE 0 END),0) issued_count
+             FROM cylinder_types ct
+             LEFT JOIN cylinder_units cu ON cu.cylinder_type_id=ct.id AND cu.location_id=?
+             WHERE ct.is_active=1
+             GROUP BY ct.id,ct.code,ct.name,ct.capacity_kg,ct.is_active,ct.sort_order
+             HAVING shop_count>0 OR issued_count>0
+             ORDER BY ct.sort_order,ct.id",
+            [$locationId]
+        )->getResultArray();
+
+        $availableTypes=array_values(array_filter($types,static fn($t)=>(int)$t['shop_count']>0));
         $inv=new \App\Services\InventoryService();
-        $rows=[['type'=>'gas_kg','id'=>'','name'=>'Gas (KG)','stock'=>$inv->stock($locationId,'gas_kg')]];
-        foreach($types as $t){$rows[]=['type'=>'filled_cylinder','id'=>$t['id'],'name'=>'Filled '.$t['name'],'stock'=>$inv->stock($locationId,'filled_cylinder',(int)$t['id'])];$rows[]=['type'=>'empty_cylinder','id'=>$t['id'],'name'=>'Empty '.$t['name'],'stock'=>$inv->stock($locationId,'empty_cylinder',(int)$t['id'])];}
+        $rows=[];
+        $gasStock=(float)$inv->stock($locationId,'gas_kg');
+        if($gasStock>0.00001) $rows[]=['type'=>'gas_kg','id'=>'','name'=>'Gas (KG)','stock'=>$gasStock,'class'=>'gas'];
+        foreach($types as $t){
+            if((int)$t['shop_filled']>0) $rows[]=['type'=>'filled_cylinder','id'=>(int)$t['id'],'name'=>'Filled '.$t['name'],'stock'=>(int)$t['shop_filled'],'class'=>'filled','issued'=>(int)$t['issued_count']];
+            if((int)$t['shop_empty']>0) $rows[]=['type'=>'empty_cylinder','id'=>(int)$t['id'],'name'=>'Empty '.$t['name'],'stock'=>(int)$t['shop_empty'],'class'=>'empty','issued'=>(int)$t['issued_count']];
+        }
+
         $units=$db->table('cylinder_units cu')->select('cu.id,cu.unit_code,cu.status,cu.gas_weight_kg,cu.cylinder_type_id,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where('cu.location_id',$locationId)->whereIn('cu.status',['filled','empty'])->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
-        $from=$this->validDate($this->request->getGet('from_date'),date('Y-m-d',strtotime('-30 days'))); $to=$this->validDate($this->request->getGet('to_date'),date('Y-m-d')); if($from>$to)[$from,$to]=[$to,$from];
-        $filterType=trim((string)$this->request->getGet('inventory_type')); $filterDirection=trim((string)$this->request->getGet('direction')); $filterScope=trim((string)$this->request->getGet('adjustment_scope')); $filterCylinder=(int)$this->request->getGet('cylinder_type_id'); $filterUnit=trim((string)$this->request->getGet('unit_code')); $search=trim((string)$this->request->getGet('q'));
+
+        $from=$this->validDate($this->request->getGet('from_date'),date('Y-m-d',strtotime('-30 days')));
+        $to=$this->validDate($this->request->getGet('to_date'),date('Y-m-d'));
+        if($from>$to)[$from,$to]=[$to,$from];
+
+        $filterType=trim((string)$this->request->getGet('inventory_type'));
+        $filterDirection=trim((string)$this->request->getGet('direction'));
+        $filterScope=trim((string)$this->request->getGet('adjustment_scope'));
+        $filterCylinder=(int)$this->request->getGet('cylinder_type_id');
+        $filterUnit=trim((string)$this->request->getGet('unit_code'));
+        $search=trim((string)$this->request->getGet('q'));
+
         $historyQuery=$db->table('inventory_adjustments ia')->select('ia.*,ct.code cylinder_code,ct.name cylinder_name,cu.unit_code source_unit_code,u.full_name')->join('cylinder_types ct','ct.id=ia.cylinder_type_id','left')->join('cylinder_units cu','cu.id=ia.source_cylinder_unit_id','left')->join('users u','u.id=ia.created_by','left')->where('ia.location_id',$locationId)->where('ia.created_at>=',$from.' 00:00:00')->where('ia.created_at<=',$to.' 23:59:59');
         if(in_array($filterType,['gas_kg','filled_cylinder','empty_cylinder'],true))$historyQuery->where('ia.inventory_type',$filterType);
         if(in_array($filterDirection,['in','out'],true))$historyQuery->where('ia.direction',$filterDirection);
         if(in_array($filterScope,['bulk','specific'],true))$historyQuery->where('ia.adjustment_scope',$filterScope);
         if($filterCylinder>0)$historyQuery->where('ia.cylinder_type_id',$filterCylinder);
         if($search!=='')$historyQuery->groupStart()->like('ia.adjustment_no',$search)->orLike('ia.reason',$search)->orLike('ia.notes',$search)->orLike('cu.unit_code',$search)->groupEnd();
+
         $history=$historyQuery->orderBy('ia.created_at','DESC')->orderBy('ia.id','DESC')->limit(500)->get()->getResultArray();
         foreach($history as &$h){$h['before_state']=json_decode((string)$h['before_state'],true)?:[];$h['after_state']=json_decode((string)$h['after_state'],true)?:[];} unset($h);
-        return view('inventory/adjustments',['title'=>'Stock Adjustment & History','rows'=>$rows,'types'=>$types,'units'=>$units,'history'=>$history,'fromDate'=>$from,'toDate'=>$to,'filterType'=>$filterType,'filterDirection'=>$filterDirection,'filterScope'=>$filterScope,'filterCylinder'=>$filterCylinder,'filterUnit'=>$filterUnit,'search'=>$search]);
+
+        return view('inventory/adjustments',['title'=>'Stock Adjustment & History','rows'=>$rows,'types'=>$availableTypes,'allTypes'=>$types,'units'=>$units,'history'=>$history,'fromDate'=>$from,'toDate'=>$to,'filterType'=>$filterType,'filterDirection'=>$filterDirection,'filterScope'=>$filterScope,'filterCylinder'=>$filterCylinder,'filterUnit'=>$filterUnit,'search'=>$search]);
     }
 
     public function adjustmentDetails(int $adjustmentId)
