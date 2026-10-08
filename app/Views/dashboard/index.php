@@ -1,3 +1,17 @@
+<?= $this->section('styles') ?>
+<style>
+.dashboard-hero{display:flex;align-items:center;gap:1rem;padding:1.25rem 1.35rem;border-radius:1rem;background:linear-gradient(135deg,#13283b,#1e4f68);color:#fff;box-shadow:0 12px 28px rgba(15,23,42,.12);overflow:hidden;position:relative}.dashboard-hero:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-80px;top:-130px;background:rgba(255,255,255,.08)}.dashboard-hero-art{display:flex;align-items:center;gap:.35rem;z-index:1}.dashboard-cylinder{width:54px;height:78px;border-radius:16px 16px 10px 10px;background:linear-gradient(90deg,#dce6ed,#fff,#aebdca);display:flex;align-items:center;justify-content:center;color:#176b83;font-size:1.7rem;box-shadow:inset 0 -8px 0 rgba(0,0,0,.08)}.dashboard-flame{font-weight:800;font-size:.72rem;background:#f59e0b;border-radius:999px;padding:.35rem .45rem;align-self:flex-end;margin-bottom:.55rem}.dashboard-period-pill{margin-left:auto;z-index:1;white-space:nowrap;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:.45rem .7rem;border-radius:999px;font-size:.78rem}.dashboard-summary-grid .col-12{display:flex}.dashboard-card{position:relative;border:1px solid #e2e8f0;border-radius:.9rem;background:#fff;padding:1rem;min-height:190px;box-shadow:0 3px 14px rgba(15,23,42,.055);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.dashboard-card:hover{transform:translateY(-3px);box-shadow:0 10px 25px rgba(15,23,42,.11);border-color:#cbd5e1}.dashboard-card-top{display:flex;justify-content:space-between;align-items:center}.dashboard-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.35rem}.dashboard-icon.gas,.type-color.gas{background:#dbeafe;color:#2563eb}.dashboard-icon.empty,.type-color.empty{background:#ffedd5;color:#c2410c}.dashboard-icon.issued,.type-color.issued{background:#ede9fe;color:#7c3aed}.dashboard-icon.sale{background:#dcfce7;color:#15803d}.dashboard-icon.cash,.type-color.cash{background:#fef3c7;color:#a16207}.dashboard-icon.receivable,.type-color.receivable{background:#fee2e2;color:#b91c1c}.dashboard-icon.expense{background:#fce7f3;color:#be185d}.dashboard-chevron{color:#94a3b8}.dashboard-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.045em;color:#64748b;font-weight:750;margin-top:.8rem}.dashboard-value{font-size:1.72rem;font-weight:800;line-height:1.15;color:#172033;margin-top:.25rem}.dashboard-value small{font-size:.75rem;font-weight:700;color:#64748b}.dashboard-sub{font-size:.76rem;color:#64748b;margin-top:.35rem}.dashboard-hint{font-size:.72rem;color:#94a3b8;margin-top:.7rem}.dashboard-payment-mini{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.65rem}.dashboard-payment-mini span{font-size:.67rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:.18rem .4rem;color:#475569}.dashboard-note{padding:.7rem .9rem;border:1px dashed #cbd5e1;border-radius:.65rem;background:#f8fafc;color:#64748b;font-size:.78rem}.detail-intro{display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;border-radius:.7rem;margin-bottom:1rem}.detail-intro i{font-size:1.5rem}.detail-intro strong{display:block;font-size:1.15rem}.detail-intro span{display:block;font-size:.78rem;color:#64748b}.gas-bg{background:#eff6ff;color:#1d4ed8}.empty-bg{background:#fff7ed;color:#c2410c}.issued-bg{background:#f5f3ff;color:#6d28d9}.receivable-bg{background:#fef2f2;color:#b91c1c}.dashboard-drill-card{border:1px solid #e2e8f0;border-radius:.65rem;margin-bottom:.65rem;overflow:hidden;background:#fff}.dashboard-drill-card summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:.55rem;padding:.8rem .9rem;font-size:.84rem}.dashboard-drill-card summary::-webkit-details-marker{display:none}.dashboard-drill-card summary:after{content:"\\f282";font-family:"bootstrap-icons";margin-left:.55rem;color:#94a3b8}.dashboard-drill-card[open] summary{background:#f8fafc;border-bottom:1px solid #e2e8f0}.type-color{display:inline-flex;width:12px;height:12px;border-radius:50%;flex:0 0 12px}.type-color.gas{background:#3b82f6}.type-color.empty{background:#f97316}.type-color.issued{background:#8b5cf6}.type-color.cash{background:#eab308}.type-color.receivable{background:#ef4444}.detail-kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.65rem;margin-bottom:1rem}.detail-kpi-grid>div{border:1px solid #e2e8f0;border-radius:.65rem;padding:.7rem;background:#f8fafc}.detail-kpi-grid span{display:block;font-size:.7rem;color:#64748b}.detail-kpi-grid strong{display:block;margin-top:.15rem;font-size:.95rem}.expense-category{border:1px solid #e2e8f0;border-radius:.65rem;padding:.65rem;background:#fff}.expense-category span,.expense-category small{display:block;color:#64748b}.expense-category strong{display:block;font-size:.95rem}@media(max-width:767.98px){.dashboard-hero{align-items:flex-start}.dashboard-period-pill{display:none}.dashboard-hero-art{display:none}.dashboard-value{font-size:1.5rem}.detail-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  const modal=document.getElementById('dashboardDetailModal'); if(!modal)return;
+  const body=document.getElementById('dashboardDetailBody'), title=document.getElementById('dashboardDetailTitle');
+  const titles={gas:'Available Gas KG — Cylinder Type & Individual Cylinders',empty:'Empty Gas Cylinders in Shop — Type & Individual Cylinders',issued:'Issued Cylinders — Customers & Cylinder Details',sales:'Sales — Payment & Transaction Details',cash:'Cash Counter — Register In / Out Movements',receivable:'Credit Sales / Accounts Receivable — Customer OS',expenses:'Expenses — Category & Transaction Details'};
+  modal.addEventListener('show.bs.modal',function(e){const target=e.relatedTarget?.getAttribute('data-detail-target');const source=document.getElementById(target);if(!source)return;title.textContent=titles[target.replace('detail-','')]||'Details';body.innerHTML=source.innerHTML;});
+});
+</script>
+\n<?= $this->endSection() ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('content') ?>
@@ -57,65 +71,164 @@ $displayStockTab = $stockTab !== '' ? $stockTab : 'filled';
 
 <div class="tab-content" id="dashboardTabContent">
     <div class="tab-pane fade <?= $stockTab === '' ? 'show active' : '' ?>" id="summary-pane" role="tabpanel" aria-labelledby="summary-tab">
-        <div class="row g-3">
-            <div class="col-12 col-md-6 col-xl">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="text-muted small">Total Sale</div>
-                        <div class="display-6 fw-semibold mt-1"><?= $money((float)$summary['sales']) ?></div>
-                        <div class="small text-muted mt-2"><?= number_format((int)$summary['sale_count']) ?> posted sales</div>
-                    </div>
-                </div>
+        <div class="dashboard-hero mb-4">
+            <div class="dashboard-hero-art"><div class="dashboard-cylinder"><i class="bi bi-fuel-pump-fill"></i></div><div class="dashboard-flame">KG</div></div>
+            <div class="flex-grow-1">
+                <div class="small text-uppercase fw-bold opacity-75">Shop overview</div>
+                <h3 class="mb-1">LPG Operations Dashboard</h3>
+                <div class="small opacity-75">Click any summary card to drill into the underlying cylinders, customers, payments or cash movements.</div>
             </div>
+            <div class="dashboard-period-pill"><i class="bi bi-calendar3 me-1"></i><?= esc($range['label']) ?></div>
+        </div>
 
-            <div class="col-12 col-md-6 col-xl">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="text-muted small">Cash Sale</div>
-                        <div class="display-6 fw-semibold mt-1"><?= $money((float)$summary['cash_sale']) ?></div>
-                        <div class="small text-muted mt-2">Cash payments against sales</div>
-                    </div>
-                </div>
+        <div class="row g-3 dashboard-summary-grid">
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card gas-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-gas">
+                    <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-fuel-pump-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Available Gas KG</div>
+                    <div class="dashboard-value"><?= number_format((float)$availableGasKg,2) ?> <small>KG</small></div>
+                    <div class="dashboard-sub"><?= number_format(count($gasRows)) ?> filled cylinders · <?= number_format(count($gasTypes)) ?> types</div>
+                    <div class="dashboard-hint">Cylinder type → individual cylinder</div>
+                </button>
             </div>
-
-            <div class="col-12 col-md-6 col-xl">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="text-muted small">Credit Sale</div>
-                        <div class="display-6 fw-semibold mt-1"><?= $money((float)$summary['credit_sale']) ?></div>
-                        <div class="small text-muted mt-2">Credit created during this period</div>
-                    </div>
-                </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card empty-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-empty">
+                    <div class="dashboard-card-top"><span class="dashboard-icon empty"><i class="bi bi-circle-square"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Empty Gas Cylinders in Shop</div>
+                    <div class="dashboard-value"><?= number_format((int)$emptyCylinderCount) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($emptyTypes)) ?> cylinder types available</div>
+                    <div class="dashboard-hint">Cylinder type → individual cylinder</div>
+                </button>
             </div>
-
-            <div class="col-12 col-md-6 col-xl">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="text-muted small">Payments</div>
-                        <div class="display-6 fw-semibold mt-1"><?= $money((float)$summary['payments']) ?></div>
-                        <div class="small text-muted mt-2">Sale payments + customer receipts</div>
-                    </div>
-                </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card issued-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-issued">
+                    <div class="dashboard-card-top"><span class="dashboard-icon issued"><i class="bi bi-person-badge-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Issued Cylinders</div>
+                    <div class="dashboard-value"><?= number_format((int)$issuedCylinderCount) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($issuedCustomers)) ?> customers · <?= $money((float)$issuedDepositTotal) ?> deposit</div>
+                    <div class="dashboard-hint">Customer → cylinder details</div>
+                </button>
             </div>
-
-            <div class="col-12 col-md-6 col-xl">
-                <div class="card h-100 shadow-sm border-0">
-                    <div class="card-body">
-                        <div class="text-muted small">Stock Purchased</div>
-                        <div class="display-6 fw-semibold mt-1"><?= $money((float)$summary['stock_purchased']) ?></div>
-                        <div class="small text-muted mt-2"><?= number_format((int)$summary['purchase_count']) ?> purchases</div>
-                        <div class="small mt-2">
-                            Gas: <strong><?= $qty((float)$summary['purchase_gas_kg']) ?> KG</strong>
-                            · Filled: <strong><?= number_format((float)$summary['purchase_filled'], 0) ?></strong>
-                            · Empty: <strong><?= number_format((float)$summary['purchase_empty'], 0) ?></strong>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card sale-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-sales">
+                    <div class="dashboard-card-top"><span class="dashboard-icon sale"><i class="bi bi-cart-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Sales</div>
+                    <div class="dashboard-value"><?= $money((float)$saleSummary['total']) ?></div>
+                    <div class="dashboard-sub"><?= number_format((int)$saleSummary['count']) ?> sales · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
+                    <div class="dashboard-payment-mini"><span>Cash <?= $money((float)$saleSummary['cash']) ?></span><span>Online <?= $money((float)$saleSummary['online']) ?></span><span>Credit <?= $money((float)$saleSummary['credit']) ?></span></div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card cash-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-cash">
+                    <div class="dashboard-card-top"><span class="dashboard-icon cash"><i class="bi bi-cash-stack"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Cash Counter</div>
+                    <div class="dashboard-value"><?= $money((float)$cashIn - (float)$cashOut) ?></div>
+                    <div class="dashboard-sub">In <?= $money((float)$cashIn) ?> · Out <?= $money((float)$cashOut) ?></div>
+                    <div class="dashboard-hint"><?= number_format(count($cashRegisters)) ?> register(s) in selected period</div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card receivable-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-receivable">
+                    <div class="dashboard-card-top"><span class="dashboard-icon receivable"><i class="bi bi-person-lines-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Credit Sales / Accounts Receivable</div>
+                    <div class="dashboard-value"><?= $money((float)$receivableTotal) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($receivables)) ?> customers with balance due</div>
+                    <div class="dashboard-hint">Current OS as of today</div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card expense-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-expenses">
+                    <div class="dashboard-card-top"><span class="dashboard-icon expense"><i class="bi bi-receipt-cutoff"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Expenses</div>
+                    <div class="dashboard-value"><?= $money((float)$expenseTotal) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($expenseRows)) ?> expense entries</div>
+                    <div class="dashboard-hint">Category and payment breakdown</div>
+                </button>
             </div>
         </div>
 
-        <div class="text-muted small mt-4">
-            The selected date range controls the five summary figures above. Current physical stock is shown in the separate Current Stock tab.
+        <div class="dashboard-note mt-4"><i class="bi bi-info-circle me-2"></i>Sales, Cash Counter and Expenses follow the selected date range. Accounts Receivable is the current outstanding OS as of today.</div>
+
+        <div class="d-none">
+            <div id="detail-gas">
+                <div class="detail-intro gas-bg"><i class="bi bi-fuel-pump-fill"></i><div><strong><?= number_format((float)$availableGasKg,2) ?> KG</strong><span>available gas in filled cylinders</span></div></div>
+                <?php if (!$gasTypes): ?><div class="alert alert-light border">No filled cylinders are currently available.</div><?php endif; ?>
+                <?php foreach($gasTypes as $type): ?>
+                    <details class="dashboard-drill-card" data-detail-type="gas">
+                        <summary><span class="type-color gas"></span><strong><?= esc($type['code'].' — '.$type['name']) ?></strong><span class="ms-auto"><?= number_format((float)$type['gas_kg'],2) ?> KG · <?= number_format((int)$type['cylinder_count']) ?> cylinders</span></summary>
+                        <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Capacity</th><th>Gas KG</th><th>Status</th><th>Updated</th></tr></thead><tbody>
+                        <?php foreach($type['rows'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['unit_code']) ?></td><td><?= number_format((float)$row['capacity_kg'],2) ?> KG</td><td class="fw-semibold"><?= number_format((float)$row['gas_weight_kg'],2) ?> KG</td><td><span class="badge text-bg-success">Filled</span></td><td><?= esc($row['updated_at']) ?></td></tr><?php endforeach; ?>
+                        </tbody></table></div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="detail-empty">
+                <div class="detail-intro empty-bg"><i class="bi bi-circle-square"></i><div><strong><?= number_format((int)$emptyCylinderCount) ?> cylinders</strong><span>empty physical cylinders in shop</span></div></div>
+                <?php if (!$emptyTypes): ?><div class="alert alert-light border">No empty cylinders are currently in the shop.</div><?php endif; ?>
+                <?php foreach($emptyTypes as $type): ?>
+                    <details class="dashboard-drill-card"><summary><span class="type-color empty"></span><strong><?= esc($type['code'].' — '.$type['name']) ?></strong><span class="ms-auto"><?= number_format((int)$type['count']) ?> cylinders</span></summary>
+                        <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Capacity</th><th>Gas KG</th><th>Status</th><th>Updated</th></tr></thead><tbody>
+                        <?php foreach($type['rows'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['unit_code']) ?></td><td><?= number_format((float)$row['capacity_kg'],2) ?> KG</td><td>0.00 KG</td><td><span class="badge text-bg-warning">Empty</span></td><td><?= esc($row['updated_at']) ?></td></tr><?php endforeach; ?>
+                        </tbody></table></div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="detail-issued">
+                <div class="detail-intro issued-bg"><i class="bi bi-person-badge-fill"></i><div><strong><?= number_format((int)$issuedCylinderCount) ?> cylinders</strong><span>currently issued to customers</span></div></div>
+                <?php if (!$issuedCustomers): ?><div class="alert alert-light border">No cylinders are currently issued to customers.</div><?php endif; ?>
+                <?php foreach($issuedCustomers as $customer): ?>
+                    <details class="dashboard-drill-card"><summary><span class="type-color issued"></span><strong><?= esc($customer['name']) ?></strong><span class="small text-muted ms-2"><?= esc($customer['code']) ?></span><span class="ms-auto"><?= number_format((int)$customer['count']) ?> cylinders · <?= $money((float)$customer['deposit']) ?></span></summary>
+                        <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Type</th><th>Condition</th><th>Gas KG</th><th>Issued</th><th>Deposit</th></tr></thead><tbody>
+                        <?php foreach($customer['rows'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['unit_code']) ?></td><td><?= esc($row['type_code'].' — '.$row['type_name']) ?></td><td><?= esc(ucfirst($row['issued_condition'])) ?></td><td><?= number_format((float)$row['gas_weight_kg'],2) ?></td><td><?= esc($row['issued_at']) ?></td><td><?= $money((float)$row['deposit_amount']) ?></td></tr><?php endforeach; ?>
+                        </tbody></table></div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="detail-sales">
+                <div class="detail-kpi-grid">
+                    <div><span>Total</span><strong><?= $money((float)$saleSummary['total']) ?></strong></div><div><span>Cash</span><strong><?= $money((float)$saleSummary['cash']) ?></strong></div><div><span>Online</span><strong><?= $money((float)$saleSummary['online']) ?></strong></div><div><span>Cheque</span><strong><?= $money((float)$saleSummary['cheque']) ?></strong></div><div><span>Credit</span><strong><?= $money((float)$saleSummary['credit']) ?></strong></div>
+                </div>
+                <div class="table-responsive"><table class="table table-sm table-hover align-middle"><thead><tr><th>Sale No.</th><th>Date / Time</th><th>Customer</th><th>Type</th><th class="text-end">Total</th><th class="text-end">Cash</th><th class="text-end">Online</th><th class="text-end">Credit</th></tr></thead><tbody>
+                <?php foreach($salesRows as $row): ?><tr><td class="fw-semibold"><?= esc($row['sale_no']) ?></td><td><?= esc($row['transaction_at']) ?></td><td><?= esc($row['customer_name'] ?: 'Walk-in / Cash') ?></td><td><?= esc(ucwords(str_replace('_',' ',$row['transaction_type']))) ?></td><td class="text-end fw-semibold"><?= $money((float)$row['total_amount']) ?></td><td class="text-end"><?= $money((float)$row['cash_amount']) ?></td><td class="text-end"><?= $money((float)$row['online_amount']) ?></td><td class="text-end"><?= $money((float)$row['credit_amount']) ?></td></tr><?php endforeach; ?>
+                <?php if(!$salesRows): ?><tr><td colspan="8" class="text-center text-muted py-4">No sales found for the selected date range.</td></tr><?php endif; ?></tbody></table></div>
+            </div>
+
+            <div id="detail-cash">
+                <div class="detail-kpi-grid"><div><span>Cash In</span><strong><?= $money((float)$cashIn) ?></strong></div><div><span>Cash Out</span><strong><?= $money((float)$cashOut) ?></strong></div><div><span>Net Counter Movement</span><strong><?= $money((float)$cashIn-(float)$cashOut) ?></strong></div></div>
+                <?php if(!$cashRegisters): ?><div class="alert alert-light border">No cash movements found for the selected date range.</div><?php endif; ?>
+                <?php foreach($cashRegisters as $register): ?><details class="dashboard-drill-card"><summary><span class="type-color cash"></span><strong><?= esc($register['code'].' — '.$register['name']) ?></strong><span class="ms-auto">In <?= $money((float)$register['in']) ?> · Out <?= $money((float)$register['out']) ?></span></summary>
+                    <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Date / Time</th><th>Movement</th><th>Direction</th><th class="text-end">Amount</th><th>Reference</th></tr></thead><tbody>
+                    <?php foreach($register['rows'] as $row): ?><tr><td><?= esc($row['transaction_at']) ?></td><td><?= esc(ucwords(str_replace('_',' ',$row['transaction_type']))) ?></td><td><span class="badge <?= $row['direction']==='in'?'text-bg-success':'text-bg-danger' ?>"><?= strtoupper(esc($row['direction'])) ?></span></td><td class="text-end fw-semibold"><?= $money((float)$row['amount']) ?></td><td><?= esc(($row['reference_type']??'').' '.($row['reference_id']??'')) ?></td></tr><?php endforeach; ?></tbody></table></div>
+                </details><?php endforeach; ?>
+            </div>
+
+            <div id="detail-receivable">
+                <div class="detail-intro receivable-bg"><i class="bi bi-person-lines-fill"></i><div><strong><?= $money((float)$receivableTotal) ?></strong><span>current outstanding customer OS as of today</span></div></div>
+                <?php if(!$receivables): ?><div class="alert alert-light border">No customer receivables are currently outstanding.</div><?php endif; ?>
+                <?php foreach($receivables as $customer): ?><details class="dashboard-drill-card"><summary><span class="type-color receivable"></span><strong><?= esc($customer['name']) ?></strong><span class="small text-muted ms-2"><?= esc($customer['code']) ?></span><span class="ms-auto"><?= $money((float)$customer['balance']) ?> due</span></summary>
+                    <div class="p-3 border-top bg-light-subtle"><div class="row g-2 small mb-2"><div class="col-md-4">Opening: <strong><?= $money((float)$customer['opening_balance']) ?></strong></div><div class="col-md-4">Credit sales: <strong><?= $money((float)$customer['credit_sales']) ?></strong></div><div class="col-md-4">Receipts: <strong><?= $money((float)$customer['receipts']) ?></strong></div></div>
+                    <?php $ledger=$receivableLedger[$customer['id']]??[]; ?><div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Date</th><th>Reference</th><th class="text-end">Credit</th><th class="text-end">Receipt</th></tr></thead><tbody>
+                    <?php foreach($ledger as $row): ?><tr><td><?= esc($row['transaction_at']) ?></td><td><?= esc($row['sale_no']??$row['receipt_no']??'') ?></td><td class="text-end"><?= $money((float)$row['credit_amount']) ?></td><td class="text-end"><?= $money((float)$row['receipt_amount']) ?></td></tr><?php endforeach; ?></tbody></table></div></div>
+                </details><?php endforeach; ?>
+            </div>
+
+            <div id="detail-expenses">
+                <div class="detail-kpi-grid"><div><span>Total Expenses</span><strong><?= $money((float)$expenseTotal) ?></strong></div><div><span>Entries</span><strong><?= number_format(count($expenseRows)) ?></strong></div></div>
+                <div class="row g-2 mb-3"><?php foreach($expenseCategories as $cat): ?><div class="col-md-4"><div class="expense-category"><span><?= esc($cat['name']) ?></span><strong><?= $money((float)$cat['amount']) ?></strong><small><?= number_format((int)$cat['count']) ?> entries</small></div></div><?php endforeach; ?></div>
+                <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Expense No.</th><th>Date</th><th>Category</th><th>Mode</th><th>Description</th><th class="text-end">Amount</th></tr></thead><tbody>
+                <?php foreach($expenseRows as $row): ?><tr><td class="fw-semibold"><?= esc($row['expense_no']) ?></td><td><?= esc($row['expense_at']) ?></td><td><?= esc($row['category_name']??'Other') ?></td><td><span class="badge text-bg-secondary"><?= esc(ucfirst($row['payment_mode'])) ?></span></td><td><?= esc($row['description']??'') ?></td><td class="text-end fw-semibold"><?= $money((float)$row['amount']) ?></td></tr><?php endforeach; ?>
+                <?php if(!$expenseRows): ?><tr><td colspan="6" class="text-center text-muted py-4">No expenses found for the selected date range.</td></tr><?php endif; ?></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="dashboardDetailModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title" id="dashboardDetailTitle">Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <div class="modal-body" id="dashboardDetailBody"></div>
+            </div></div>
         </div>
     </div>
 
