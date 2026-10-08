@@ -219,3 +219,28 @@ test('E2E-008 Configuration navigation remains available after POS regression', 
   await login(page); await page.getByText('Configuration',{exact:false}).first().click();
   await page.waitForTimeout(300); await expect(page.locator('body')).toContainText(/configuration/i);
 });
+
+
+test('E2E-011 All application screens load without HTTP, PHP, or browser errors', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
+  await login(page);
+
+  const screens = [
+    '/dashboard', '/shop-settings', '/sales', '/sales/history', '/cash', '/cash/history',
+    '/purchases', '/inventory', '/inventory/adjustments', '/inventory/controls', '/inventory/wastage',
+    '/expenses', '/receipts', '/supplier-payments', '/reports', '/reports/inventory-detail',
+    '/reports/custody', '/audit', '/customers', '/suppliers', '/cylinder-types', '/rates',
+    '/users', '/inventory/opening'
+  ];
+
+  for (const path of screens) {
+    const response = await page.goto(path, { waitUntil: 'networkidle' });
+    expect(response, path).not.toBeNull();
+    expect(response.status(), path).toBeLessThan(400);
+    await expect(page.locator('body'), path).not.toContainText(/(Whoops!|Exception|Fatal error|Undefined variable|Call to undefined|Database Error)/i);
+  }
+
+  expect(pageErrors).toEqual([]);
+});
