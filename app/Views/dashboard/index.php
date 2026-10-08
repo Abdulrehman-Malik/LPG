@@ -3,6 +3,8 @@
 <?= $this->section('styles') ?>
 <style>
 .dashboard-hero{display:flex;align-items:center;gap:1rem;padding:1.25rem 1.35rem;border-radius:1rem;background:linear-gradient(135deg,#13283b,#1e4f68);color:#fff;box-shadow:0 12px 28px rgba(15,23,42,.12);overflow:hidden;position:relative}.dashboard-hero:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-80px;top:-130px;background:rgba(255,255,255,.08)}.dashboard-hero-art{display:flex;align-items:center;gap:.35rem;z-index:1}.dashboard-cylinder{width:54px;height:78px;border-radius:16px 16px 10px 10px;background:linear-gradient(90deg,#dce6ed,#fff,#aebdca);display:flex;align-items:center;justify-content:center;color:#176b83;font-size:1.7rem;box-shadow:inset 0 -8px 0 rgba(0,0,0,.08)}.dashboard-flame{font-weight:800;font-size:.72rem;background:#f59e0b;border-radius:999px;padding:.35rem .45rem;align-self:flex-end;margin-bottom:.55rem}.dashboard-period-pill{margin-left:auto;z-index:1;white-space:nowrap;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:.45rem .7rem;border-radius:999px;font-size:.78rem}.dashboard-summary-grid .col-12{display:flex}.dashboard-card{position:relative;border:1px solid #e2e8f0;border-radius:.9rem;background:#fff;padding:1rem;min-height:190px;box-shadow:0 3px 14px rgba(15,23,42,.055);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.dashboard-card:hover{transform:translateY(-3px);box-shadow:0 10px 25px rgba(15,23,42,.11);border-color:#cbd5e1}.dashboard-card-top{display:flex;justify-content:space-between;align-items:center}.dashboard-icon{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.35rem}.dashboard-icon.gas,.type-color.gas{background:#dbeafe;color:#2563eb}.dashboard-icon.empty,.type-color.empty{background:#ffedd5;color:#c2410c}.dashboard-icon.issued,.type-color.issued{background:#ede9fe;color:#7c3aed}.dashboard-icon.sale{background:#dcfce7;color:#15803d}.dashboard-icon.cash,.type-color.cash{background:#fef3c7;color:#a16207}.dashboard-icon.receivable,.type-color.receivable{background:#fee2e2;color:#b91c1c}.dashboard-icon.expense{background:#fce7f3;color:#be185d}.dashboard-chevron{color:#94a3b8}.dashboard-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.045em;color:#64748b;font-weight:750;margin-top:.8rem}.dashboard-value{font-size:1.72rem;font-weight:800;line-height:1.15;color:#172033;margin-top:.25rem}.dashboard-value small{font-size:.75rem;font-weight:700;color:#64748b}.dashboard-sub{font-size:.76rem;color:#64748b;margin-top:.35rem}.dashboard-hint{font-size:.72rem;color:#94a3b8;margin-top:.7rem}.dashboard-payment-mini{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.65rem}.dashboard-payment-mini span{font-size:.67rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:.18rem .4rem;color:#475569}.dashboard-note{padding:.7rem .9rem;border:1px dashed #cbd5e1;border-radius:.65rem;background:#f8fafc;color:#64748b;font-size:.78rem}.detail-intro{display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;border-radius:.7rem;margin-bottom:1rem}.detail-intro i{font-size:1.5rem}.detail-intro strong{display:block;font-size:1.15rem}.detail-intro span{display:block;font-size:.78rem;color:#64748b}.gas-bg{background:#eff6ff;color:#1d4ed8}.empty-bg{background:#fff7ed;color:#c2410c}.issued-bg{background:#f5f3ff;color:#6d28d9}.receivable-bg{background:#fef2f2;color:#b91c1c}.dashboard-drill-card{border:1px solid #e2e8f0;border-radius:.65rem;margin-bottom:.65rem;overflow:hidden;background:#fff}.dashboard-drill-card summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:.55rem;padding:.8rem .9rem;font-size:.84rem}.dashboard-drill-card summary::-webkit-details-marker{display:none}.dashboard-drill-card summary:after{content:"\\f282";font-family:"bootstrap-icons";margin-left:.55rem;color:#94a3b8}.dashboard-drill-card[open] summary{background:#f8fafc;border-bottom:1px solid #e2e8f0}.type-color{display:inline-flex;width:12px;height:12px;border-radius:50%;flex:0 0 12px}.type-color.gas{background:#3b82f6}.type-color.empty{background:#f97316}.type-color.issued{background:#8b5cf6}.type-color.cash{background:#eab308}.type-color.receivable{background:#ef4444}.detail-kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.65rem;margin-bottom:1rem}.detail-kpi-grid>div{border:1px solid #e2e8f0;border-radius:.65rem;padding:.7rem;background:#f8fafc}.detail-kpi-grid span{display:block;font-size:.7rem;color:#64748b}.detail-kpi-grid strong{display:block;margin-top:.15rem;font-size:.95rem}.expense-category{border:1px solid #e2e8f0;border-radius:.65rem;padding:.65rem;background:#fff}.expense-category span,.expense-category small{display:block;color:#64748b}.expense-category strong{display:block;font-size:.95rem}@media(max-width:767.98px){.dashboard-hero{align-items:flex-start}.dashboard-period-pill{display:none}.dashboard-hero-art{display:none}.dashboard-value{font-size:1.5rem}.detail-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.dashboard-top-header{padding:.8rem 1rem;background:#fff;border:1px solid #e2e8f0;border-radius:.75rem;box-shadow:0 2px 10px rgba(15,23,42,.045)}.dashboard-top-header h4{font-weight:800;color:#172033}.dashboard-top-header #dashboardFilterToggle{font-weight:650}.dashboard-top-header + #dashboardDateFilter .card{border:1px solid #e2e8f0!important}.dashboard-top-header + #dashboardDateFilter .card-body{padding:.75rem 1rem!important}
 </style>
 
 <script>
@@ -27,35 +29,55 @@ if (!in_array($stockTab, ['filled', 'empty', 'issued'], true)) {
 $displayStockTab = $stockTab !== '' ? $stockTab : 'filled';
 ?>
 
-<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-    <div>
-        <h4 class="mb-1"><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h4>
-        <div class="text-muted small"><?= esc($range['label']) ?></div>
+<div class="dashboard-top-header d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2">
+        <h4 class="mb-0"><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h4>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="<?= site_url('dashboard?from=' . date('Y-m-d') . '&to=' . date('Y-m-d')) ?>" class="btn btn-sm <?= $range['isToday'] ? 'btn-primary' : 'btn-outline-primary' ?>">Today</a>
-        <a href="<?= site_url('dashboard?from=' . date('Y-m-d', strtotime('-6 days')) . '&to=' . date('Y-m-d')) ?>" class="btn btn-sm btn-outline-secondary">7 Days</a>
-        <a href="<?= site_url('dashboard?from=' . date('Y-m-d', strtotime('-29 days')) . '&to=' . date('Y-m-d')) ?>" class="btn btn-sm btn-outline-secondary">30 Days</a>
+    <button type="button" class="btn btn-sm btn-outline-primary" id="dashboardFilterToggle"
+            data-bs-toggle="collapse" data-bs-target="#dashboardDateFilter"
+            aria-expanded="false" aria-controls="dashboardDateFilter">
+        <i class="bi bi-funnel me-1"></i><span>Show Date Filter</span>
+    </button>
+</div>
+
+<div class="collapse mb-3" id="dashboardDateFilter">
+    <div class="card shadow-sm border-0">
+        <div class="card-body py-3">
+            <form method="get" action="<?= site_url('dashboard') ?>" class="row g-2 align-items-end">
+                <div class="col-sm-5 col-md-3">
+                    <label class="form-label small text-muted mb-1">From</label>
+                    <input type="date" name="from" class="form-control" value="<?= esc($range['from']) ?>" required>
+                </div>
+                <div class="col-sm-5 col-md-3">
+                    <label class="form-label small text-muted mb-1">To</label>
+                    <input type="date" name="to" class="form-control" value="<?= esc($range['to']) ?>" required>
+                </div>
+                <div class="col-sm-2 col-md-2">
+                    <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Apply Filter</button>
+                </div>
+                <div class="col-12 col-md-auto">
+                    <div class="small text-muted mt-1">Current range: <?= esc($range['label']) ?></div>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-body">
-        <form method="get" action="<?= site_url('dashboard') ?>" class="row g-2 align-items-end">
-            <div class="col-sm-5 col-md-3">
-                <label class="form-label small text-muted mb-1">From</label>
-                <input type="date" name="from" class="form-control" value="<?= esc($range['from']) ?>" required>
-            </div>
-            <div class="col-sm-5 col-md-3">
-                <label class="form-label small text-muted mb-1">To</label>
-                <input type="date" name="to" class="form-control" value="<?= esc($range['to']) ?>" required>
-            </div>
-            <div class="col-sm-2 col-md-2">
-                <button class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Apply</button>
-            </div>
-        </form>
-    </div>
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filter = document.getElementById('dashboardDateFilter');
+    const toggle = document.getElementById('dashboardFilterToggle');
+    if (!filter || !toggle) return;
+    filter.addEventListener('show.bs.collapse', function () {
+        toggle.querySelector('span').textContent = 'Hide Date Filter';
+        toggle.querySelector('i').className = 'bi bi-funnel-fill me-1';
+    });
+    filter.addEventListener('hide.bs.collapse', function () {
+        toggle.querySelector('span').textContent = 'Show Date Filter';
+        toggle.querySelector('i').className = 'bi bi-funnel me-1';
+    });
+});
+</script>
 
 <ul class="nav nav-tabs dashboard-tabs mb-4" id="dashboardTabs" role="tablist">
     <li class="nav-item" role="presentation">
