@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded',function(){
   modal.addEventListener('show.bs.modal',function(e){const target=e.relatedTarget?.getAttribute('data-detail-target');const source=document.getElementById(target);if(!source)return;title.textContent=titles[target.replace('detail-','')]||'Details';body.innerHTML=source.innerHTML;});
 });
 </script>
-\n<?= $this->endSection() ?>
+<?= $this->endSection() ?>
 <?= $this->extend('layouts/app') ?>
 
 <?= $this->section('content') ?>
