@@ -1175,7 +1175,8 @@ class SalesService
             }elseif($creditMode==='shop'){
                 $this->acquireCreditLimitLock($this->currentLocationId ?? 0);
                 $shopOs=$this->shopOutstanding($this->currentLocationId ?? 0);
-                $projectedShopOs=max(0,$shopOs-$settlementTotal+$creditAmount);
+                $advanceApplied=min($creditAmount,max(0,-$previousOs));
+                $projectedShopOs=max(0,$shopOs-$settlementTotal+$creditAmount-$advanceApplied);
                 $shopLimit=(float)($shopSettings['shop_credit_limit']??0);
                 if($projectedShopOs>$shopLimit+0.01){
                     $available=max(0,$shopLimit-($shopOs-$settlementTotal));
