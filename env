@@ -78,3 +78,6 @@ CI_ENVIRONMENT = development
 # backup.directory = writable/backups
 # backup.mysqldumpPath = C:/xampp/mysql/bin/mysqldump.exe
 # backup.mysqlPath = C:/xampp/mysql/bin/mysql.exe
+
+# Company name displayed on the login page and browser title.
+app.companyName = 'Perfect LPG (Pvt.) LTD'
