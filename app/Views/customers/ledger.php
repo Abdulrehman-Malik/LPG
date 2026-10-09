@@ -40,21 +40,18 @@
       <div class="tab-pane fade" id="customerReceipts">
         <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Receipt</th><th>Amount</th><th>Mode</th><th>Status</th></tr></thead><tbody>
         <?php foreach($receipts as $r): ?><tr><td><?=esc($r['receipt_at'])?></td><td><?=esc($r['receipt_no'])?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc(ucfirst($r['payment_mode']))?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
-        <?php if(!$receipts): ?><tr><td colspan="5" class="text-muted">No customer receipts found.</td></tr><?php endif; ?>
         </tbody></table></div>
       </div>
 
       <div class="tab-pane fade" id="customerDeposits">
         <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Entry</th><th>Amount</th><th>Sale</th><th>Custody</th><th>Note</th></tr></thead><tbody>
         <?php foreach($deposits as $r): ?><tr><td><?=esc($r['transaction_at'])?></td><td><?= $r['entry_type']==='hold'?'<span class="badge text-bg-success">Deposit Held</span>':'<span class="badge text-bg-danger">Deposit Refunded</span>' ?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc((string)($r['sale_id']??''))?></td><td><?=esc((string)($r['custody_id']??''))?></td><td><?=esc($r['notes']??'')?></td></tr><?php endforeach; ?>
-        <?php if(!$deposits): ?><tr><td colspan="6" class="text-muted">No security deposit entries.</td></tr><?php endif; ?>
         </tbody></table></div>
       </div>
 
       <div class="tab-pane fade" id="customerCustody">
         <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Cylinder</th><th>Type</th><th>Gas KG</th><th>Deposit Held</th><th>Issued</th><th>Status</th></tr></thead><tbody>
         <?php foreach($custody as $r): ?><tr><td><?=esc($r['unit_code'])?></td><td><?=esc($r['cylinder_code'].' — '.$r['cylinder_name'])?></td><td><?=number_format((float)$r['gas_weight_kg'],2)?></td><td>Rs. <?=number_format((float)$r['deposit_amount'],2)?></td><td><?=esc($r['issued_at'])?></td><td><span class="badge text-bg-warning">Issued / Held</span></td></tr><?php endforeach; ?>
-        <?php if(!$custody): ?><tr><td colspan="6" class="text-muted">No cylinders currently on customer custody.</td></tr><?php endif; ?>
         </tbody></table></div>
       </div>
     </div>
