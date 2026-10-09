@@ -266,3 +266,26 @@ test('E2E-012 Receipt History shows POS-generated payment with its source', asyn
   await expect(posRow).toContainText(/POSTED/i);
   expect(pageErrors).toEqual([]);
 });
+
+test('E2E-013 Customer Ledger receipt history shows POS source and payment details', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
+
+  await login(page);
+  await page.goto('/customers', { waitUntil: 'networkidle' });
+  const customerRow = page.locator('tr').filter({ hasText: 'QA-E2E-CUST' }).first();
+  await expect(customerRow).toBeVisible();
+  await customerRow.getByRole('link', { name: 'Ledger' }).click();
+  await expect(page).toHaveURL(/\/customers\/ledger\/\d+/);
+  await page.locator('[data-bs-target="#customerReceipts"]').click();
+  const history = page.locator('#customerReceipts table.datatable');
+  await expect(history.locator('thead')).toContainText('Source');
+  await expect(history.locator('thead')).toContainText('Reference');
+  await expect(history.locator('thead')).toContainText('Details');
+  const posRow = history.locator('tbody tr').filter({ hasText: /POS — gas sale \/ Sale Payment/i }).first();
+  await expect(posRow).toBeVisible();
+  await expect(posRow).toContainText(/CASH|CHEQUE|ONLINE/i);
+  await expect(posRow).toContainText(/POSTED/i);
+  expect(pageErrors).toEqual([]);
+});
