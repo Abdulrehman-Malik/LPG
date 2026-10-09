@@ -352,7 +352,7 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
   </div>
   <div class="col-md-3" id="gasEntryModeWrap" style="display:<?= $initialTransactionType === 'gas_sale' ? 'block' : 'none' ?>">
     <label class="form-label fw-semibold">Gas Entry</label>
-    <select id="gasEntryMode" class="form-select"><option value="quantity">KG</option><option value="amount">Amount</option><option value="cylinders">Cylinders</option></select>
+    <select id="gasEntryMode" class="form-select"><option value="quantity" <?= ($defaultGasEntryMode ?? 'quantity') === 'quantity' ? 'selected' : '' ?>>KG</option><option value="amount" <?= ($defaultGasEntryMode ?? 'quantity') === 'amount' ? 'selected' : '' ?>>Amount</option><option value="cylinders" <?= ($defaultGasEntryMode ?? 'quantity') === 'cylinders' ? 'selected' : '' ?>>Cylinders</option></select>
   </div>
   <div class="col-md-3">
     <label class="form-label">Customer</label>
