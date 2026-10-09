@@ -869,9 +869,6 @@ class SalesService
         $gasPreviousOs=$this->customerGasBalance($customerId);
         $gasDue=round($chargeTotal+$gasPreviousOs,2);
         $combinedReceived=array_sum(array_map(static fn($p)=>(float)$p['amount'],$combinedPayments));
-        if($combinedPayments && $combinedReceived+0.01<$depositRequired){
-            throw new RuntimeException('Security Deposit / Issue Cylinder payment must be at least the Security Deposit amount of Rs. '.number_format($depositRequired,2,'.','').'.');
-        }
         if($combinedPayments && $combinedReceived>$gasDue+$depositRequired+0.01){
             throw new RuntimeException('Payment exceeds the combined Gas / Cylinder balance and Security Deposit amount.');
         }
@@ -892,9 +889,6 @@ class SalesService
         // Security deposit receipt is independent of the amount entered for the issue transaction.
         // Accept any non-negative receipt amount; only actual receipts increase the refundable balance.
         $depositPaid=array_sum(array_map(static fn($p)=>(float)$p['amount'],$depositPayments));
-        if($combinedPayments && $depositPaid+0.01<$depositRequired){
-            throw new RuntimeException('Security Deposit payment must include at least the full Security Deposit amount.');
-        }
         if($chargeTotal>0.00001){
             if(!$salePayments)$salePayments=[['payment_mode'=>'credit','amount'=>0,'reference_no'=>null]];
             $paymentPlan=$this->prepareSalePaymentPlan($salePayments,$customerId,$chargeTotal);
