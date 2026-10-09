@@ -484,7 +484,7 @@ class SalesService
                 'status'=>'posted','transaction_at'=>$transactionAt,'total_kg'=>$totalKg,'subtotal'=>$subtotal,
                 'discount_amount'=>$discount,'total_amount'=>$total,'security_deposit_amount'=>0,
                 'security_deposit_refund_amount'=>0,'credit_amount'=>$paymentPlan['credit_amount'],
-                'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>round($paymentPlan['payment_total']+$depositPaid,2),
+                'previous_os_balance'=>$paymentPlan['previous_os'],'receipt_amount'=>round($paymentPlan['payment_total'],2),
                 'net_receivable_amount'=>$paymentPlan['net_receivable'],'os_balance'=>$paymentPlan['remaining_os'],
                 'custom_rate_flag'=>$customRate?1:0,'notes'=>$notes,'created_by'=>$userId
             ]);
