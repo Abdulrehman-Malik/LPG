@@ -387,7 +387,7 @@ class SalesService
         if(!$lines) throw new RuntimeException('At least one gas line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
-        $allowSourceSelection=(int)($shopSettings['allow_pos_source_cylinder_selection']??0)===1;
+        $allowSourceSelection=(int)($shopSettings['allow_pos_source_cylinder_selection']??0)===1;\n        // Cylinder-count entry allocates gas across available filled cylinders by stock order.\n        if ((string)($lines[0]['gas_entry_mode']??'') === 'cylinders') $allowSourceSelection=false;
 
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
         foreach($lines as $i=>$line){
@@ -395,6 +395,8 @@ class SalesService
             $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
             $sourceId=isset($line['source_cylinder_unit_id'])&&$line['source_cylinder_unit_id']!==''?(int)$line['source_cylinder_unit_id']:0;
             $qty=(float)($line['quantity']??0);
+            $entryMode=(string)($line['gas_entry_mode']??'quantity');
+            $cylinderQty=(float)($line['cylinder_quantity']??0);
             $enteredAmount=trim((string)($line['entered_amount']??''))===''?null:(float)$line['entered_amount'];
             $gasRateInput=trim((string)($line['gas_rate']??''))===''?null:(float)$line['gas_rate'];
             $targetId=isset($line['customer_cylinder_unit_id'])&&$line['customer_cylinder_unit_id']!==''?(int)$line['customer_cylinder_unit_id']:null;
@@ -404,6 +406,15 @@ class SalesService
             if(!$allowSourceSelection) $sourceId=0;
             $type=$this->types->find($typeId);
             if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on gas line '.$n.'.');
+            if($entryMode==='cylinders'){
+                if($cylinderQty<=0 || floor($cylinderQty)!==$cylinderQty) throw new RuntimeException('Cylinder quantity on gas line '.$n.' must be a positive whole number.');
+                $capacity=(float)($type['capacity_kg']??0);
+                if($capacity<=0) throw new RuntimeException('A positive cylinder capacity is required for '.$type['name'].'.');
+                $qty=$cylinderQty*$capacity;
+                $enteredAmount=null;
+                // Cylinder-count entry uses normal gas/kg pricing and stock allocation.
+                $sourceId=0;
+            }
             if($enteredAmount!==null && $enteredAmount<=0) throw new RuntimeException('Entered amount on gas line '.$n.' must be greater than zero.');
             if($gasRateInput!==null&&$gasRateInput<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
 
