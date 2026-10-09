@@ -74,6 +74,22 @@ class Sales extends Controller
         }
     }
 
+    public function customerBalance(int $id)
+    {
+        if($r=$this->guard()) return $r;
+        $customer=(new CustomerModel())->find($id);
+        if(!$customer || (int)($customer['is_active']??0)!==1) {
+            return $this->response->setStatusCode(404)->setJSON(['error'=>'Customer not found.']);
+        }
+        try {
+            $balance=(new SalesService())->customerBalance($id);
+            return $this->response->setJSON(['customer_id'=>$id,'balance'=>$balance]);
+        } catch (\\Throwable $e) {
+            log_message('error','POS customer balance refresh failed: '.$e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['error'=>'Unable to refresh customer balance.']);
+        }
+    }
+
     public function receipt(int $id)
     {
         if($r=$this->guard()) return $r;
