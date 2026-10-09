@@ -1122,8 +1122,8 @@ class SalesService
             if(!$customerId&&$mode!=='cash')throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer.':'Walk-in transactions are cash only.');
             $paymentTotal+=$amount;
         }
-        $previousOs=$customerId?max(0,$this->customerGasBalance($customerId)):0;
-        $maxReceivable=$saleTotal+$previousOs;
+        $previousOs=$customerId?$this->customerGasBalance($customerId):0;
+        $maxReceivable=max(0,round($saleTotal+$previousOs,2));
         if($customerId===null && $paymentTotal>$saleTotal+0.01)throw new RuntimeException('Payment cannot exceed the walk-in sale amount.');
         if($paymentTotal>$maxReceivable+0.01)throw new RuntimeException('Payment cannot exceed the customer net receivable of Rs. '.number_format($maxReceivable,2).'.');
 
@@ -1151,7 +1151,7 @@ class SalesService
         // current-sale credit as well.
         $explicitCreditAmount=array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
         $creditAmount=max(0,$remainingSale)+$explicitCreditAmount;
-        $newOs=max(0,$remainingOs+$creditAmount);
+        $newOs=round($remainingOs+$creditAmount,2);
         if($customerId!==null && $creditAmount>0.01){
             $customerForCredit=$this->customers->find($customerId);
             if(!$customerForCredit || !(int)$customerForCredit['is_active']) throw new RuntimeException('Customer is unavailable.');
@@ -1169,7 +1169,7 @@ class SalesService
                 // while the server silently allows unlimited credit.
                 $creditLimit=(float)($customerForCredit['credit_limit']??0);
                 if($creditLimit>0 && $newOs>$creditLimit+0.01){
-                    $available=max(0,$creditLimit-$previousOs);
+                    $available=max(0,$creditLimit-max(0,$previousOs));
                     throw new RuntimeException('Customer credit limit exceeded. Existing OS Rs. '.number_format($previousOs,2).'; available additional credit Rs. '.number_format($available,2).'.');
                 }
             }elseif($creditMode==='shop'){
@@ -1188,9 +1188,9 @@ class SalesService
 
     protected function shopOutstanding(int $locationId): float
     {
-        $sql="SELECT COALESCE(SUM(CASE WHEN (c.opening_balance+COALESCE(s.credit,0)-COALESCE(r.paid,0))>0 THEN (c.opening_balance+COALESCE(s.credit,0)-COALESCE(r.paid,0)) ELSE 0 END),0) AS shop_os
+        $sql="SELECT COALESCE(SUM(CASE WHEN (c.opening_balance+COALESCE(s.credit,0)+COALESCE(s.return_ledger,0)-COALESCE(r.paid,0))>0 THEN (c.opening_balance+COALESCE(s.credit,0)+COALESCE(s.return_ledger,0)-COALESCE(r.paid,0)) ELSE 0 END),0) AS shop_os
               FROM customers c
-              LEFT JOIN (SELECT customer_id,SUM(credit_amount) credit FROM sales WHERE location_id=? AND status='posted' AND customer_id IS NOT NULL GROUP BY customer_id) s ON s.customer_id=c.id
+              LEFT JOIN (SELECT customer_id,SUM(credit_amount) credit,SUM(return_gas_ledger_amount) return_ledger FROM sales WHERE location_id=? AND status='posted' AND customer_id IS NOT NULL GROUP BY customer_id) s ON s.customer_id=c.id
               LEFT JOIN (SELECT customer_id,SUM(amount) paid FROM customer_receipts WHERE location_id=? AND status='posted' GROUP BY customer_id) r ON r.customer_id=c.id";
         $row=$this->db->query($sql,[$locationId,$locationId])->getRowArray();
         return (float)($row['shop_os']??0);
