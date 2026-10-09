@@ -408,11 +408,17 @@ class SalesService
             if($gasRateInput!==null&&$gasRateInput<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
 
             $standardRate=$this->rates->currentKgRate($transactionAt);
-            if($standardRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
-            // Amount-entry mode is identified by a positive entered amount. The server
-            // recalculates KG from the effective current gas rate and does not trust the
-            // client-submitted quantity or gas rate.
+            // A zero rate is not usable for calculating KG from an amount.
+            if($standardRate!==null && $standardRate<=0) $standardRate=null;
+
+            // Amount-entry mode must have an effective positive rate because the
+            // server converts the entered amount to KG. In KG-entry mode, a cashier
+            // may use an explicitly entered positive custom rate even if no standard
+            // rate has been configured yet.
             if($enteredAmount!==null){
+                if($standardRate===null){
+                    throw new RuntimeException('A positive effective gas/kg rate is required for Amount entry. Configure it in Gas Rate Settings before posting this sale.');
+                }
                 $gasRate=$standardRate;
                 $qty=$enteredAmount/$standardRate;
                 if($qty<=0) throw new RuntimeException('Calculated gas quantity on line '.$n.' must be greater than zero.');
@@ -420,9 +426,16 @@ class SalesService
             }else{
                 if($qty<=0) throw new RuntimeException('Gas quantity on line '.$n.' must be greater than zero.');
                 $gasRate=$gasRateInput??$standardRate;
+                if($gasRate===null || $gasRate<=0){
+                    throw new RuntimeException($standardRate===null
+                        ? 'No effective gas/kg rate exists. Enter a positive Gas Rate for this line or configure an effective rate in Gas Rate Settings.'
+                        : 'Gas rate must be greater than zero on line '.$n.'.');
+                }
                 $lineTotal=$qty*$gasRate;
             }
-            $custom=$gasRateInput!==null&&$enteredAmount===null&&abs($gasRate-$standardRate)>0.00001;
+            $custom=$standardRate===null
+                ? ($gasRateInput!==null && $enteredAmount===null && $gasRate>0)
+                : ($gasRateInput!==null && $enteredAmount===null && abs($gasRate-$standardRate)>0.00001);
             $customRate=$customRate||$custom;
 
             $prepared[]=[
