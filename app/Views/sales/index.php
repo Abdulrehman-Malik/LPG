@@ -745,7 +745,7 @@ function recalc(){
    const totalDue=deposit+Math.max(0,saleTotal+previousOs),received=paymentTotal();
    paid=received;
    balanceAfter=Math.max(0,totalDue-received);
-   document.getElementById('combinedGasDue').textContent=(saleTotal+previousOs).toFixed(2);
+   document.getElementById('combinedGasDue').textContent=Math.max(0,saleTotal+previousOs).toFixed(2);
    document.getElementById('combinedAmountReceivedTotal').textContent=received.toFixed(2);
    document.getElementById('combinedOsAfterPayment').textContent=balanceAfter.toFixed(2);
  }else{
@@ -1079,7 +1079,7 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  }
  let pays=[];
  if(t==='security_deposit'){
-   const received=paymentTotal(),gasDue=saleTotalForPayment()+Number(document.getElementById('previousOs').textContent||0),depositDue=Number(document.getElementById('securityDeposit').value||0);
+   const received=paymentTotal(),gasDue=Math.max(0,saleTotalForPayment()+Number(document.getElementById('previousOs').textContent||0)),depositDue=Number(document.getElementById('securityDeposit').value||0);
    if(received>gasDue+depositDue+0.01)return fail('Amount received cannot exceed the total amount due.');
    pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:depositPaymentAllocationRule==='manual'?(p.querySelector('.paymentType')?.value||'sale'):'combined',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:(document.getElementById('paymentReferenceNote')?.value||'')}));
    if(depositPaymentAllocationRule==='manual'){
@@ -1093,7 +1093,7 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  const saleTotal=Number(document.getElementById('saleTotal').textContent||0),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0,refund=t==='cylinder_return'?Number(document.getElementById('refundAmount').value||0):0;
  if(t==='security_deposit'&&deposit<0)return fail('Security Deposit Amount cannot be negative.');
  if(t==='cylinder_return'&&refund>0){const refundTotal=paymentTotal('security_deposit_refund');if(!pays.length){addPayment('security_deposit_refund');return fail('Add a payment method for the security deposit refund.');}if(Math.abs(refundTotal-refund)>0.01)return fail('Refund payment total must equal the refund amount.');if(pays.some(p=>p.payment_type!=='security_deposit_refund'))return fail('Cylinder Return payments must be classified as Security Deposit Refund.');}
- if(t==='security_deposit'){const expectedGas=saleTotal+Number(document.getElementById('previousOs').textContent||0),totalDue=expectedGas+deposit,received=paymentTotal();if(received>totalDue+0.01)return fail('Amount Received cannot exceed the Total Due of Rs. '+totalDue.toFixed(2)+'.');if(!pays.length)return fail('Add a payment row or leave the default zero/blank payment row when the gas amount is going to customer credit.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(sp>expectedGas+0.01)return fail('Gas / Cylinder allocation cannot exceed Rs. '+expectedGas.toFixed(2)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
+ if(t==='security_deposit'){const expectedGas=Math.max(0,saleTotal+Number(document.getElementById('previousOs').textContent||0)),totalDue=expectedGas+deposit,received=paymentTotal();if(received>totalDue+0.01)return fail('Amount Received cannot exceed the Total Due of Rs. '+totalDue.toFixed(2)+'.');if(!pays.length)return fail('Add a payment row or leave the default zero/blank payment row when the gas amount is going to customer credit.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(sp>expectedGas+0.01)return fail('Gas / Cylinder allocation cannot exceed Rs. '+expectedGas.toFixed(2)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
  if(['gas_sale','cylinder_sale'].includes(t)){const expected=Math.max(0,saleTotal+Number(document.getElementById('previousOs').textContent||0));if(!pays.length)return fail('Add at least one payment.');if(paymentTotal()>expected+0.01)return fail('Payment cannot exceed the net receivable.');}
  document.getElementById('stock_override_confirmed').value='0';saveBtn.disabled=true;const old=saveBtn.textContent;saveBtn.textContent='Posting...';
  try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{};}catch(_e){}if(!response.ok||data.success!==true){const serverMessage=String(data.error||'').trim();if(serverMessage)throw new Error(serverMessage);if(raw&&raw.trim()&&!/^\s*</.test(raw))throw new Error(raw.trim().slice(0,500));throw new Error('Unable to post transaction. The server did not return a valid error message.');}
