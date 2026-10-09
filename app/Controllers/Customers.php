@@ -87,7 +87,7 @@ class Customers extends Controller
                         END AS receipt_type
                  FROM sale_payments sp
                  JOIN sales s ON s.id=sp.sale_id
-                 WHERE s.customer_id=? AND s.location_id=? AND sp.payment_mode <> 'credit'
+                 WHERE s.customer_id=? AND s.location_id=? AND sp.payment_mode <> 'credit' AND sp.payment_type <> 'security_deposit_refund'
              ) AS all_receipts
              ORDER BY receipt_at DESC",
             [$id,$locationId,$id,$locationId]
