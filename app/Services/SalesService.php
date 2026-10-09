@@ -387,7 +387,9 @@ class SalesService
         if(!$lines) throw new RuntimeException('At least one gas line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
         $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
-        $allowSourceSelection=(int)($shopSettings['allow_pos_source_cylinder_selection']??0)===1;\n        // Cylinder-count entry allocates gas across available filled cylinders by stock order.\n        if ((string)($lines[0]['gas_entry_mode']??'') === 'cylinders') $allowSourceSelection=false;
+        $allowSourceSelection=(int)($shopSettings['allow_pos_source_cylinder_selection']??0)===1;
+        // Cylinder-count entry allocates gas across available filled cylinders by stock order.
+        if ((string)($lines[0]['gas_entry_mode']??'') === 'cylinders') $allowSourceSelection=false;
 
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
         foreach($lines as $i=>$line){
