@@ -67,9 +67,12 @@ class Customers extends Controller
         $db=$this->model->db;
         $sales=$db->table('sales')->select('transaction_at,sale_no,transaction_type,total_amount,credit_amount,security_deposit_amount,security_deposit_refund_amount,status')->where('customer_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
         $receipts=$db->query(
-            "SELECT receipt_at,receipt_no,amount,payment_mode,status,receipt_type
+            "SELECT receipt_at,receipt_no,amount,payment_mode,status,receipt_type,source,reference_no,details
              FROM (
-                 SELECT cr.receipt_at,cr.receipt_no,cr.amount,cr.payment_mode,cr.status,'Customer Receipt' AS receipt_type
+                 SELECT cr.receipt_at,cr.receipt_no,cr.amount,cr.payment_mode,cr.status,
+                        CASE WHEN cr.notes LIKE 'OS settlement collected with sale %' THEN 'POS OS Settlement' ELSE 'Customer Receipt' END AS receipt_type,
+                        CASE WHEN cr.notes LIKE 'OS settlement collected with sale %' THEN 'POS — OS Settlement' ELSE 'Customer Receipts screen' END AS source,
+                        cr.reference_no,cr.notes AS details
                  FROM customer_receipts cr
                  WHERE cr.customer_id=? AND cr.location_id=?
                  UNION ALL
@@ -82,14 +85,25 @@ class Customers extends Controller
                         sp.amount,sp.payment_mode,s.status,
                         CASE sp.payment_type
                             WHEN 'security_deposit' THEN 'POS Security Deposit'
-                            WHEN 'security_deposit_refund' THEN 'POS Deposit Refund'
+                            WHEN 'security_deposit_refund' THEN 'POS Security Deposit Refund'
                             ELSE 'POS Sale Receipt'
-                        END AS receipt_type
+                        END AS receipt_type,
+                        CASE sp.payment_type
+                            WHEN 'security_deposit' THEN 'POS — Security Deposit'
+                            WHEN 'security_deposit_refund' THEN 'POS — Security Deposit Refund'
+                            ELSE CONCAT('POS — ',REPLACE(s.transaction_type,'_',' '),' / Sale Payment')
+                        END AS source,
+                        sp.reference_no,
+                        CASE sp.payment_type
+                            WHEN 'security_deposit' THEN CONCAT('POS security deposit payment for ',s.sale_no)
+                            WHEN 'security_deposit_refund' THEN CONCAT('POS security deposit refund for ',s.sale_no)
+                            ELSE CONCAT('POS sale payment for ',s.sale_no)
+                        END AS details
                  FROM sale_payments sp
                  JOIN sales s ON s.id=sp.sale_id
-                 WHERE s.customer_id=? AND s.location_id=? AND sp.payment_mode <> 'credit' AND sp.payment_type <> 'security_deposit_refund'
+                 WHERE s.customer_id=? AND s.location_id=? AND sp.payment_mode <> 'credit'
              ) AS all_receipts
-             ORDER BY receipt_at DESC",
+             ORDER BY receipt_at DESC,receipt_no DESC",
             [$id,$locationId,$id,$locationId]
         )->getResultArray();
         $deposits=$db->table('customer_security_deposits')->select('transaction_at,entry_type,amount,sale_id,custody_id,notes')->where('customer_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
