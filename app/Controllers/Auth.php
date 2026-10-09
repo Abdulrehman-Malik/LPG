@@ -23,10 +23,12 @@ class Auth extends Controller
 
         try {
             $migrationGate=(new MigrationRunnerService())->status();
-            return view('auth/login',['title'=>'Login — Perfect LPG (Pvt.) LTD','migrationGate'=>$migrationGate]);
+            $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
+            return view('auth/login',['title'=>'Login','companyName'=>$companyName,'migrationGate'=>$migrationGate]);
         } catch (\Throwable $e) {
             return view('auth/login',[
-                'title'=>'Login — Perfect LPG (Pvt.) LTD',
+                'title'=>'Login',
+                'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
                 'migrationGate'=>[
                     'ready'=>false,
                     'blocked_message'=>'Database migration status could not be checked.',
@@ -49,7 +51,9 @@ class Auth extends Controller
         } catch (\Throwable $e) {
             return redirect()->to(site_url('login'))->with('migration_error','Database migration status could not be checked: '.$e->getMessage());
         }
-        $rules=['login'=>'required|min_length[3]','password'=>'required|min_length[4]'];
+        // Passwords may be short (including the configured initial password '1');
+        // authentication still verifies the submitted value against the stored hash.
+        $rules=['login'=>'required|min_length[1]','password'=>'required'];
         if(!$this->validate($rules)){
             return redirect()->back()->withInput()->with('errors',$this->validator->getErrors());
         }
