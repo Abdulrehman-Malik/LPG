@@ -75,28 +75,29 @@
 #lines.gas-sale-mode td:nth-child(5) { display:none !important; }
 /* Rebalance every visible Gas Sale header and body column after hiding Customer Cylinder. */
 #lines.gas-sale-mode { width:100%; table-layout:fixed; }
+/* Cylinder Type is 1.5x wider; remaining visible columns are proportionally rebalanced. */
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(1),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(1) { width:24%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(1) { width:36%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(3),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(3) { width:16%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(3) { width:13.5%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(4),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(4) { width:18%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(4) { width:15.2%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(6),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6) { width:26%; text-align:right; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6) { width:22%; text-align:right; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(7),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) { width:16%; text-align:right; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) { width:13.3%; text-align:right; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1),
-#lines.gas-sale-mode.source-enabled td:nth-child(1) { width:18%; }
+#lines.gas-sale-mode.source-enabled td:nth-child(1) { width:27%; }
 #lines.gas-sale-mode.source-enabled th:nth-child(2),
-#lines.gas-sale-mode.source-enabled td:nth-child(2) { width:22%; }
+#lines.gas-sale-mode.source-enabled td:nth-child(2) { width:19.6%; }
 #lines.gas-sale-mode.source-enabled th:nth-child(3),
-#lines.gas-sale-mode.source-enabled td:nth-child(3) { width:12%; }
+#lines.gas-sale-mode.source-enabled td:nth-child(3) { width:10.7%; }
 #lines.gas-sale-mode.source-enabled th:nth-child(4),
-#lines.gas-sale-mode.source-enabled td:nth-child(4) { width:15%; }
+#lines.gas-sale-mode.source-enabled td:nth-child(4) { width:13.4%; }
 #lines.gas-sale-mode.source-enabled th:nth-child(6),
-#lines.gas-sale-mode.source-enabled td:nth-child(6) { width:23%; text-align:right; }
+#lines.gas-sale-mode.source-enabled td:nth-child(6) { width:20.4%; text-align:right; }
 #lines.gas-sale-mode.source-enabled th:nth-child(7),
-#lines.gas-sale-mode.source-enabled td:nth-child(7) { width:10%; text-align:right; }
+#lines.gas-sale-mode.source-enabled td:nth-child(7) { width:8.9%; text-align:right; }
 #lines.gas-sale-mode .lineTotal { min-width:0; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceCell { display:none; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceHead { display:none !important; }
