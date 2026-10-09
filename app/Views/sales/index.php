@@ -76,16 +76,17 @@
 /* Rebalance every visible Gas Sale header and body column after hiding Customer Cylinder. */
 #lines.gas-sale-mode { width:100%; table-layout:fixed; }
 /* Cylinder Type is 1.5x wider; remaining visible columns are proportionally rebalanced. */
+/* Visible Gas Sale columns only: keep Amount compact so it doesn't create a large blank gap. */
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(1),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(1) { width:36%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(1) { width:38%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(3),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(3) { width:13.5%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(3) { width:14%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(4),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(4) { width:15.2%; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(4) { width:20%; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(6),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6) { width:22%; text-align:right; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6) { width:14%; text-align:right; }
 #lines.gas-sale-mode:not(.source-enabled) th:nth-child(7),
-#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) { width:13.3%; text-align:right; }
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) { width:14%; text-align:right; }
 #lines.gas-sale-mode.source-enabled th:nth-child(1),
 #lines.gas-sale-mode.source-enabled td:nth-child(1) { width:27%; }
 #lines.gas-sale-mode.source-enabled th:nth-child(2),
