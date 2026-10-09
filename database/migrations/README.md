@@ -52,7 +52,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 028 → 029 → 030**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases. Its refresh list is authoritative for transactional/test state: whenever a later migration introduces a new transactional table, update the controlled refresh script/rule so that table is reset too, while master/configuration data remains preserved.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
@@ -103,3 +103,5 @@ Never reuse an existing sequence number.
 - none means no credit-limit restriction; customer validates the selected customer's projected OS; shop validates projected positive OS across the branch and ignores individual customer credit limits.
 - Shop-level validation uses a branch-wide database lock to prevent concurrent credit sales from collectively exceeding the shop limit.
 - These rules are enforced server-side; POS display/JavaScript is only an early user-feedback layer.
+
+- `031_20261009_default_gas_entry_mode.sql` — adds the branch-level default Gas Entry option (KG, Amount, or Cylinders) for Gas Sale / Refill.
