@@ -51,6 +51,12 @@ class Dashboard extends Controller
     {
         if ($r = $this->guard()) return $r;
 
+        // Dashboard totals are transaction-sensitive; prevent browsers/proxies from
+        // reusing a stale rendered summary after a POS transaction is posted.
+        $this->response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $this->response->setHeader('Pragma', 'no-cache');
+        $this->response->setHeader('Expires', '0');
+
         $db = Database::connect();
         $locationId = (int) (session()->get('location_id') ?? 0);
         $range = $this->dateRange();
