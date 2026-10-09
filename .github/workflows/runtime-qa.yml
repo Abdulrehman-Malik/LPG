@@ -116,7 +116,7 @@ jobs:
           set -e
           npm install --no-save --no-package-lock @playwright/test
           npx playwright install --with-deps chromium
-          npx playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-002|E2E-003a|E2E-004|E2E-009|E2E-010|E2E-011|E2E-012" --workers=1
+          npx playwright test tests/e2e/lpg-runtime.spec.mjs --grep "E2E-002|E2E-003a|E2E-004|E2E-009|E2E-010|E2E-011|E2E-012|E2E-013" --workers=1
 
       - name: Upload runtime logs
         if: always()
