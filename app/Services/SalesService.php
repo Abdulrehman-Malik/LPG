@@ -1152,7 +1152,7 @@ class SalesService
         $explicitCreditAmount=array_sum(array_map(static fn($p)=>(string)$p['payment_mode']==='credit'?(float)$p['amount']:0,$salePayments));
         $creditAmount=max(0,$remainingSale)+$explicitCreditAmount;
         $newOs=round($remainingOs+$creditAmount,2);
-        if($customerId!==null && $creditAmount>0.01){
+        if($customerId!==null && $newOs>0.01){
             $customerForCredit=$this->customers->find($customerId);
             if(!$customerForCredit || !(int)$customerForCredit['is_active']) throw new RuntimeException('Customer is unavailable.');
             if(!(int)($customerForCredit['allow_credit_sale']??0)){
