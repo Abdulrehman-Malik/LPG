@@ -84,7 +84,7 @@ class Sales extends Controller
         try {
             $balance=(new SalesService())->customerBalance($id);
             return $this->response->setJSON(['customer_id'=>$id,'balance'=>$balance]);
-        } catch (\\Throwable $e) {
+        } catch (\Throwable $e) {
             log_message('error','POS customer balance refresh failed: '.$e->getMessage());
             return $this->response->setStatusCode(500)->setJSON(['error'=>'Unable to refresh customer balance.']);
         }
