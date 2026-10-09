@@ -70,6 +70,21 @@
 #lines.cylinder-sale-mode td:nth-child(8) { text-align:right; white-space:nowrap; padding-left:.15rem; padding-right:.15rem; }
 #lines.cylinder-sale-mode td:nth-child(8) .remove { width:28px; height:28px; min-width:28px; min-height:28px; padding:0; font-size:.8rem; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
 #lines.gas-sale-mode .sourceCell { display:table-cell; }
+/* Customer Cylinder is intentionally hidden on the POS face; keep the existing field/serialization intact. */
+#lines.gas-sale-mode th:nth-child(5),
+#lines.gas-sale-mode td:nth-child(5) { display:none !important; }
+/* Rebalance visible Gas Sale columns after hiding Customer Cylinder. */
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:27%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:23%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:22%}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:18%; text-align:right}
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7){width:10%; text-align:right}
+#lines.gas-sale-mode.source-enabled th:nth-child(1){width:20%}
+#lines.gas-sale-mode.source-enabled th:nth-child(2){width:24%}
+#lines.gas-sale-mode.source-enabled th:nth-child(3){width:14%}
+#lines.gas-sale-mode.source-enabled th:nth-child(4){width:17%}
+#lines.gas-sale-mode.source-enabled th:nth-child(6){width:17%; text-align:right}
+#lines.gas-sale-mode.source-enabled th:nth-child(7){width:8%; text-align:right}
 #lines.gas-sale-mode:not(.source-enabled) .sourceCell { display:none; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceHead { display:none !important; }
 #lines.cylinder-sale-mode .cylStatus { min-width:0; }
