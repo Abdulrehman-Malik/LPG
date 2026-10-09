@@ -50,6 +50,15 @@
                         </select>
                         <div class="form-text">This value is selected automatically when the POS opens. It must be one of the visible transaction types.</div>
                     </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Default Gas Entry</label>
+                        <select name="default_gas_entry_mode" class="form-select">
+                            <option value="quantity" <?= ($settings['default_gas_entry_mode'] ?? 'quantity') === 'quantity' ? 'selected' : '' ?>>KG</option>
+                            <option value="amount" <?= ($settings['default_gas_entry_mode'] ?? 'quantity') === 'amount' ? 'selected' : '' ?>>Amount</option>
+                            <option value="cylinders" <?= ($settings['default_gas_entry_mode'] ?? 'quantity') === 'cylinders' ? 'selected' : '' ?>>Cylinders</option>
+                        </select>
+                        <div class="form-text">The selected entry method will be preselected whenever Gas Sale / Refill opens on the POS. Cashiers can still change it for an individual sale.</div>
+                    </div>
                     <div class="col-md-7">
                         <label class="form-label">POS Transaction Type Visibility</label>
                         <?php $visibleTypes = (new \App\Models\ShopSettingsModel())->visibleTransactionTypes($settings); ?>
