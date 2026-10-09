@@ -73,18 +73,31 @@
 /* Customer Cylinder is intentionally hidden on the POS face; keep the existing field/serialization intact. */
 #lines.gas-sale-mode th:nth-child(5),
 #lines.gas-sale-mode td:nth-child(5) { display:none !important; }
-/* Rebalance visible Gas Sale columns after hiding Customer Cylinder. */
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1){width:27%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3){width:23%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4){width:22%}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6){width:18%; text-align:right}
-#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7){width:10%; text-align:right}
-#lines.gas-sale-mode.source-enabled th:nth-child(1){width:20%}
-#lines.gas-sale-mode.source-enabled th:nth-child(2){width:24%}
-#lines.gas-sale-mode.source-enabled th:nth-child(3){width:14%}
-#lines.gas-sale-mode.source-enabled th:nth-child(4){width:17%}
-#lines.gas-sale-mode.source-enabled th:nth-child(6){width:17%; text-align:right}
-#lines.gas-sale-mode.source-enabled th:nth-child(7){width:8%; text-align:right}
+/* Rebalance every visible Gas Sale header and body column after hiding Customer Cylinder. */
+#lines.gas-sale-mode { width:100%; table-layout:fixed; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(1),
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(1) { width:24%; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(3),
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(3) { width:16%; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(4),
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(4) { width:18%; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(6),
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(6) { width:26%; text-align:right; }
+#lines.gas-sale-mode:not(.source-enabled) th:nth-child(7),
+#lines.gas-sale-mode:not(.source-enabled) td:nth-child(7) { width:16%; text-align:right; }
+#lines.gas-sale-mode.source-enabled th:nth-child(1),
+#lines.gas-sale-mode.source-enabled td:nth-child(1) { width:18%; }
+#lines.gas-sale-mode.source-enabled th:nth-child(2),
+#lines.gas-sale-mode.source-enabled td:nth-child(2) { width:22%; }
+#lines.gas-sale-mode.source-enabled th:nth-child(3),
+#lines.gas-sale-mode.source-enabled td:nth-child(3) { width:12%; }
+#lines.gas-sale-mode.source-enabled th:nth-child(4),
+#lines.gas-sale-mode.source-enabled td:nth-child(4) { width:15%; }
+#lines.gas-sale-mode.source-enabled th:nth-child(6),
+#lines.gas-sale-mode.source-enabled td:nth-child(6) { width:23%; text-align:right; }
+#lines.gas-sale-mode.source-enabled th:nth-child(7),
+#lines.gas-sale-mode.source-enabled td:nth-child(7) { width:10%; text-align:right; }
+#lines.gas-sale-mode .lineTotal { min-width:0; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceCell { display:none; }
 #lines.gas-sale-mode:not(.source-enabled) .sourceHead { display:none !important; }
 #lines.cylinder-sale-mode .cylStatus { min-width:0; }
