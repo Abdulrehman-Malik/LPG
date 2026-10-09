@@ -735,14 +735,14 @@ function recalc(){
  saleTotal=Math.max(0,saleTotal-discount);
  const customer=selectedCustomer(),previousOs=customer?Number(customer.balance||0):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
- const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:(saleTotal+previousOs));
+ const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:Math.max(0,saleTotal+previousOs));
  document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
  document.getElementById('previousOs').textContent=previousOs.toFixed(2);
  document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
 
  let paid=0,balanceAfter=0;
  if(t==='security_deposit'){
-   const totalDue=deposit+saleTotal+previousOs,received=paymentTotal();
+   const totalDue=deposit+Math.max(0,saleTotal+previousOs),received=paymentTotal();
    paid=received;
    balanceAfter=Math.max(0,totalDue-received);
    document.getElementById('combinedGasDue').textContent=(saleTotal+previousOs).toFixed(2);
@@ -751,7 +751,7 @@ function recalc(){
  }else{
    const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
    paid=refundPaid;
-   balanceAfter=Math.max(0,netReceivable-paid);
+   const collected=[...payments.querySelectorAll('.payment')].reduce((sum,p)=>sum+((p.querySelector('.mode')?.value||'')==='credit'?0:Number(p.querySelector('.amount').value||0)),0);balanceAfter=previousOs+saleTotal-collected;
  }
  document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
