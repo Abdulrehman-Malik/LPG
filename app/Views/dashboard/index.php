@@ -10,6 +10,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded',function(){
+  // Refresh dashboard data when returning from POS in another tab.
+  // Preserve the current URL/date filter and do not interrupt an open drill-down modal.
+  let dashboardWasHidden=false;
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){dashboardWasHidden=true;return;}
+    if(dashboardWasHidden){
+      dashboardWasHidden=false;
+      if(!document.querySelector('.modal.show')) window.location.reload();
+    }
+  });
+  window.addEventListener('pageshow',function(event){
+    if(event.persisted) window.location.reload();
+  });
+
   // Promote the shop overview hero to the top of the dashboard and place the date filter inside it.
   const hero=document.querySelector('.dashboard-hero');
   const contentWrap=document.querySelector('.content-wrap');
