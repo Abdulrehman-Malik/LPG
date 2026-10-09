@@ -893,7 +893,7 @@ class SalesService
             }
         }
         $gasPreviousOs=$this->customerGasBalance($customerId);
-        $gasDue=round($chargeTotal+$gasPreviousOs,2);
+        $gasDue=max(0,round($chargeTotal+$gasPreviousOs,2));
         $combinedReceived=array_sum(array_map(static fn($p)=>(float)$p['amount'],$combinedPayments));
         if($combinedPayments && $combinedReceived>$gasDue+$depositRequired+0.01){
             throw new RuntimeException('Payment exceeds the combined Gas / Cylinder balance and Security Deposit amount.');
