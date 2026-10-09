@@ -38,8 +38,8 @@
       </div>
 
       <div class="tab-pane fade" id="customerReceipts">
-        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Receipt / Reference</th><th>Type</th><th>Amount</th><th>Mode</th><th>Status</th></tr></thead><tbody>
-        <?php foreach($receipts as $r): ?><tr><td><?=esc($r['receipt_at'])?></td><td><?=esc($r['receipt_no'])?></td><td><?=esc($r['receipt_type']??'Customer Receipt')?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc(ucfirst($r['payment_mode']))?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
+        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>Receipt / Transaction</th><th>Type</th><th>Amount</th><th>Mode</th><th>Source</th><th>Status</th><th>Reference</th><th>Details</th></tr></thead><tbody>
+        <?php foreach($receipts as $r): ?><tr><td><?=esc($r['receipt_at'])?></td><td><?=esc($r['receipt_no'])?></td><td><?=esc($r['receipt_type']??'Customer Receipt')?></td><td>Rs. <?=number_format((float)$r['amount'],2)?></td><td><?=esc(strtoupper($r['payment_mode']))?></td><td><?=esc($r['source']??'Unknown')?></td><td><span class="badge text-bg-<?=($r['status']??'')==='posted'?'success':'secondary'?>"><?=esc(strtoupper($r['status']??'UNKNOWN'))?></span></td><td><?=esc($r['reference_no']??'')?></td><td><?=esc($r['details']??'')?></td></tr><?php endforeach; ?>
         </tbody></table></div>
       </div>
 
