@@ -65,7 +65,7 @@ class Customers extends Controller
         $customer=$this->model->withLedgerTotals($id,$locationId);
         if(!$customer) return $this->response->setStatusCode(404)->setBody('Customer not found');
         $db=$this->model->db;
-        $sales=$db->table('sales')->select('transaction_at,sale_no,transaction_type,total_amount,credit_amount,security_deposit_amount,security_deposit_refund_amount,status')->where('customer_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
+        $sales=$db->table('sales')->select('transaction_at,sale_no,transaction_type,total_amount,credit_amount,return_gas_ledger_amount,security_deposit_amount,security_deposit_refund_amount,status')->where('customer_id',$id)->where('location_id',$locationId)->orderBy('transaction_at','DESC')->get()->getResultArray();
         $receipts=$db->query(
             "SELECT receipt_at,receipt_no,amount,payment_mode,status,receipt_type,source,reference_no,details
              FROM (
