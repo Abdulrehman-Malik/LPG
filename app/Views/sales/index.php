@@ -662,6 +662,12 @@ function recalc(){
        const rate=Number(tr.querySelector('.gasRate')?.value||0);
        gas=rate>0&&amountEntered>0?amountEntered/rate:0;
        tr.querySelector('.qty').value=gas>0?gas.toFixed(3):'0';
+     }else if(mode==='cylinders'){
+       const type=types.find(x=>String(x.id)===String(typeId)),capacity=Math.max(0,Number(type?.capacity_kg||0));
+       const count=Math.max(0,Number(tr.querySelector('.cylinderQty')?.value||0));
+       gas=capacity*count;
+       tr.querySelector('.qty').value=gas.toFixed(3);
+       tr.querySelector('.enteredAmount').value=gas>0&&Number(tr.querySelector('.gasRate').value||0)>0?(gas*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';
      }else{
        tr.querySelector('.enteredAmount').value=Number(tr.querySelector('.qty').value||0)>0&&Number(tr.querySelector('.gasRate').value||0)>0
          ?(Number(tr.querySelector('.qty').value)*Number(tr.querySelector('.gasRate').value)).toFixed(2):'';
@@ -670,7 +676,15 @@ function recalc(){
      const prior=Number(usedByType[typeId]||0),remaining=Math.max(0,available-prior);
      tr.querySelector('.availableGas')?.replaceChildren(document.createTextNode(remaining.toFixed(2)+' KG'));
      tr.querySelector('.qty').max=Math.max(0,remaining);
-     if(gas>remaining && tr.dataset.entryMode!=='amount'){
+     if(gas>remaining && tr.dataset.entryMode==='cylinders'){
+       const type=types.find(x=>String(x.id)===String(typeId)),capacity=Math.max(0,Number(type?.capacity_kg||0));
+       const allowedCount=capacity>0?Math.floor((remaining+0.00001)/capacity):0;
+       tr.querySelector('.cylinderQty').value=allowedCount;
+       tr.querySelector('.entryValue').value=allowedCount;
+       gas=allowedCount*capacity;
+       tr.querySelector('.qty').value=gas.toFixed(3);
+       tr.querySelector('.enteredAmount').value=(gas*Number(tr.querySelector('.gasRate').value||0)).toFixed(2);
+     }else if(gas>remaining && tr.dataset.entryMode!=='amount'){
        tr.querySelector('.qty').value=remaining;gas=remaining;
        tr.querySelector('.enteredAmount').value=(remaining*Number(tr.querySelector('.gasRate').value||0)).toFixed(2);
      }
