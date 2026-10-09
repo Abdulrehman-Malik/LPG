@@ -546,6 +546,28 @@ function refreshCustomer(){
  if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
  box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
 }
+let balanceRefreshInProgress=false;
+async function refreshSelectedCustomerBalance(){
+ const id=selectedCustomerId();
+ if(!id||balanceRefreshInProgress)return;
+ balanceRefreshInProgress=true;
+ try{
+  const response=await fetch(<?=json_encode(site_url('sales/customer-balance'))?>+'/'+encodeURIComponent(id),{headers:{'Accept':'application/json'},credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)return;
+  const data=await response.json();
+  if(String(data.customer_id)!==String(id)||!Number.isFinite(Number(data.balance)))return;
+  balances[id]=Number(data.balance);
+  if(String(selectedCustomerId())!==String(id))return;
+  document.getElementById('previousOs').textContent=Number(data.balance).toFixed(2);
+  refreshCustomer();
+ }catch(error){
+  console.warn('Unable to refresh POS customer OS balance.',error);
+ }finally{
+  balanceRefreshInProgress=false;
+ }
+}
+window.addEventListener('focus',refreshSelectedCustomerBalance);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSelectedCustomerBalance();});
 function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
 }
