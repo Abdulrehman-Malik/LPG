@@ -54,6 +54,7 @@ class ShopSettings extends Controller
         $locationId = (int) session()->get('location_id');
         $saleMode = trim((string) $this->request->getPost('default_sale_mode'));
         $transactionType = trim((string) $this->request->getPost('default_transaction_type'));
+        $gasEntryMode = trim((string) $this->request->getPost('default_gas_entry_mode'));
         $paymentMode = trim((string) $this->request->getPost('default_payment_mode'));
         $visibleTransactionTypes = array_values(array_unique(array_intersect(
             array_map('strval', (array) $this->request->getPost('pos_visible_transaction_types')),
@@ -89,6 +90,9 @@ class ShopSettings extends Controller
 
         if (!in_array($saleMode, ShopSettingsModel::SALE_MODES, true)) {
             $saleMode = 'sell_gas_only';
+        }
+        if (!in_array($gasEntryMode, ['quantity','amount','cylinders'], true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid default gas entry mode.');
         }
         if (!in_array($transactionType, ShopSettingsModel::TRANSACTION_TYPES, true)) {
             return redirect()->back()->withInput()->with('error', 'Invalid default POS transaction type.');
@@ -133,6 +137,7 @@ class ShopSettings extends Controller
                 'location_id' => $locationId,
                 'default_sale_mode' => $saleMode,
                 'default_transaction_type' => $transactionType,
+                'default_gas_entry_mode' => $gasEntryMode,
                 'pos_visible_transaction_types' => json_encode($visibleTransactionTypes, JSON_UNESCAPED_UNICODE),
                 'individual_cylinder_tracking' => $individualCylinderTracking,
                 'allow_pos_source_cylinder_selection' => $allowPosSourceCylinderSelection,
