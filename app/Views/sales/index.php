@@ -523,7 +523,7 @@ function refreshWalkInCustomerOption(resetSelection=false){
 }
 function refreshCustomer(){
  const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalanceValue');
- if(osBox)osBox.textContent=(c?Math.max(0,c.balance):0).toFixed(2);
+ if(osBox)osBox.textContent=(c?c.balance:0).toFixed(2);
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
  const depositBalance=Math.max(0,Number((window.depositBalances||{})[String(selectedCustomerId())]||0));
@@ -842,7 +842,7 @@ function handleTransactionTypeChange(){
    refreshForm();
    rebuildLines();
    const c=selectedCustomer();
-   const previousOs=c?Math.max(0,c.balance):0;
+   const previousOs=c?c.balance:0;
    document.getElementById('previousOs').textContent=previousOs.toFixed(2);
    document.getElementById('customerOsBalanceValue').textContent=previousOs.toFixed(2);
    setCustodyLists();
@@ -991,8 +991,8 @@ document.getElementById('customer_id').onchange=()=>{
   refreshForm();
   if(selected){
     const c=selectedCustomer();
-    document.getElementById('previousOs').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
-    document.getElementById('customerOsBalanceValue').textContent=(c?Math.max(0,c.balance):0).toFixed(2);
+    document.getElementById('previousOs').textContent=(c?c.balance:0).toFixed(2);
+    document.getElementById('customerOsBalanceValue').textContent=(c?c.balance:0).toFixed(2);
   }else{
     document.getElementById('previousOs').textContent='0.00';
     document.getElementById('customerOsBalanceValue').textContent='0.00';
