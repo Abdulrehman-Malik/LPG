@@ -751,7 +751,7 @@ function recalc(){
  }else{
    const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
    paid=refundPaid;
-   const collected=[...payments.querySelectorAll('.payment')].reduce((sum,p)=>sum+((p.querySelector('.mode')?.value||'')==='credit'?0:Number(p.querySelector('.amount').value||0)),0);balanceAfter=previousOs+saleTotal-collected;
+   const collected=[...payments.querySelectorAll('.payment')].reduce((sum,p)=>sum+((p.querySelector('.mode')?.value||'')==='credit'?0:Number(p.querySelector('.amount').value||0)),0);balanceAfter=t==='cylinder_return'?previousOs:previousOs+saleTotal-collected;
  }
  document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
  document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
