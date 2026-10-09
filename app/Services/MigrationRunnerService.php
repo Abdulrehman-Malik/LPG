@@ -115,6 +115,7 @@ class MigrationRunnerService
             27 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='deposit_payment_allocation_rule'",
             28 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_HISTORY'",
             29 => "SELECT IF(COUNT(*)=0,1,0) ok FROM shop_settings WHERE deposit_payment_allocation_rule='gas_first'",
+            31 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='default_gas_entry_mode'",
         ];
 
         if (!isset($checks[$migration['seq']])) {
