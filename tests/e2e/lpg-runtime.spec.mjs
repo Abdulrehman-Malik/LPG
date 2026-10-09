@@ -247,3 +247,22 @@ test('E2E-011 All application screens load without HTTP, PHP, or browser errors'
 
   expect(pageErrors).toEqual([]);
 });
+
+test('E2E-012 Receipt History shows POS-generated payment with its source', async ({ page }) => {
+  const pageErrors = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') pageErrors.push(message.text()); });
+
+  await login(page);
+  await page.goto('/receipts', { waitUntil: 'networkidle' });
+  await expect(page.locator('h4')).toContainText('Customer Receipts');
+  const history = page.locator('table.datatable').last();
+  await expect(history.locator('thead')).toContainText('Source');
+  await expect(history.locator('thead')).toContainText('Status');
+  const posRow = history.locator('tbody tr').filter({ hasText: /POS — gas sale \/ Sale Payment/i }).first();
+  await expect(posRow).toBeVisible();
+  await expect(posRow).toContainText(/QA-E2E-CUST|QA E2E Customer/i);
+  await expect(posRow).toContainText(/CASH|CHEQUE|ONLINE/i);
+  await expect(posRow).toContainText(/POSTED/i);
+  expect(pageErrors).toEqual([]);
+});
