@@ -733,7 +733,7 @@ function recalc(){
  }
  const discount=Math.max(0,Number(document.getElementById('discount').value||0));
  saleTotal=Math.max(0,saleTotal-discount);
- const customer=selectedCustomer(),previousOs=customer?Math.max(0,customer.balance):0;
+ const customer=selectedCustomer(),previousOs=customer?Number(customer.balance||0):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
  const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:(saleTotal+previousOs));
  document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
