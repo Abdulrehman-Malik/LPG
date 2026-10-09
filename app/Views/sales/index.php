@@ -1034,6 +1034,9 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
    document.getElementById('posSuccessAlert').scrollIntoView({behavior:'smooth',block:'start'});
    saveBtn.disabled=true;
    saveBtn.textContent='Transaction Posted';
+   // Reload POS data after posting to reset inputs and refresh dropdown options.
+   window.location.assign(data.redirect || window.location.href);
+   return false;
  }else{
    throw new Error('Transaction posted, but the receipt URL was not returned.');
  }}catch(err){saveBtn.disabled=false;saveBtn.textContent=old;return fail(err.message);}
