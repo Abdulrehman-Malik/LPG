@@ -494,7 +494,16 @@ Before considering the application release-ready, explicitly execute and record:
 - Confirm credit-sale eligibility and credit-limit rules remain enforced server-side for the gas/cylinder portion.
 - Confirm successful posting opens the receipt as a preview and does not auto-print.
 
-### Security Deposit zero-receipt / compact payment regression
+### Negative Customer OS / Advance Credit Regression
+- Customer has OS Rs. 1,000; post receipt Rs. 1,500. Receipts, POS, customer ledger, and customer balance endpoint show -Rs. 500.
+- With OS -Rs. 500 and a sale of Rs. 200 with no collection, resulting OS remains -Rs. 300; net receivable is Rs. 0 and POS does not reject the transaction because expected collection is negative.
+- With OS -Rs. 100 and a sale of Rs. 200, the net receivable is Rs. 100. Collecting Rs. 100 results in OS Rs. 0; collecting Rs. 50 results in OS Rs. 50.
+- With a negative OS, credit-limit availability is calculated from positive amount due only; a customer advance does not incorrectly appear as an exceeded credit limit.
+- Customer ledger balance includes `return_gas_ledger_amount`, matching the POS/customer balance calculation.
+- Shop-level receivables and credit-limit totals include return-gas ledger adjustments but do not subtract negative customer credits from total receivables.
+- **Status:** NOT EXECUTED (requires application/database runtime).
+
+## Security Deposit zero-receipt / compact payment regression
 - With Security Deposit / Issue Cylinder selected, a blank or zero payment amount is permitted when the gas/cylinder charge is being posted to customer credit.
 - Credit eligibility and credit-limit validation remain the same as Gas Sale: projected customer OS must remain within the applicable limit.
 - A positive Security Deposit Amount still requires an actual non-credit deposit payment; deposit liability is never converted into gas-sale revenue.
