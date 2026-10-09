@@ -542,7 +542,7 @@ function refreshCustomer(){
    if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Shop credit limit reached.');return c;}
    box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+shopCreditLimit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
  }
- const available=Math.max(0,c.limit-c.balance);
+ const available=Math.max(0,c.limit-Math.max(0,c.balance));
  if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
  box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
 }
