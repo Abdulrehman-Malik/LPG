@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= esc($title ?? 'Login') ?></title>
+    <?php $companyName = trim((string)($companyName ?? env('app.companyName', 'Perfect LPG (Pvt.) LTD'))) ?: 'Perfect LPG (Pvt.) LTD'; ?>
+    <title><?= esc(($title ?? 'Login') . ' — ' . $companyName) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
@@ -71,7 +72,7 @@
             <div class="card login-card">
                 <div class="login-brand text-center">
                     <i class="bi bi-fire"></i>
-                    <h4 class="mt-2 mb-0 fw-bold">Perfect LPG (Pvt.) LTD</h4>
+                    <h4 class="mt-2 mb-0 fw-bold"><?= esc($companyName) ?></h4>
                     <small class="opacity-75">Distribution &amp; Cylinder Inventory System</small>
                 </div>
                 <div class="card-body p-4 p-md-5">
@@ -220,7 +221,7 @@
                 </div>
             </div>
             <p class="text-center text-white-50 mt-3 small mb-0">
-                &copy; <?= date('Y') ?> Perfect LPG (Pvt.) LTD. All rights reserved.
+                &copy; <?= date('Y') ?> <?= esc($companyName) ?>. All rights reserved.
             </p>
         </div>
     </div>
