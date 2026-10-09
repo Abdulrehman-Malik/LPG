@@ -32,8 +32,8 @@
       </div>
 
       <div class="tab-pane fade" id="customerSales">
-        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>No.</th><th>Type</th><th>Total</th><th>Credit</th><th>Deposit</th><th>Refund</th><th>Status</th></tr></thead><tbody>
-        <?php foreach($sales as $r): ?><tr><td><?=esc($r['transaction_at'])?></td><td><?=esc($r['sale_no'])?></td><td><?=esc(ucwords(str_replace('_',' ',$r['transaction_type'])))?></td><td>Rs. <?=number_format((float)$r['total_amount'],2)?></td><td>Rs. <?=number_format((float)$r['credit_amount'],2)?></td><td>Rs. <?=number_format((float)$r['security_deposit_amount'],2)?></td><td>Rs. <?=number_format((float)$r['security_deposit_refund_amount'],2)?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
+        <div class="table-responsive"><table class="table table-sm table-striped align-middle datatable"><thead><tr><th>Date</th><th>No.</th><th>Type</th><th>Total</th><th>Credit</th><th>Gas Return Credit</th><th>Deposit</th><th>Refund</th><th>Status</th></tr></thead><tbody>
+        <?php foreach($sales as $r): ?><tr><td><?=esc($r['transaction_at'])?></td><td><?=esc($r['sale_no'])?></td><td><?=esc(ucwords(str_replace('_',' ',$r['transaction_type'])))?></td><td>Rs. <?=number_format((float)$r['total_amount'],2)?></td><td>Rs. <?=number_format((float)$r['credit_amount'],2)?></td><td>Rs. <?=number_format((float)($r['return_gas_ledger_amount']??0),2)?></td><td>Rs. <?=number_format((float)$r['security_deposit_amount'],2)?></td><td>Rs. <?=number_format((float)$r['security_deposit_refund_amount'],2)?></td><td><?=esc(ucfirst($r['status']))?></td></tr><?php endforeach; ?>
         </tbody></table></div>
       </div>
 
