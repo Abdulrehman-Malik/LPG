@@ -68,18 +68,20 @@
 </form>
 
 <div class="card shadow-sm mt-4">
-  <div class="card-header fw-semibold">Recent Customer Receipts</div>
+  <div class="card-header fw-semibold">Receipt History <span class="text-muted fw-normal small">— customer receipts and POS payment records</span></div>
   <div class="card-body table-responsive">
     <table class="table table-sm table-striped align-middle datatable">
-      <thead><tr><th>Date</th><th>Receipt</th><th>Customer</th><th>Amount</th><th>Mode</th><th>Reference</th><th>Notes</th></tr></thead>
+      <thead><tr><th>Date</th><th>Receipt / Transaction</th><th>Customer</th><th>Amount</th><th>Mode</th><th>Source</th><th>Status</th><th>Reference</th><th>Details</th></tr></thead>
       <tbody>
       <?php foreach($receipts as $r):?>
         <tr>
           <td><?=esc($r['receipt_at'])?></td>
           <td><?=esc($r['receipt_no'])?></td>
-          <td><?=esc($r['customer_name']??'')?></td>
+          <td><?=esc($r['customer_name']??'Walk-in / Cash')?></td>
           <td>Rs. <?=number_format((float)$r['amount'],2)?></td>
           <td><?=esc(strtoupper($r['payment_mode']))?></td>
+          <td><?=esc($r['source']??'Unknown')?></td>
+          <td><span class="badge text-bg-<?=($r['status']??'')==='posted'?'success':'secondary'?>"><?=esc(strtoupper($r['status']??'UNKNOWN'))?></span></td>
           <td><?=esc($r['reference_no']??'')?></td>
           <td><?=esc($r['notes']??'')?></td>
         </tr>
