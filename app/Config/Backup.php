@@ -10,6 +10,10 @@ class Backup extends BaseConfig
     public string $mysqldumpPath = '';
     public string $mysqlPath = '';
     public int $maxUploadSize = 536870912; // 512 MB
+    public string $googleDriveClientId = '';
+    public string $googleDriveClientSecret = '';
+    public string $googleDriveRefreshToken = '';
+    public string $googleDriveFolderId = '';
 
     public function __construct()
     {
@@ -26,6 +30,10 @@ class Backup extends BaseConfig
 
         $this->mysqldumpPath = trim((string) env('backup.mysqldumpPath', ''));
         $this->mysqlPath = trim((string) env('backup.mysqlPath', ''));
+        $this->googleDriveClientId = trim((string) env('backup.googleDriveClientId', ''));
+        $this->googleDriveClientSecret = trim((string) env('backup.googleDriveClientSecret', ''));
+        $this->googleDriveRefreshToken = trim((string) env('backup.googleDriveRefreshToken', ''));
+        $this->googleDriveFolderId = trim((string) env('backup.googleDriveFolderId', ''));
 
         if (DIRECTORY_SEPARATOR === '\\' && defined('ROOTPATH')) {
             $xamppRoot = dirname(dirname(rtrim(ROOTPATH, "\\\\/")));
