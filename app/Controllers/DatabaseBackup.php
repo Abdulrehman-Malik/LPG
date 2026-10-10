@@ -49,12 +49,19 @@ class DatabaseBackup extends Controller
 
             $result = (new DatabaseBackupService())->createBackup(
                 $this->request->getPost('send_email') === '1',
-                $emailRecipient !== '' ? $emailRecipient : (string) session()->get('database_backup_email')
+                $emailRecipient !== '' ? $emailRecipient : (string) session()->get('database_backup_email'),
+                $this->request->getPost('upload_drive') === '1'
             );
 
             $message = 'Database backup created successfully: ' . $result['name'];
             if ($result['email_sent']) {
                 $message .= ' Email sent successfully.';
+            }
+            if (!empty($result['drive_uploaded'])) {
+                $message .= ' Uploaded to Google Drive successfully.';
+            } elseif (!empty($result['drive_error'])) {
+                $message .= ' WARNING: Google Drive upload failed: ' . $result['drive_error'];
+                return redirect()->to('/database-backup')->with('error', $message);
             }
             return redirect()->to('/database-backup')->with('success', $message);
         } catch (\Throwable $e) {
