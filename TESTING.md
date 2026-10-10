@@ -361,3 +361,15 @@ Use a disposable test database and dedicated test credentials. Never expose prod
 - [ ] Test blank/zero/negative rates, amount greater than available stock, and Amount mode with no configured standard rate; invalid entries must be rejected safely and a valid manually entered positive rate must work.
 
 Status: **Not yet runtime-verified**. Execute these checks in the application with test data before merging/deploying.
+
+
+## Gas Rate Validation Regression — Main
+
+The server must not report **“No effective gas/kg rate exists.”** when a valid positive gas rate was explicitly entered on the POS line. This applies to the legacy gas/replacement posting path and filled-cylinder sales. When a manual rate is supplied, use that same rate consistently for amount-to-KG conversion, line totals, saved sale-item rates, and custom-rate tracking.
+
+- [ ] Positive manual gas rate + no effective configured rate: allow posting when all other validations pass.
+- [ ] Blank manual rate + no effective configured rate: reject with a clear instruction to enter a positive line rate or configure an effective rate.
+- [ ] Zero/negative manual rate: reject; do not silently post at zero.
+- [ ] Verify sale amount, KG, receipt/payment, customer OS, saved rate, and inventory movements reconcile.
+
+Status: **Code updated; runtime/browser/database regression not yet executed.**
