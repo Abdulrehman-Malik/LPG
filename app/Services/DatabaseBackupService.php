@@ -51,7 +51,7 @@ class DatabaseBackupService
         $this->ensureDirectory();
 
         if ($this->config->mysqldumpPath === '' || !is_file($this->config->mysqldumpPath)) {
-            throw new \RuntimeException('mysqldump was not found. Configure backup.mysqldumpPath in .env or install MySQL/MariaDB client tools.');
+            return $this->createNativeBackup($email, $emailRecipient);
         }
 
         $database = trim((string) ($this->db['database'] ?? ''));
@@ -79,9 +79,6 @@ class DatabaseBackupService
 
     public function restore(string $uploadedPath): array
     {
-        if ($this->config->mysqlPath === '' || !is_file($this->config->mysqlPath)) {
-            throw new \RuntimeException('mysql client was not found. Configure backup.mysqlPath in .env or install MySQL/MariaDB client tools.');
-        }
         if (!is_file($uploadedPath)) {
             throw new \RuntimeException('The selected backup file could not be found.');
         }
@@ -91,9 +88,13 @@ class DatabaseBackupService
             throw new \RuntimeException('Only .sql database backup files can be restored.');
         }
 
-        $exitCode = $this->runMysqlUtility($this->config->mysqlPath, $uploadedPath, true);
-        if ($exitCode !== 0) {
-            throw new \RuntimeException('Database restore failed. The database may be partially restored; review the MySQL error log before retrying.');
+        if ($this->config->mysqlPath !== '' && is_file($this->config->mysqlPath)) {
+            $exitCode = $this->runMysqlUtility($this->config->mysqlPath, $uploadedPath, true);
+            if ($exitCode !== 0) {
+                throw new \RuntimeException('Database restore failed. The database may be partially restored; review the MySQL error log before retrying.');
+            }
+        } else {
+            $this->restoreNativeBackup($uploadedPath);
         }
 
         return ['name' => basename($uploadedPath)];
@@ -120,6 +121,180 @@ class DatabaseBackupService
         }
 
         return true;
+    }
+
+    /**
+     * Portable table-and-data backup for hosts where mysqldump is not installed.
+     * The marker lets the portable restore path recognize files generated here.
+     */
+    private function createNativeBackup(bool $email = false, ?string $emailRecipient = null): array
+    {
+        $this->ensureDirectory();
+        $database = trim((string) ($this->db['database'] ?? ''));
+        if ($database === '') {
+            throw new \RuntimeException('Database name is not configured.');
+        }
+
+        $filename = preg_replace('/[^A-Za-z0-9._-]+/', '_', $database)
+            . '_' . date('Ymd_His') . '.sql';
+        $path = $this->directory() . DIRECTORY_SEPARATOR . $filename;
+        $db = \Config\Database::connect();
+        $handle = @fopen($path, 'wb');
+        if ($handle === false) {
+            throw new \RuntimeException('Unable to create the database backup file.');
+        }
+
+        try {
+            fwrite($handle, "-- PERFECT_LPG_NATIVE_BACKUP_V1\nSET FOREIGN_KEY_CHECKS=0;\n");
+            $tablesResult = $db->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+            foreach ($tablesResult->getResultArray() as $tableRow) {
+                $table = (string) array_values($tableRow)[0];
+                if (!preg_match('/^[A-Za-z0-9_$]+$/', $table)) {
+                    throw new \RuntimeException('A database table name contains unsupported characters.');
+                }
+                $quotedTable = chr(96) . $table . chr(96);
+                $createRow = $db->query('SHOW CREATE TABLE ' . $quotedTable)->getRowArray();
+                if (!$createRow || count($createRow) < 2) {
+                    throw new \RuntimeException('Could not read the schema for table ' . $table . '.');
+                }
+                $createSql = (string) array_values($createRow)[1];
+                fwrite($handle, "\n-- Table: " . $table . "\nDROP TABLE IF EXISTS " . $quotedTable . ";\n");
+                fwrite($handle, rtrim($createSql, ";\r\n") . ";\n");
+
+                $rows = $db->query('SELECT * FROM ' . $quotedTable)->getResultArray();
+                foreach ($rows as $row) {
+                    $columns = [];
+                    $values = [];
+                    foreach ($row as $column => $value) {
+                        if (!preg_match('/^[A-Za-z0-9_$]+$/', (string) $column)) {
+                            throw new \RuntimeException('A database column name contains unsupported characters.');
+                        }
+                        $columns[] = chr(96) . $column . chr(96);
+                        $values[] = $value === null ? 'NULL' : $db->escape($value);
+                    }
+                    if ($columns) {
+                        fwrite($handle, 'INSERT INTO ' . $quotedTable . ' (' . implode(', ', $columns)
+                            . ') VALUES (' . implode(', ', $values) . ");\n");
+                    }
+                }
+            }
+            fwrite($handle, "\nSET FOREIGN_KEY_CHECKS=1;\n");
+        } catch (\Throwable $e) {
+            fclose($handle);
+            @unlink($path);
+            throw $e;
+        }
+        fclose($handle);
+
+        if (!is_file($path) || (filesize($path) ?: 0) < 50) {
+            @unlink($path);
+            throw new \RuntimeException('Database backup did not contain usable data.');
+        }
+
+        $emailSent = false;
+        if ($email) {
+            $emailSent = $this->emailBackup($path, $emailRecipient);
+        }
+
+        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent];
+    }
+
+    private function restoreNativeBackup(string $path): void
+    {
+        $contents = @file_get_contents($path);
+        if ($contents === false) {
+            throw new \RuntimeException('Unable to read the selected backup file.');
+        }
+        if (!str_starts_with($contents, "-- PERFECT_LPG_NATIVE_BACKUP_V1")) {
+            throw new \RuntimeException(
+                'This server has no mysql client installed and this is not a portable LPG backup. Restore a backup created by this page, or configure backup.mysqlPath.'
+            );
+        }
+
+        $db = \Config\Database::connect();
+        foreach ($this->splitSqlStatements($contents) as $statement) {
+            $statement = trim($statement);
+            if ($statement === '' || str_starts_with($statement, '--')) {
+                continue;
+            }
+            $db->query($statement);
+        }
+    }
+
+    /**
+     * Split SQL at semicolons outside quoted strings and comments.
+     */
+    private function splitSqlStatements(string $sql): array
+    {
+        $statements = [];
+        $buffer = '';
+        $quote = '';
+        $lineComment = false;
+        $blockComment = false;
+        $length = strlen($sql);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+            $next = $i + 1 < $length ? $sql[$i + 1] : '';
+
+            if ($lineComment) {
+                if ($char === "\n") {
+                    $lineComment = false;
+                    $buffer .= "\n";
+                }
+                continue;
+            }
+            if ($blockComment) {
+                if ($char === '*' && $next === '/') {
+                    $blockComment = false;
+                    $i++;
+                }
+                continue;
+            }
+            if ($quote !== '') {
+                $buffer .= $char;
+                if ($char === chr(92) && $quote !== chr(96) && $i + 1 < $length) {
+                    $buffer .= $sql[++$i];
+                } elseif ($char === $quote) {
+                    if ($next === $quote && $quote !== chr(96)) {
+                        $buffer .= $sql[++$i];
+                    } else {
+                        $quote = '';
+                    }
+                }
+                continue;
+            }
+
+            if (($char === '-' && $next === '-' && ($i + 2 >= $length || ctype_space($sql[$i + 2])))
+                || $char === '#') {
+                $lineComment = true;
+                $i += $char === '-' ? 1 : 0;
+                continue;
+            }
+            if ($char === '/' && $next === '*') {
+                $blockComment = true;
+                $i++;
+                continue;
+            }
+            if ($char === "'" || $char === '"' || $char === chr(96)) {
+                $quote = $char;
+                $buffer .= $char;
+                continue;
+            }
+            if ($char === ';') {
+                if (trim($buffer) !== '') {
+                    $statements[] = trim($buffer);
+                }
+                $buffer = '';
+                continue;
+            }
+            $buffer .= $char;
+        }
+
+        if (trim($buffer) !== '') {
+            $statements[] = trim($buffer);
+        }
+        return $statements;
     }
 
     private function ensureDirectory(): void
