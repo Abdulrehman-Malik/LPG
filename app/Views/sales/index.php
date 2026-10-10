@@ -722,6 +722,14 @@ function recalc(){
    gasRequired+=gas;saleTotal+=amount;
    tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
  });
+ // Show the total KG that will leave gas stock when Amount or cylinder-count entry is used.
+ const gasQtyHeader=document.getElementById('gasQtyHeader');
+ const gasEntryMode=document.getElementById('gasEntryMode')?.value||'quantity';
+ if(gasQtyHeader){
+   if(t==='gas_sale'&&gasEntryMode==='amount')gasQtyHeader.textContent='Qty / KG ('+gasRequired.toFixed(3)+' KG)';
+   else if(t==='gas_sale'&&gasEntryMode==='cylinders')gasQtyHeader.textContent='Cylinder Qty ('+gasRequired.toFixed(3)+' KG gas)';
+   else gasQtyHeader.textContent='Qty / KG';
+ }
  if(t==='security_deposit'){
    issueLines.forEach(l=>{
      const gas=Number(l.gas_weight_kg||0),q=(l.selected_cylinder_unit_ids||[]).length;
@@ -990,7 +998,7 @@ const applyReturnRate=document.getElementById('applyReturnRate');
 if(applyReturnRate)applyReturnRate.onclick=()=>{const rate=Math.max(0,Number(document.getElementById('returnOverallRate').value||0));returnLines.forEach(l=>l.return_gas_rate=rate);renderReturnLines();recalc();};
 document.getElementById('gasEntryMode').onchange=()=>{
  const mode=document.getElementById('gasEntryMode').value,header=document.getElementById('gasQtyHeader');
- if(header)header.textContent=mode==='cylinders'?'Cylinder Qty':'Qty / KG';
+ if(header)header.textContent=mode==='cylinders'?'Cylinder Qty (0.000 KG gas)':(mode==='amount'?'Qty / KG (0.000 KG)':'Qty / KG');
  const sourceHead=document.querySelector('#lines .sourceHead');
  if(sourceHead)sourceHead.style.display=mode==='cylinders'?'none':(allowPosSourceCylinderSelection?'table-cell':'none');
  tbody.querySelectorAll('tr').forEach(tr=>{if(!tr.querySelector('.entryValue'))return;

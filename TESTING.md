@@ -344,6 +344,8 @@ Use a disposable test database and dedicated test credentials. Never expose prod
 
 - [ ] In POS → Gas Sale, select **Amount** entry mode and confirm the Gas Rate field remains editable.
 - [ ] Enter Amount Rs. 1,000 and Gas Rate Rs. 250/kg; verify calculated quantity is 4.000 KG and line amount remains Rs. 1,000.00.
+- [ ] In Amount mode, verify the Qty / KG column header shows the total gas KG to be deducted from stock (for example, `Qty / KG (4.000 KG)`) and updates when amount or rate changes.
+- [ ] In Cylinders mode, verify the header shows the cylinder count and total KG gas to be deducted (for example, `Cylinder Qty (10.000 KG gas)`) and updates when cylinder quantity/type changes; in KG mode, keep the plain `Qty / KG` header.
 - [ ] Change the rate to Rs. 200/kg; verify quantity updates to 5.000 KG and amount remains Rs. 1,000.00.
 - [ ] Post a test sale and verify saved sale-item rate, quantity, total, receipt, stock movement, and customer OS balance are consistent.
 - [ ] Test blank/zero/negative rates, amount greater than available stock, and Amount mode with no configured standard rate; invalid entries must be rejected safely and a valid manually entered positive rate must work.
