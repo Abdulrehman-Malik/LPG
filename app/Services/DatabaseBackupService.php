@@ -349,32 +349,68 @@ class DatabaseBackupService
         if ($folderId !== '') {
             $metadata['parents'] = [$folderId];
         }
-        $boundary = 'lpgbackup' . bin2hex(random_bytes(12));
-        $mime = "application/sql";
-        $body = "--{$boundary}\r\n"
-            . "Content-Type: application/json; charset=UTF-8\r\n\r\n"
-            . json_encode($metadata, JSON_THROW_ON_ERROR) . "\r\n"
-            . "--{$boundary}\r\n"
-            . "Content-Type: {$mime}\r\n\r\n"
-            . file_get_contents($path) . "\r\n"
-            . "--{$boundary}--";
+        $fileSize = filesize($path);
+        if ($fileSize === false || $fileSize <= 0) {
+            throw new \RuntimeException('The backup file is empty or its size could not be read.');
+        }
 
-        $ch = curl_init('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink');
+        // Start a resumable upload so large database files are streamed from disk
+        // instead of loaded into PHP memory in one operation.
+        $uploadUrl = null;
+        $ch = curl_init('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name,webViewLink');
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
-                'Content-Type: multipart/related; boundary=' . $boundary,
+                'Content-Type: application/json; charset=UTF-8',
+                'X-Upload-Content-Type: application/sql',
+                'X-Upload-Content-Length: ' . $fileSize,
             ],
-            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_POSTFIELDS => json_encode($metadata, JSON_THROW_ON_ERROR),
+            CURLOPT_HEADERFUNCTION => static function ($curl, string $header) use (&$uploadUrl): int {
+                if (stripos($header, 'Location:') === 0) {
+                    $uploadUrl = trim(substr($header, strlen('Location:')));
+                }
+                return strlen($header);
+            },
             CURLOPT_CONNECTTIMEOUT => 20,
-            CURLOPT_TIMEOUT => 300,
+            CURLOPT_TIMEOUT => 30,
+        ]);
+        $initResponse = curl_exec($ch);
+        $initError = curl_error($ch);
+        $initStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($initResponse === false || $initStatus < 200 || $initStatus >= 300 || !$uploadUrl) {
+            log_message('error', 'Google Drive resumable upload initialization failed (HTTP {status}): {response}; cURL: {curlError}', [
+                'status' => $initStatus, 'response' => substr((string) $initResponse, 0, 1000), 'curlError' => $initError,
+            ]);
+            throw new \RuntimeException('Google Drive could not start the backup upload. Check Drive API access and folder permissions.');
+        }
+
+        $fileHandle = @fopen($path, 'rb');
+        if ($fileHandle === false) {
+            throw new \RuntimeException('Unable to read the backup file for Google Drive upload.');
+        }
+        $ch = curl_init($uploadUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_UPLOAD => true,
+            CURLOPT_INFILE => $fileHandle,
+            CURLOPT_INFILESIZE => $fileSize,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/sql',
+            ],
+            CURLOPT_CONNECTTIMEOUT => 20,
+            CURLOPT_TIMEOUT => 600,
         ]);
         $response = curl_exec($ch);
         $curlError = curl_error($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+        fclose($fileHandle);
 
         if ($response === false || $status < 200 || $status >= 300) {
             log_message('error', 'Google Drive API upload response (HTTP {status}): {response}; cURL: {curlError}', [
