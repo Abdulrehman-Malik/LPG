@@ -14,6 +14,7 @@
         "ext-intl": "*",
         "ext-mbstring": "*",
         "ext-mysqli": "*",
+        "ext-zip": "*",
         "laminas/laminas-escaper": "^2.18",
         "psr/log": "^3.0"
     },
