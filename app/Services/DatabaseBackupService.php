@@ -215,7 +215,7 @@ class DatabaseBackupService
         if ($email) {
             try {
                 $emailSent = $this->emailBackup($path, $emailRecipient);
-            } catch (\\Throwable $e) {
+            } catch (\Throwable $e) {
                 $emailError = $e->getMessage();
                 log_message('error', 'Database backup email delivery failed: {error}', ['error' => $emailError]);
             }
