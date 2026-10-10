@@ -67,6 +67,11 @@ class Sales extends Controller
                 ->with('success','Transaction '.$result['sale_no'].' posted successfully.')
                 ->with('receipt_url',site_url('sales/receipt/'.$result['id']));
         }catch(\Throwable $e){
+            log_message('error', 'POS sale posting failed: {message} at {file}:{line}', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
             if ($this->request->isAJAX() || str_contains(strtolower((string)$this->request->getHeaderLine('Accept')), 'application/json')) {
                 return $this->response->setStatusCode(422)->setJSON(['success'=>false,'error'=>$e->getMessage()]);
             }
