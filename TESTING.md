@@ -340,6 +340,16 @@ Use a disposable test database and dedicated test credentials. Never expose prod
 - Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
 
 
+## Walk-in Credit Sale Regression — Main
+
+- [ ] Select Walk-in / Cash, create a sale for Rs. 1,000, enter cash received of Rs. 900, and post. Expected: rejected with a clear message that walk-in sales must be fully paid; no sale, payment, inventory movement, or customer OS is created.
+- [ ] Select Walk-in / Cash and explicitly choose Credit as the payment mode. Expected: rejected server-side; no transaction is posted.
+- [ ] Select Walk-in / Cash and pay the full sale amount in cash. Expected: sale posts normally.
+- [ ] Select a named customer and use a partial payment. Expected: existing customer credit-eligibility and credit-limit rules continue to apply.
+
+**Code fix:** SalesService::prepareSalePaymentPlan() now rejects walk-in payments that do not exactly equal the sale total (within Rs. 0.01), closing the path where a cash underpayment could silently become customer credit. Runtime browser/database verification is still pending.
+
+
 ## POS Gas Sale — Amount Mode Custom Gas Rate (branch: `fix/pos-gas-entry-amount-rate`)
 
 - [ ] In POS → Gas Sale, select **Amount** entry mode and confirm the Gas Rate field remains editable.
