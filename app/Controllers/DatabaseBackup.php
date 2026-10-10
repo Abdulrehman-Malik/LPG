@@ -56,6 +56,9 @@ class DatabaseBackup extends Controller
             $message = 'Database backup created successfully: ' . $result['name'];
             if ($result['email_sent']) {
                 $message .= ' Email sent successfully.';
+            } elseif (!empty($result['email_error'])) {
+                $message .= ' WARNING: Email delivery failed: ' . $result['email_error'];
+                return redirect()->to('/database-backup')->with('error', $message);
             }
             if (!empty($result['drive_uploaded'])) {
                 $message .= ' Uploaded to Google Drive successfully.';
