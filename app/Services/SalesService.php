@@ -1123,9 +1123,15 @@ class SalesService
             if(!$customerId&&$mode!=='cash')throw new RuntimeException($mode==='credit'?'Credit sale is not allowed for Walk-in / Cash customer.':'Walk-in transactions are cash only.');
             $paymentTotal+=$amount;
         }
+        // Walk-in / Cash is strictly cash-only and must be fully settled at posting.
+        // Do not let an underpayment silently become credit via the unpaid remainder.
+        if($customerId===null && abs($paymentTotal-$saleTotal)>0.01){
+            throw new RuntimeException($paymentTotal<$saleTotal-0.01
+                ? 'Credit sale is not allowed for Walk-in / Cash customer. A walk-in sale must be fully paid at posting time.'
+                : 'Payment cannot exceed the walk-in sale amount.');
+        }
         $previousOs=$customerId?$this->customerGasBalance($customerId):0;
         $maxReceivable=max(0,round($saleTotal+$previousOs,2));
-        if($customerId===null && $paymentTotal>$saleTotal+0.01)throw new RuntimeException('Payment cannot exceed the walk-in sale amount.');
         if($paymentTotal>$maxReceivable+0.01)throw new RuntimeException('Payment cannot exceed the customer net receivable of Rs. '.number_format($maxReceivable,2).'.');
 
         // A customer payment may be less than the current sale amount. The unpaid
