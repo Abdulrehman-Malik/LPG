@@ -221,6 +221,24 @@ class DatabaseBackup extends Controller
         return redirect()->to('/database-backup')->with('success', $sent . ' selected backup file(s) emailed successfully.');
     }
 
+    public function download()
+    {
+        if ($r = $this->guard()) return $r;
+
+        $name = basename((string) $this->request->getGet('file'));
+        if ($name === '' || !preg_match('/^[A-Za-z0-9._-]+\.sql$/i', $name)) {
+            return $this->response->setStatusCode(400)->setBody('Invalid backup file name.');
+        }
+
+        foreach ((new DatabaseBackupService())->listBackups() as $backup) {
+            if ($backup['name'] === $name && is_file($backup['path'])) {
+                return $this->response->download($backup['path'], null)->setFileName($backup['name']);
+            }
+        }
+
+        return $this->response->setStatusCode(404)->setBody('Backup file not found.');
+    }
+
     public function restore()
     {
         if ($r = $this->guard()) return $r;
