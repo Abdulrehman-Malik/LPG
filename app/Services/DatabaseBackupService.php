@@ -46,12 +46,12 @@ class DatabaseBackupService
         return $files;
     }
 
-    public function createBackup(bool $email = false, ?string $emailRecipient = null): array
+    public function createBackup(bool $email = false, ?string $emailRecipient = null, bool $uploadToDrive = false): array
     {
         $this->ensureDirectory();
 
         if ($this->config->mysqldumpPath === '' || !is_file($this->config->mysqldumpPath)) {
-            return $this->createNativeBackup($email, $emailRecipient);
+            return $this->createNativeBackup($email, $emailRecipient, $uploadToDrive);
         }
 
         $database = trim((string) ($this->db['database'] ?? ''));
@@ -74,7 +74,20 @@ class DatabaseBackupService
             $emailSent = $this->emailBackup($path, $emailRecipient);
         }
 
-        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent];
+        $driveUploaded = false;
+        $driveError = null;
+        if ($uploadToDrive) {
+            try {
+                $this->uploadBackupToGoogleDrive($path);
+                $driveUploaded = true;
+            } catch (\Throwable $e) {
+                $driveError = $e->getMessage();
+                log_message('error', 'Google Drive backup upload failed: {error}', ['error' => $driveError]);
+            }
+        }
+
+        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent,
+            'drive_uploaded' => $driveUploaded, 'drive_error' => $driveError];
     }
 
     public function restore(string $uploadedPath): array
@@ -127,7 +140,7 @@ class DatabaseBackupService
      * Portable table-and-data backup for hosts where mysqldump is not installed.
      * The marker lets the portable restore path recognize files generated here.
      */
-    private function createNativeBackup(bool $email = false, ?string $emailRecipient = null): array
+    private function createNativeBackup(bool $email = false, ?string $emailRecipient = null, bool $uploadToDrive = false): array
     {
         $this->ensureDirectory();
         $database = trim((string) ($this->db['database'] ?? ''));
@@ -196,7 +209,20 @@ class DatabaseBackupService
             $emailSent = $this->emailBackup($path, $emailRecipient);
         }
 
-        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent];
+        $driveUploaded = false;
+        $driveError = null;
+        if ($uploadToDrive) {
+            try {
+                $this->uploadBackupToGoogleDrive($path);
+                $driveUploaded = true;
+            } catch (\Throwable $e) {
+                $driveError = $e->getMessage();
+                log_message('error', 'Google Drive backup upload failed: {error}', ['error' => $driveError]);
+            }
+        }
+
+        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent,
+            'drive_uploaded' => $driveUploaded, 'drive_error' => $driveError];
     }
 
     private function restoreNativeBackup(string $path): void
@@ -295,6 +321,103 @@ class DatabaseBackupService
             $statements[] = trim($buffer);
         }
         return $statements;
+    }
+
+    /**
+     * Upload a backup using Google Drive API v3 and an OAuth refresh token.
+     * Credentials are supplied only through deployment environment variables.
+     */
+    public function uploadBackupToGoogleDrive(string $path): array
+    {
+        if (!is_file($path)) {
+            throw new \RuntimeException('Backup file is missing; Google Drive upload was skipped.');
+        }
+        $clientId = trim((string) $this->config->googleDriveClientId);
+        $clientSecret = trim((string) $this->config->googleDriveClientSecret);
+        $refreshToken = trim((string) $this->config->googleDriveRefreshToken);
+        $folderId = trim((string) $this->config->googleDriveFolderId);
+        if ($clientId === '' || $clientSecret === '' || $refreshToken === '') {
+            throw new \RuntimeException('Google Drive is not configured. Set BACKUP_GOOGLE_DRIVE_CLIENT_ID, BACKUP_GOOGLE_DRIVE_CLIENT_SECRET and BACKUP_GOOGLE_DRIVE_REFRESH_TOKEN in the environment.');
+        }
+
+        if (!function_exists('curl_init')) {
+            throw new \RuntimeException('The PHP cURL extension is required for Google Drive uploads.');
+        }
+
+        $token = $this->requestGoogleDriveAccessToken($clientId, $clientSecret, $refreshToken);
+        $metadata = ['name' => basename($path)];
+        if ($folderId !== '') {
+            $metadata['parents'] = [$folderId];
+        }
+        $boundary = 'lpgbackup' . bin2hex(random_bytes(12));
+        $mime = "application/sql";
+        $body = "--{$boundary}\r\n"
+            . "Content-Type: application/json; charset=UTF-8\r\n\r\n"
+            . json_encode($metadata, JSON_THROW_ON_ERROR) . "\r\n"
+            . "--{$boundary}\r\n"
+            . "Content-Type: {$mime}\r\n\r\n"
+            . file_get_contents($path) . "\r\n"
+            . "--{$boundary}--";
+
+        $ch = curl_init('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: multipart/related; boundary=' . $boundary,
+            ],
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_CONNECTTIMEOUT => 20,
+            CURLOPT_TIMEOUT => 300,
+        ]);
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false || $status < 200 || $status >= 300) {
+            log_message('error', 'Google Drive API upload response (HTTP {status}): {response}; cURL: {curlError}', [
+                'status' => $status, 'response' => substr((string) $response, 0, 1500), 'curlError' => $curlError,
+            ]);
+            throw new \RuntimeException('Backup was created, but Google Drive upload failed (HTTP ' . $status . '). Check Drive API access, folder permissions, and deployment logs.');
+        }
+
+        $result = json_decode((string) $response, true);
+        if (!is_array($result) || empty($result['id'])) {
+            throw new \RuntimeException('Google Drive did not confirm that the backup file was uploaded.');
+        }
+        return $result;
+    }
+
+    private function requestGoogleDriveAccessToken(string $clientId, string $clientSecret, string $refreshToken): string
+    {
+        $ch = curl_init('https://oauth2.googleapis.com/token');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'refresh_token' => $refreshToken,
+                'grant_type' => 'refresh_token',
+            ]),
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => 30,
+        ]);
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $result = json_decode((string) $response, true);
+        if ($response === false || $status < 200 || $status >= 300 || empty($result['access_token'])) {
+            log_message('error', 'Google OAuth token refresh failed (HTTP {status}): {response}; cURL: {curlError}', [
+                'status' => $status, 'response' => substr((string) $response, 0, 1000), 'curlError' => $curlError,
+            ]);
+            throw new \RuntimeException('Google Drive authorization failed. Check OAuth client credentials and refresh token.');
+        }
+        return (string) $result['access_token'];
     }
 
     private function ensureDirectory(): void
