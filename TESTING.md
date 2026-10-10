@@ -338,3 +338,14 @@ Use a disposable test database and dedicated test credentials. Never expose prod
 - For production, set `app.baseURL` in the production machine's local `.env` to the production URL.
 - Do not commit tunnel URLs, environment-specific hostnames, production URLs, or environment secrets to the repository.
 - Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
+
+
+## POS Gas Sale — Amount Mode Custom Gas Rate (branch: `fix/pos-gas-entry-amount-rate`)
+
+- [ ] In POS → Gas Sale, select **Amount** entry mode and confirm the Gas Rate field remains editable.
+- [ ] Enter Amount Rs. 1,000 and Gas Rate Rs. 250/kg; verify calculated quantity is 4.000 KG and line amount remains Rs. 1,000.00.
+- [ ] Change the rate to Rs. 200/kg; verify quantity updates to 5.000 KG and amount remains Rs. 1,000.00.
+- [ ] Post a test sale and verify saved sale-item rate, quantity, total, receipt, stock movement, and customer OS balance are consistent.
+- [ ] Test blank/zero/negative rates, amount greater than available stock, and Amount mode with no configured standard rate; invalid entries must be rejected safely and a valid manually entered positive rate must work.
+
+Status: **Not yet runtime-verified**. Execute these checks in the application with test data before merging/deploying.
