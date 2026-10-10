@@ -3,7 +3,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h4 class="mb-1">Database Backup & Restore</h4>
-        <div class="text-muted small">Manage local database backups, restore SQL files, and configure backup email delivery.</div>
+        <div class="text-muted small">Create downloadable database backups, restore SQL files, and configure backup email delivery.</div>
     </div>
 </div>
 
@@ -37,7 +37,8 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">Create Database Backup</div>
             <div class="card-body">
-                <p class="text-muted">The complete database will be exported to the configured local backup directory.</p>
+                <p class="text-muted">The database tables and their data will be exported to the configured server backup directory. Download each backup to keep a copy outside the server.</p>
+                <div class="alert alert-warning py-2 small">Railway service storage may be temporary. Files kept only on the server may be lost after redeploys or restarts, so download backups or email them to a secure destination.</div>
 
                 <div class="alert alert-light border mb-3">
                     <div class="small fw-semibold">Backup directory</div>
@@ -193,7 +194,7 @@
 
 <div class="card shadow-sm mt-3">
     <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
-        <span>Local Backup Files</span>
+        <span>Saved Backup Files</span>
         <?php if ($backups): ?>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAllBackups(true)">Select All</button>
@@ -203,7 +204,7 @@
     </div>
     <div class="card-body p-0">
         <?php if (!$backups): ?>
-            <div class="p-3 text-muted">No local SQL backups found.</div>
+            <div class="p-3 text-muted">No saved SQL backups found. Create a backup above to get started.</div>
         <?php else: ?>
             <form method="post" id="backupActionsForm">
                 <?= csrf_field() ?>
@@ -233,6 +234,7 @@
                                 <th>Backup File</th>
                                 <th>Size</th>
                                 <th>Created</th>
+                                <th class="text-end">Download</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -246,6 +248,12 @@
                                 <td><code><?= esc($backup['name']) ?></code></td>
                                 <td><?= esc(number_format($backup['size'] / 1048576, 2)) ?> MB</td>
                                 <td><?= esc(date('Y-m-d H:i:s', $backup['modified'])) ?></td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       href="<?= site_url('database-backup/download?file=' . rawurlencode($backup['name'])) ?>">
+                                        <i class="bi bi-download me-1"></i>Download
+                                    </a>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
