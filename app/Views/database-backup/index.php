@@ -38,7 +38,8 @@
             <div class="card-header bg-white fw-semibold">Create Database Backup</div>
             <div class="card-body">
                 <p class="text-muted">The database tables and their data will be exported to the configured server backup directory. Download each backup to keep a copy outside the server.</p>
-                <div class="alert alert-warning py-2 small">Railway service storage may be temporary. Files kept only on the server may be lost after redeploys or restarts, so download backups or email them to a secure destination.</div>
+                <div class="alert alert-warning py-2 small">Railway service storage may be temporary. Files kept only on the server may be lost after redeploys or restarts, so download backups, email them, or upload them to Google Drive.</div>
+                <div class="alert alert-info py-2 small">Google Drive upload requires OAuth credentials in Railway Variables (or the local environment). Configure BACKUP_GOOGLE_DRIVE_CLIENT_ID, BACKUP_GOOGLE_DRIVE_CLIENT_SECRET, BACKUP_GOOGLE_DRIVE_REFRESH_TOKEN, and optionally BACKUP_GOOGLE_DRIVE_FOLDER_ID. Enable the Google Drive API and grant the OAuth account access to the target folder.</div>
 
                 <div class="alert alert-light border mb-3">
                     <div class="small fw-semibold">Backup directory</div>
@@ -59,6 +60,11 @@
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="sendEmailCheckbox">
                         <label class="form-check-label" for="sendEmailCheckbox">Also send backup as an email attachment</label>
+                    </div>
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="uploadDriveCheckbox" name="upload_drive" value="1">
+                        <label class="form-check-label" for="uploadDriveCheckbox">Also upload backup to Google Drive</label>
                     </div>
 
                     <button type="submit" class="btn btn-primary"
