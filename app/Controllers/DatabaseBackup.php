@@ -54,19 +54,20 @@ class DatabaseBackup extends Controller
             );
 
             $message = 'Database backup created successfully: ' . $result['name'];
+            $deliveryWarning = false;
             if ($result['email_sent']) {
                 $message .= ' Email sent successfully.';
             } elseif (!empty($result['email_error'])) {
                 $message .= ' WARNING: Email delivery failed: ' . $result['email_error'];
-                return redirect()->to('/database-backup')->with('error', $message);
+                $deliveryWarning = true;
             }
             if (!empty($result['drive_uploaded'])) {
                 $message .= ' Uploaded to Google Drive successfully.';
             } elseif (!empty($result['drive_error'])) {
                 $message .= ' WARNING: Google Drive upload failed: ' . $result['drive_error'];
-                return redirect()->to('/database-backup')->with('error', $message);
+                $deliveryWarning = true;
             }
-            return redirect()->to('/database-backup')->with('success', $message);
+            return redirect()->to('/database-backup')->with($deliveryWarning ? 'error' : 'success', $message);
         } catch (\Throwable $e) {
             log_message('error', 'Database backup failed: {error}', ['error' => $e->getMessage()]);
             return redirect()->back()->with('error', $e->getMessage());
