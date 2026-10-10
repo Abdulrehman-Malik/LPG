@@ -18,3 +18,4 @@ php_errors.log
 .env
 .env.*
 !.env.example
+.env
