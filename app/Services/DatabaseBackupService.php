@@ -70,8 +70,14 @@ class DatabaseBackupService
         }
 
         $emailSent = false;
+        $emailError = null;
         if ($email) {
-            $emailSent = $this->emailBackup($path, $emailRecipient);
+            try {
+                $emailSent = $this->emailBackup($path, $emailRecipient);
+            } catch (\\Throwable $e) {
+                $emailError = $e->getMessage();
+                log_message('error', 'Database backup email delivery failed: {error}', ['error' => $emailError]);
+            }
         }
 
         $driveUploaded = false;
@@ -86,7 +92,7 @@ class DatabaseBackupService
             }
         }
 
-        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent,
+        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent, 'email_error' => $emailError,
             'drive_uploaded' => $driveUploaded, 'drive_error' => $driveError];
     }
 
@@ -205,8 +211,14 @@ class DatabaseBackupService
         }
 
         $emailSent = false;
+        $emailError = null;
         if ($email) {
-            $emailSent = $this->emailBackup($path, $emailRecipient);
+            try {
+                $emailSent = $this->emailBackup($path, $emailRecipient);
+            } catch (\\Throwable $e) {
+                $emailError = $e->getMessage();
+                log_message('error', 'Database backup email delivery failed: {error}', ['error' => $emailError]);
+            }
         }
 
         $driveUploaded = false;
@@ -221,7 +233,7 @@ class DatabaseBackupService
             }
         }
 
-        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent,
+        return ['path' => $path, 'name' => $filename, 'email_sent' => $emailSent, 'email_error' => $emailError,
             'drive_uploaded' => $driveUploaded, 'drive_error' => $driveError];
     }
 
