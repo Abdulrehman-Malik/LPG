@@ -97,10 +97,15 @@ class SalesService
 
             if(in_array($mode,['sell_gas_only','replace_same','sell_filled','replace_different'],true)){
                 $standardGasRate=$this->rates->currentKgRate($transactionAt);
-                if($standardGasRate===null) throw new RuntimeException('No effective gas/kg rate exists.');
-                // Amount-entry mode is always converted using the server-side current gas rate.
-                // This prevents a client-submitted quantity/rate from bypassing stock controls.
-                $gasRate=$enteredAmount!==null?$standardGasRate:($gasRateInput??$standardGasRate);
+                if($standardGasRate!==null && $standardGasRate<=0) $standardGasRate=null;
+                // A positive line rate is an allowed override. Only require a configured
+                // effective rate when the cashier has not supplied a usable line rate.
+                $gasRate=$gasRateInput??$standardGasRate;
+                if($gasRate===null || $gasRate<=0){
+                    throw new RuntimeException($gasRateInput===null
+                        ? 'No effective gas/kg rate exists. Enter a positive Gas Rate for this line or configure an effective rate in Gas Rate Settings.'
+                        : 'Gas rate must be greater than zero on line '.($i+1).'.');
+                }
             }
             if(in_array($mode,['sell_filled','replace_different','sell_empty'],true)){
                 $standardCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
@@ -110,7 +115,7 @@ class SalesService
 
             if($mode==='sell_gas_only'){
                 if($enteredAmount!==null){
-                    $gasKg=$enteredAmount/$standardGasRate;
+                    $gasKg=$enteredAmount/$gasRate;
                     if($gasKg<=0) throw new RuntimeException('Calculated gas quantity must be greater than zero on line '.($i+1).'.');
                 }else{
                     $gasKg=(float)($line['gas_weight_kg']??$qty);
@@ -149,7 +154,7 @@ class SalesService
                 if(count($availableEmpty)<(int)$qty) throw new RuntimeException('Insufficient empty cylinders of '.$type['name'].'.');
             }
 
-            $customGas=$standardGasRate!==null && abs($gasRate-$standardGasRate)>0.00001;
+            $customGas=$gasRateInput!==null && ($standardGasRate===null || abs($gasRate-$standardGasRate)>0.00001);
             $customCylinder=$standardCylinderRate!==null && abs($cylinderRate-$standardCylinderRate)>0.00001;
             $customRate=$customRate||$customGas||$customCylinder;
             $lineTotal=0;
@@ -652,14 +657,18 @@ class SalesService
                     $selectedAcrossLines[$selectedId]=$n;
                 }
                 $stdGas=$this->rates->currentKgRate($transactionAt);
-                if($stdGas===null) throw new RuntimeException('No effective gas/kg rate exists.');
+                if($stdGas!==null && $stdGas<=0) $stdGas=null;
                 $gasRate=$gasRateInput??$stdGas;
-                if($gasRate<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
+                if($gasRate===null || $gasRate<=0){
+                    throw new RuntimeException($gasRateInput===null
+                        ? 'No effective gas/kg rate exists. Enter a positive Gas Rate for this line or configure an effective rate in Gas Rate Settings.'
+                        : 'Gas rate must be greater than zero on line '.$n.'.');
+                }
             }else{
                 if($selectedIds) throw new RuntimeException('Physical cylinder selection is only allowed for filled cylinder sale lines.');
             }
 
-            $custom=(($status==='filled'&&$gasRateInput!==null&&abs($gasRate-$stdGas)>0.00001)||($cylRateInput!==null&&abs($cylRate-$stdCylinderRate)>0.00001));
+            $custom=(($status==='filled'&&$gasRateInput!==null&&($stdGas===null||abs($gasRate-$stdGas)>0.00001))||($cylRateInput!==null&&abs($cylRate-$stdCylinderRate)>0.00001));
             $customRate=$customRate||$custom;
             $prepared[]=[
                 'line_no'=>$n,'type_id'=>$typeId,'status'=>$status,'quantity'=>(int)$qty,
