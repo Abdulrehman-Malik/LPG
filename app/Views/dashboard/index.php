@@ -202,7 +202,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     <details class="dashboard-drill-card" data-detail-type="gas">
                         <summary><span class="type-color gas"></span><strong><?= esc($type['code'].' — '.$type['name']) ?></strong><span class="ms-auto"><?= number_format((float)$type['gas_kg'],2) ?> KG · <?= number_format((int)$type['cylinder_count']) ?> cylinders</span></summary>
                         <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder</th><th>Capacity</th><th>Gas KG</th><th>Status</th><th>Updated</th></tr></thead><tbody>
-                        <?php foreach($type['rows'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['unit_code']) ?></td><td><?= number_format((float)$row['capacity_kg'],2) ?> KG</td><td class="fw-semibold"><?= number_format((float)$row['gas_weight_kg'],2) ?> KG</td><td><span class="badge text-bg-success">Filled</span></td><td><?= esc($row['updated_at']) ?></td></tr><?php endforeach; ?>
+                        <?php foreach($type['rows'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['unit_code']) ?></td><td><?= number_format((float)$row['capacity_kg'],2) ?> KG</td><td class="fw-semibold"><?= number_format((float)$row['gas_weight_kg'],2) ?> KG</td><?php $gasKg=(float)$row['gas_weight_kg']; $capacityKg=(float)$row['capacity_kg']; $cylinderStatus=$gasKg<=0.00001?'Empty':($gasKg<$capacityKg-0.00001?'Partially Filled':'Filled'); $statusClass=$cylinderStatus==='Empty'?'text-bg-warning':($cylinderStatus==='Partially Filled'?'text-bg-info':'text-bg-success'); ?>
+                        <td><span class="badge <?= $statusClass ?>"><?= esc($cylinderStatus) ?></span></td><td><?= esc($row['updated_at']) ?></td></tr><?php endforeach; ?>
                         </tbody></table></div>
                     </details>
                 <?php endforeach; ?>
