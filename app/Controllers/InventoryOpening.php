@@ -117,7 +117,7 @@ class InventoryOpening extends Controller
             return redirect()->back()->withInput()->with('error', 'Gas quantity cannot be negative.');
         }
         if ($actual > $capacity + 0.00001) {
-            return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 3) . ' KG.');
+            return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 2) . ' KG.');
         }
 
         // Full / partially filled / empty is a calculated cylinder condition,
@@ -146,7 +146,7 @@ class InventoryOpening extends Controller
             }
             $capacity = (float) $ct['capacity_kg'];
             if ($actual > $capacity + 0.00001) {
-                return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 3) . ' KG.');
+                return redirect()->back()->withInput()->with('error', 'Gas quantity cannot exceed the selected cylinder capacity of ' . number_format($capacity, 2) . ' KG.');
             }
 
             $existingUnits = $db->table('cylinder_units')
@@ -484,7 +484,7 @@ class InventoryOpening extends Controller
 
             if ($mismatches && !$confirmed) {
                 $details = array_map(static function (array $m): string {
-                    return 'Row ' . $m['row'] . ' (' . $m['code'] . '): Excel ' . number_format($m['excel_capacity'], 3) . ' KG vs database ' . number_format($m['database_capacity'], 3) . ' KG';
+                    return 'Row ' . $m['row'] . ' (' . $m['code'] . '): Excel ' . number_format($m['excel_capacity'], 2) . ' KG vs database ' . number_format($m['database_capacity'], 2) . ' KG';
                 }, $mismatches);
                 return redirect()->back()->with('error', 'Capacity mismatch found. Review and upload again with "Confirm capacity mismatches" enabled. Existing database capacity will be retained. ' . implode(' | ', $details));
             }
@@ -635,7 +635,7 @@ class InventoryOpening extends Controller
                 throw $e;
             }
 
-            $message = 'Excel opening inventory imported successfully: ' . count($validated) . ' rows, ' . $totalUnits . ' physical cylinders, ' . number_format($totalGas, 3) . ' KG gas.';
+            $message = 'Excel opening inventory imported successfully: ' . count($validated) . ' rows, ' . $totalUnits . ' physical cylinders, ' . number_format($totalGas, 2) . ' KG gas.';
             if ($createdTypes) {
                 $message .= ' Created cylinder types: ' . implode(', ', $createdTypes) . '.';
             }

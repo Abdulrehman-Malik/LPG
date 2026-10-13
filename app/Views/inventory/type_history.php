@@ -17,7 +17,7 @@
 <?php foreach($movements as $m):
  $item=$m['inventory_type']==='gas_kg'?'Gas KG':($m['inventory_type']==='filled_cylinder'?'Filled Cylinder':'Empty Cylinder');
 ?>
-<tr><td><?=esc($m['movement_at'])?></td><td><?=esc(ucwords(str_replace('_',' ',(string)$m['source_type'])))?></td><td><?=esc($m['source_reference'])?></td><td><?=esc($m['unit_code']??'—')?></td><td><?=esc($item)?></td><td><span class="badge <?=$m['direction']==='out'?'text-bg-danger':'text-bg-success'?>"><?=esc(strtoupper($m['direction']))?></span></td><td><?=number_format((float)$m['quantity'],3)?></td><td class="fw-semibold"><?=number_format((float)$m['running_gas'],3)?></td><td><?=esc($m['notes']??'')?></td></tr>
+<tr><td><?=esc($m['movement_at'])?></td><td><?=esc(ucwords(str_replace('_',' ',(string)$m['source_type'])))?></td><td><?=esc($m['source_reference'])?></td><td><?=esc($m['unit_code']??'—')?></td><td><?=esc($item)?></td><td><span class="badge <?=$m['direction']==='out'?'text-bg-danger':'text-bg-success'?>"><?=esc(strtoupper($m['direction']))?></span></td><td><?=number_format((float)$m['quantity'], 2)?></td><td class="fw-semibold"><?=number_format((float)$m['running_gas'], 2)?></td><td><?=esc($m['notes']??'')?></td></tr>
 <?php endforeach;?>
 <?php if(!$movements):?><tr><td colspan="9" class="text-center text-muted py-4">No movements found for this cylinder type in the selected date range.</td></tr><?php endif;?>
 </tbody></table></div></div>

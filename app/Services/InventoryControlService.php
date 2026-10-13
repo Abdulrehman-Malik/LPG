@@ -39,7 +39,7 @@ class InventoryControlService
             if($gasKg>$current+0.00001) throw new RuntimeException('Wastage cannot exceed the cylinder current gas weight ('.$current.' kg).');
             $policy=$this->policy($locationId,(int)$unit['cylinder_type_id']);
             $allowed=$policy['wastage_mode']==='fixed_kg'?(float)$policy['wastage_fixed_kg']:$current*((float)$policy['wastage_percent']/100);
-            if($gasKg>$allowed+0.00001) throw new RuntimeException('Wastage exceeds the configured allowance of '.number_format($allowed,3).' kg for this cylinder.');
+            if($gasKg>$allowed+0.00001) throw new RuntimeException('Wastage exceeds the configured allowance of '.number_format($allowed, 2).' kg for this cylinder.');
             $remaining=$current-$gasKg;
             $this->db->table('inventory_movements')->insert(['location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasKg,'direction'=>'out','movement_at'=>date('Y-m-d H:i:s'),'source_type'=>'wastage','source_id'=>0,'cylinder_unit_id'=>$unitId,'created_by'=>$userId,'notes'=>$reason]);
             $this->db->table('inventory_wastage_logs')->insert(['location_id'=>$locationId,'cylinder_type_id'=>$unit['cylinder_type_id'],'cylinder_unit_id'=>$unitId,'gas_weight_kg'=>$gasKg,'reason'=>$reason,'created_by'=>$userId]);
