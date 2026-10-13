@@ -8,8 +8,8 @@ use RuntimeException;
 class TransactionalDataRefreshService
 {
     /**
-     * Clear transactional/test data while preserving application configuration
-     * and master data. This operation is intentionally destructive.
+     * Clear transactional/test data plus party, cylinder-type and rate master data,
+     * while preserving application configuration and user/role setup. Destructive.
      */
     public function refresh(): array
     {
@@ -38,6 +38,12 @@ class TransactionalDataRefreshService
             'daily_filled_stock',
             'daily_empty_stock',
             'daily_summaries',
+            // Parties and operational master data are deliberately refreshed too.
+            'rate_change_log',
+            'rate_cards',
+            'cylinder_types',
+            'customers',
+            'suppliers',
         ];
 
         // Preflight all core tables before making any destructive changes.
@@ -67,8 +73,7 @@ class TransactionalDataRefreshService
                 $cleared[] = $table;
             }
 
-            $db->table('customers')->update(['opening_balance' => 0]);
-            $db->table('suppliers')->update(['opening_balance' => 0]);
+            // Customers and suppliers are cleared as requested; no opening balances remain.
         } finally {
             $db->query('SET FOREIGN_KEY_CHECKS = 1');
         }
