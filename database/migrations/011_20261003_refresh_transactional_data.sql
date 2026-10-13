@@ -43,13 +43,11 @@
 --     expenses
 --   Audit:
 --     audit_logs
---   Ledger opening inputs:
---     customers.opening_balance, suppliers.opening_balance -> 0
+--   Party and master data:
+--     customers, suppliers, cylinder_types, rate_cards, rate_change_log
 --
 -- WHAT IS PRESERVED
 --   locations, shop_settings, roles, permissions, role_permissions, users
---   cylinder_types, customers, suppliers
---   rate_cards, rate_change_log
 --   inventory_policies, cash_registers
 --
 -- The authoritative current application derives stock from opening balances
@@ -103,13 +101,14 @@ BEGIN
 
         TRUNCATE TABLE expenses;
 
+        -- Clear dependent rate history and rate cards before cylinder types.
+        TRUNCATE TABLE rate_change_log;
+        TRUNCATE TABLE rate_cards;
+        TRUNCATE TABLE cylinder_types;
+        TRUNCATE TABLE customers;
+        TRUNCATE TABLE suppliers;
+
         SET FOREIGN_KEY_CHECKS = 1;
-
-        UPDATE customers
-        SET opening_balance = 0;
-
-        UPDATE suppliers
-        SET opening_balance = 0;
 
         -- Older installations may still contain legacy daily snapshot tables.
         -- Clear them when present so stale daily stock/summary screens cannot
@@ -163,8 +162,11 @@ BEGIN
             (SELECT COUNT(*) FROM cash_sessions) AS cash_session_rows,
             (SELECT COUNT(*) FROM customer_security_deposits) AS security_deposit_rows,
             (SELECT COUNT(*) FROM cylinder_custody) AS custody_rows,
-            (SELECT COALESCE(SUM(opening_balance),0) FROM customers) AS customer_opening_balance,
-            (SELECT COALESCE(SUM(opening_balance),0) FROM suppliers) AS supplier_opening_balance;
+            (SELECT COUNT(*) FROM customers) AS customer_rows,
+            (SELECT COUNT(*) FROM suppliers) AS supplier_rows,
+            (SELECT COUNT(*) FROM cylinder_types) AS cylinder_type_rows,
+            (SELECT COUNT(*) FROM rate_cards) AS rate_card_rows,
+            (SELECT COUNT(*) FROM rate_change_log) AS rate_change_log_rows;
 
     ELSE
         SELECT
