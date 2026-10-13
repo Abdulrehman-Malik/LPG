@@ -265,6 +265,7 @@ class DatabaseBackup extends Controller
             return redirect()->to('/database-backup')->with('error', 'Refresh cancelled. Enter the exact confirmation phrase to continue.');
         }
 
+        $refreshAttempted = false;
         try {
             $backup = (new DatabaseBackupService())->createBackup(false);
             $backupPath = (string) ($backup['path'] ?? '');
@@ -280,7 +281,11 @@ class DatabaseBackup extends Controller
                 'user_id' => (int) session()->get('user_id'),
                 'error' => $e->getMessage(),
             ]);
-            return redirect()->to('/database-backup')->with('error', 'Transactional data refresh failed: ' . $e->getMessage());
+            $message = 'Transactional data refresh failed: ' . $e->getMessage();
+            if ($refreshAttempted) {
+                $message .= ' The database may be partially refreshed. Restore the safety backup before resuming operations if data is inconsistent.';
+            }
+            return redirect()->to('/database-backup')->with('error', $message);
         }
     }
 
