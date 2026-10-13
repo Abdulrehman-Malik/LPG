@@ -103,9 +103,9 @@ Legend:
 - [x] Module 05 — API contract and security requirements documented
 - [x] Module 06 — Flutter Android/iOS app requirements documented
 - [x] Module 07 — Database model and non-destructive legacy migration plan documented
-- [x] Module 08 — QA and release gates documented
-- [ ] Inspect current data and produce customer-to-shop legacy mapping report
-- [ ] Finalize OTP/provider, staff multi-shop assignments, cancellation policy, delivery rules and pricing policy
+- [x] Module 08 — QA and release gates documented\n- [x] Module 09 — Dependency-ordered implementation plan and decision register documented
+- [x] Complete documentation-only development planning on the feature branch\n- [ ] Review/approve the mobile multi-shop decision register with the owner\n- [ ] Inspect current data in a safe non-production copy and produce customer-to-shop legacy mapping report
+- [ ] Finalize the remaining owner decisions listed in docs/mobile-multishop/09-implementation-plan-and-decision-register.md
 - [ ] Implement business-to-location model and shop-scoped authorization
 - [ ] Add verified customer-to-shop assignment and customer mobile-account linking
 - [ ] Add order tables, idempotency and status history
