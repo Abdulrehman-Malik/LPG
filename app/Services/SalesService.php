@@ -129,7 +129,7 @@ class SalesService
                     ->where(['id'=>$sourceUnitId,'location_id'=>$locationId,'cylinder_type_id'=>$typeId,'status'=>'filled'])
                     ->get()->getRowArray();
                 if(!$sourceUnit) throw new RuntimeException('Selected source cylinder is invalid or no longer available on line '.($i+1).'.');
-                if($gasKg>(float)$sourceUnit['gas_weight_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds selected source cylinder stock on line '.($i+1).'. Available: '.number_format((float)$sourceUnit['gas_weight_kg'],3).' kg.');
+                if($gasKg>(float)$sourceUnit['gas_weight_kg']+0.00001) throw new RuntimeException('Gas quantity exceeds selected source cylinder stock on line '.($i+1).'. Available: '.number_format((float)$sourceUnit['gas_weight_kg'], 2).' kg.');
                 $gasRequirements[]=['line_no'=>$i+1,'type_id'=>$typeId,'gas_kg'=>$gasKg];
             }elseif(in_array($mode,['replace_same','sell_filled','replace_different'],true)){
                 if(floor($qty)!==$qty) throw new RuntimeException('Cylinder quantity on line '.($i+1).' must be a whole number.');
@@ -228,7 +228,7 @@ class SalesService
                     if(!$allowStockOverride) throw new RuntimeException('Gas stock validation is OFF, but stock override is disabled in Shop Settings.');
                     if(!$overrideConfirmed) throw new RuntimeException('Gas stock validation is OFF. Confirm the stock override before posting this sale.');
                 }elseif($virtualGasStock+0.00001<$qty){
-                    throw new RuntimeException('Insufficient gas stock. Available: '.number_format($virtualGasStock,3).' kg; required: '.number_format($qty,3).' kg.');
+                    throw new RuntimeException('Insufficient gas stock. Available: '.number_format($virtualGasStock, 2).' kg; required: '.number_format($qty, 2).' kg.');
                 }
                 $virtualGasStock-=$qty;
             }
@@ -1047,7 +1047,7 @@ class SalesService
             if($cfg['gas']<0)throw new RuntimeException('Return gas cannot be negative for '.$row['unit_code'].'.');
             if($cfg['gas']>0&&!$allowGas)throw new RuntimeException('Return gas quantity is disabled in Shop Settings.');
             if($cfg['gas']>0&&$issued<=0&&!$allowEmptyGas)throw new RuntimeException('Cylinder '.$row['unit_code'].' was issued empty and cannot be returned with gas under current Shop Settings.');
-            if($cfg['gas']>$issued+0.00001&&!$allowOver)throw new RuntimeException('Return gas for '.$row['unit_code'].' cannot exceed the issued gas quantity of '.number_format($issued,3).' KG.');
+            if($cfg['gas']>$issued+0.00001&&!$allowOver)throw new RuntimeException('Return gas for '.$row['unit_code'].' cannot exceed the issued gas quantity of '.number_format($issued, 2).' KG.');
             $rate=$cfg['rate']>0?$cfg['rate']:$row['issued_gas_rate'];
             if($cfg['gas']>0&&$rate<0)throw new RuntimeException('Return gas rate cannot be negative.');
             $returnById[$id]['rate']=$rate;$returnById[$id]['consumed']=max(0,$issued-$cfg['gas']);
@@ -1464,7 +1464,7 @@ class SalesService
    if($stock+0.00001<$qty){
     throw new RuntimeException(
      'Insufficient gas stock. Available gas is derived from filled physical cylinders: ' .
-     number_format($stock,3) . ' KG.'
+     number_format($stock, 2) . ' KG.'
     );
    }
    return;
