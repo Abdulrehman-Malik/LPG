@@ -45,7 +45,7 @@
         "ext-pgsql": "If you use PostgreSQL",
         "ext-posix": "If you use Signals",
         "ext-readline": "Improves CLI::input() usability",
-        "ext-redis": "If you use Cache class RedisHandler",
+        "ext-redis": "If you use Cache class RedisHandler with Redis",
         "ext-simplexml": "If you format XML",
         "ext-sodium": "If you use Encryption SodiumHandler",
         "ext-sqlite3": "If you use SQLite3",
@@ -67,6 +67,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "start": "php -S 0.0.0.0:\${PORT:-8080} -t public"
     }
 }
