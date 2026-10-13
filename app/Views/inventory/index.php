@@ -9,7 +9,7 @@
 </div>
 
 <div class="row g-3 mb-4">
-  <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="small text-muted">Current Gas</div><div class="fs-4 fw-bold"><?=number_format($totalGas,3)?> KG</div></div></div></div>
+  <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="small text-muted">Current Gas</div><div class="fs-4 fw-bold"><?=number_format($totalGas, 2)?> KG</div></div></div></div>
   <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="small text-muted">Total Cylinders</div><div class="fs-4 fw-bold"><?=number_format($totalCylinders)?></div></div></div></div>
   <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Filled</div><div class="fs-4 fw-bold"><?=number_format($filledCount)?></div></div></div></div>
   <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Partially Filled</div><div class="fs-4 fw-bold"><?=number_format($partialCount)?></div></div></div></div>
@@ -33,13 +33,13 @@
       ?>
         <tr>
           <td><strong><?=esc($row['code'])?></strong><div class="small text-muted"><?=esc($row['name'])?></div></td>
-          <td><?=number_format((float)$row['capacity_kg'],3)?> KG</td>
+          <td><?=number_format((float)$row['capacity_kg'], 2)?> KG</td>
           <td class="text-end"><?=number_format((int)$row['filled_count'])?></td>
           <td class="text-end"><?=number_format((int)$row['partial_count'])?></td>
           <td class="text-end"><?=number_format((int)$row['empty_count'])?></td>
           <td class="text-end fw-semibold"><?=number_format((int)$row['total_cylinders'])?></td>
-          <td class="text-end fw-semibold"><?=number_format($gas,3)?></td>
-          <td class="text-end"><?=number_format($capacity,3)?><div class="small text-muted"><?=number_format($util,1)?>% utilized</div></td>
+          <td class="text-end fw-semibold"><?=number_format($gas, 2)?></td>
+          <td class="text-end"><?=number_format($capacity, 2)?><div class="small text-muted"><?=number_format($util,1)?>% utilized</div></td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-primary" href="<?=site_url('inventory/cylinders/'.$row['id'])?>"><i class="bi bi-box-seam me-1"></i>View Cylinders</a>
             <a class="btn btn-sm btn-outline-secondary" href="<?=site_url('inventory/type-history/'.$row['id'])?>"><i class="bi bi-clock-history me-1"></i>History</a>
