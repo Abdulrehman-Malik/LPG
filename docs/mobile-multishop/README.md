@@ -36,6 +36,10 @@ The existing CodeIgniter/PHP application and MySQL database remain the business 
 
 These are source-code observations, not runtime test results.
 
+## First read
+
+- [Current-state gap report](00-current-state-gap-report.md) — reviewed existing roles/permissions, customer/location schema gaps, POS boundaries and safe first implementation work package.
+
 ## Module index and delivery sequence
 
 | Module | Scope | Status |
