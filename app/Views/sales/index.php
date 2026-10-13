@@ -193,22 +193,23 @@
 .cylinderPickerRow.is-visible { display:table-row; }
 .cylinderPickerRow td { padding:.15rem .35rem !important; border-top:0 !important; }
 .cylinderPicker { padding:.35rem !important; max-height:230px; overflow:auto; }
-.cylinderPicker .cylinder-option.status-filled{border-color:#16a34a!important;border-left:4px solid #16a34a!important;background:#f0fdf4;color:#166534}
+.cylinderPicker .cylinder-options{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:.5rem!important;align-items:stretch}
+.cylinderPicker .cylinder-option{box-sizing:border-box;width:100%;min-width:0!important;max-width:none;min-height:78px;padding:.55rem .6rem!important;border:1px solid #dbe3ec!important;border-left:4px solid #94a3b8!important;border-radius:.65rem!important;display:flex;align-items:center;gap:.55rem;white-space:normal;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.05);transition:border-color .15s,box-shadow .15s,transform .15s}
+.cylinderPicker .cylinder-option:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(15,23,42,.08)}
+.cylinderPicker .cylinder-option.status-filled{border-color:#86efac!important;border-left-color:#16a34a!important;background:linear-gradient(135deg,#f0fdf4,#fff);color:#166534}
 .cylinderPicker .cylinder-option.status-filled .cylinder-art{color:#16a34a}
-.cylinderPicker .cylinder-option.status-filled .cylinder-status{background:#dcfce7;color:#166534;border-radius:999px;padding:.08rem .32rem;font-weight:800}
-.cylinderPicker .cylinder-option.status-partial{border-color:#d97706!important;border-left:4px solid #d97706!important;background:#fffbeb;color:#92400e}
+.cylinderPicker .cylinder-option.status-partial{border-color:#fcd34d!important;border-left-color:#d97706!important;background:linear-gradient(135deg,#fffbeb,#fff);color:#92400e}
 .cylinderPicker .cylinder-option.status-partial .cylinder-art{color:#d97706}
-.cylinderPicker .cylinder-option.status-partial .cylinder-status{background:#fef3c7;color:#92400e;border-radius:999px;padding:.08rem .32rem;font-weight:800}
-.cylinder-picker-title { font-size:.82rem; margin-bottom:.3rem !important; }
-.cylinder-options { gap:.35rem !important; }
-.cylinder-option { width:118px; min-width:118px !important; max-width:118px; min-height:44px; padding:.2rem .3rem !important; border-radius:.4rem !important; display:flex; align-items:center; gap:.25rem; }
-.cylinder-option:hover { transform:translateY(-1px); }
-.cylinder-option .cylinder-art { flex:0 0 24px; width:24px; height:30px; }
-.cylinder-option .cylinder-copy { min-width:0; line-height:1.08; }
-.cylinder-option .cylinder-code { display:block; font-size:.72rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cylinder-option .cylinder-name { display:block; font-size:.58rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cylinder-option .cylinder-gas { display:block; font-size:.56rem; margin-top:.15rem; white-space:nowrap; }
-.cylinder-option .cylinder-status { font-size:.55rem; font-weight:700; }
+.cylinderPicker .cylinder-option .cylinder-art{flex:0 0 28px;width:28px;height:36px}
+.cylinderPicker .cylinder-option .cylinder-copy{display:block;flex:1;min-width:0;line-height:1.2;overflow:hidden}
+.cylinderPicker .cylinder-option .cylinder-code{display:block;font-size:.75rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cylinderPicker .cylinder-option .cylinder-name{display:block;font-size:.64rem;font-weight:600;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.12rem}
+.cylinderPicker .cylinder-option .cylinder-gas{display:block;font-size:.68rem;font-weight:700;margin-top:.25rem;white-space:normal;overflow-wrap:anywhere}
+.cylinderPicker .cylinder-option .cylinder-status{display:inline-flex;align-items:center;width:max-content;max-width:100%;margin:.3rem 0 0;padding:.12rem .42rem;border-radius:999px;font-size:.58rem;line-height:1.25;font-weight:800;letter-spacing:.025em;white-space:normal}
+.cylinderPicker .cylinder-option.status-filled .cylinder-status{background:#dcfce7;color:#166534}
+.cylinderPicker .cylinder-option.status-partial .cylinder-status{background:#fef3c7;color:#92400e}
+.cylinderPicker .cylinder-option:has(input:checked){outline:2px solid #0d9488;outline-offset:-2px;box-shadow:0 0 0 2px rgba(13,148,136,.12)}
+@media(max-width:575.98px){.cylinderPicker .cylinder-options{grid-template-columns:repeat(2,minmax(0,1fr))}.cylinderPicker .cylinder-option{min-height:74px;padding:.45rem!important;gap:.4rem}.cylinderPicker .cylinder-option .cylinder-art{flex-basis:23px;width:23px;height:31px}.cylinderPicker .cylinder-option .cylinder-code{font-size:.68rem}.cylinderPicker .cylinder-option .cylinder-gas{font-size:.63rem}}
 .cylinder-option .filledUnitCheck { position:absolute; opacity:0; pointer-events:none; }
 .cylinder-option:has(input:checked) { border-width:2px !important; }
 
