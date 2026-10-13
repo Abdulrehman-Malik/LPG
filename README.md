@@ -41,14 +41,43 @@ The POS no longer contains a separate default-transaction preference control. It
 
 ## Installation
 
-1. Create/configure a MySQL 8+ database.
-2. Configure the local environment from `.env.example`.
-3. Run `database/schema.sql` on the database.
-4. Run the required non-destructive migrations after the schema, including `013_20261004_customer_credit_sale_control.sql` for the customer credit-sale rule.
-5. On an existing database, also run `database/migrations/009_20261003_permissions_sync.sql` to add any newer permissions and restore the default ADMIN/MANAGER/CASHIER permission mappings without removing custom permissions.
-6. Run Composer dependencies: `composer install`.
-7. Point Apache/Nginx to the project's `public` directory.
-8. Open the application and log in with the configured user.
+### Local / manual installation
+
+1. Install PHP 8.2+ with the required extensions (`intl`, `mbstring`, `mysqli`, and `zip`), Composer, and MySQL 8+.
+2. Copy the repository's `env` example file to `.env` and configure the APP and DATABASE values. Never commit `.env` or real credentials.
+3. Run `composer install`.
+4. For a manual schema installation, select the intended empty database and run `database/schema.sql` against it. Then apply the required numbered, non-destructive migrations that are not already applied, in ascending order.
+5. Point Apache/Nginx to the project's `public` directory and open the application URL.
+
+### Environment variables and flags
+
+The repository's `env` file documents each configuration block. Important values:
+
+| Variable | Purpose / instructions |
+| --- | --- |
+| `CI_ENVIRONMENT` | Use `development` locally for detailed diagnostics; set to `production` on public deployments. |
+| `app.baseURL` | The full public application URL, including a trailing slash. Use your Railway domain in production. |
+| `database.default.hostname` | MySQL server hostname for a standard CodeIgniter environment configuration. |
+| `database.default.database` | Name of the database the application should use. |
+| `database.default.username` / `database.default.password` | Database login credentials. Use a restricted account and never commit production credentials. |
+| `database.default.DBDriver` / `database.default.port` | Keep `MySQLi` for MySQL; use the port supplied by your database host (usually 3306). |
+| `LPG_DB_HOST`, `LPG_DB_NAME`, `LPG_DB_USER`, `LPG_DB_PASS`, `LPG_DB_PORT` | Alternative explicit database variables supported by the app and convenient for Railway's Variables panel. Set the values supplied by your database provider. |
+| `LPG_DB_DRIVER` | Optional driver override; normally `MySQLi`. |
+| `encryption.key` | Recommended in production: a unique, random secret. Keep it stable and out of source control. |
+| `app.companyName` | Optional company name shown on the login page and browser title. |
+| `logger.threshold` | Controls log verbosity. Use a production-appropriate level; do not expose debug details to visitors. |
+| `backup.directory` | Optional location for local SQL backup files. Local files on ephemeral hosting may not survive redeployments. |
+| `FRESH_DATABASE_SETUP` | Installer feature flag; details below. |
+
+### First-time database setup flag
+
+- **Default: `FRESH_DATABASE_SETUP = false`.** Normal login and normal application use; the installer is not enabled.
+- **Temporarily set `FRESH_DATABASE_SETUP = true` only for a controlled first deployment.** If setup is incomplete, login redirects to Installation Setup. The installer creates the configured database if missing, applies `database/schema.sql`, then runs pending numbered migrations in order. The separate destructive transactional-data refresh migration is not run automatically.
+- **Existing populated database warning:** replacement deletes the configured database's tables and records. It requires verification of an active ADMIN user's password, typed confirmations, and a successfully created/verified safety backup. The database account also needs the necessary create/drop permissions.
+- After installation, verify that the application and administrator login work, then **immediately set `FRESH_DATABASE_SETUP = false`**.
+- Do not enable this flag as a routine way to refresh transactional data. Use the separately permission-controlled Transactional Data Refresh feature for that purpose.
+
+See [First-Time Database Installation](docs/first-install-setup.md) for the full procedure and [Railway Deployment](docs/railway-deployment.md) for Railway-specific setup.
 
 ## Important Environment Rule
 
