@@ -1,8 +1,8 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use Config\\Database;
+use Config\Database;
 use RuntimeException;
 
 class TransactionalDataRefreshService
