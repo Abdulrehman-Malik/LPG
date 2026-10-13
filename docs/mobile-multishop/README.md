@@ -1,6 +1,6 @@
 # Mobile App + Multi-Shop Ordering — Requirements Pack
 
-**Status:** Requirements / architecture planning in progress. No mobile app or order feature implementation is included in this documentation-only step.
+**Status:** Development planning pack complete; implementation has not started. Business decisions and legacy data mapping remain approval gates. This branch currently contains documentation-only changes.
 **Working branch:** `feature/mobile-multishop-ordering-requirements`
 **Baseline:** current `main` as of 2026-10-13. Do not merge or modify `main` as part of this work.
 
@@ -51,7 +51,7 @@ These are source-code observations, not runtime test results.
 | 05 | API contracts, authentication and security | Documented |
 | 06 | Flutter app experience and role-based navigation | Documented |
 | 07 | Database migration and legacy-data plan | Documented |
-| 08 | QA, rollout and release gates | Documented |
+| 08 | QA, rollout and release gates | Documented |\n| 09 | Dependency-ordered implementation plan and decision register | Documented |
 
 ## Implementation sequence for the coding agent
 
