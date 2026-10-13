@@ -1,7 +1,7 @@
 <?= $this->extend('layouts/app') ?>
 <?= $this->section('content') ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <div><h4 class="mb-1">Physical Cylinders</h4><div class="text-muted small"><?=esc($type['code'].' — '.$type['name'])?> · Capacity <?=number_format((float)$type['capacity_kg'],3)?> KG</div></div>
+  <div><h4 class="mb-1">Physical Cylinders</h4><div class="text-muted small"><?=esc($type['code'].' — '.$type['name'])?> · Capacity <?=number_format((float)$type['capacity_kg'], 2)?> KG</div></div>
   <a class="btn btn-outline-secondary" href="<?=site_url('inventory')?>"><i class="bi bi-arrow-left me-1"></i>Inventory</a>
 </div>
 <form method="get" class="row g-2 mb-3">
@@ -24,7 +24,7 @@
   $badge=$label==='Filled'?'text-bg-success':($label==='Partially Filled'?'text-bg-warning':'text-bg-secondary');
 ?>
 <tr>
-<td><strong><?=esc($u['unit_code'])?></strong></td><td><?=number_format($cap,3)?> KG</td><td class="fw-semibold"><?=number_format($gas,3)?> KG</td>
+<td><strong><?=esc($u['unit_code'])?></strong></td><td><?=number_format($cap, 2)?> KG</td><td class="fw-semibold"><?=number_format($gas, 2)?> KG</td>
 <td><span class="badge <?=$badge?>"><?=esc($label)?></span></td><td>Current Branch</td>
 <td><?=esc($u['last_activity_at']??'—')?></td>
 <td><a class="btn btn-sm btn-primary" href="<?=site_url('inventory/cylinder/'.$u['id'])?>">Details</a></td>
