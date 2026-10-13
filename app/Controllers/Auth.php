@@ -21,6 +21,10 @@ class Auth extends Controller
     {
         if(session()->get('isLoggedIn')) return redirect()->to(site_url('dashboard'));
 
+        if ((new \\App\\Services\\InstallationSetupService())->shouldRedirectToSetup()) {
+            return redirect()->to(site_url('installation'));
+        }
+
         try {
             $migrationGate=(new MigrationRunnerService())->status();
             $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
@@ -43,6 +47,9 @@ class Auth extends Controller
 
     public function attemptLogin(): RedirectResponse
     {
+        if ((new \\App\\Services\\InstallationSetupService())->shouldRedirectToSetup()) {
+            return redirect()->to(site_url('installation'));
+        }
         try {
             $migrationGate=(new MigrationRunnerService())->status();
             if(!$migrationGate['ready']) {
