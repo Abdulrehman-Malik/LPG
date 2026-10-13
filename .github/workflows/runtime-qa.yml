@@ -43,7 +43,7 @@ jobs:
         env:
           MYSQL_PWD: root
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root < database/schema.sql
+          mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/schema.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/007_20261003_pos_transaction_type.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/008_20261003_individual_cylinder_tracking.sql
           mysql -h 127.0.0.1 -P 3306 -u root perfect_lpg < database/migrations/010_20261004_purchase_inventory_integrity.sql
