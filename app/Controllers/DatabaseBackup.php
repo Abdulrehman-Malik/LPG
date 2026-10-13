@@ -269,7 +269,7 @@ class DatabaseBackup extends Controller
             $backup = (new DatabaseBackupService())->createBackup(false);
             $backupPath = (string) ($backup['path'] ?? '');
             if ($backupPath === '' || !is_file($backupPath) || (filesize($backupPath) ?: 0) < 50) {
-                throw new \\RuntimeException('Refresh cancelled because a valid safety backup could not be verified.');
+                throw new \RuntimeException('Refresh cancelled because a valid safety backup could not be verified.');
             }
             $result = (new \App\Services\TransactionalDataRefreshService())->refresh();
             $message = 'Transactional data refresh completed. Safety backup: ' . ($backup['name'] ?? 'created') .
