@@ -29,7 +29,8 @@ class DatabaseBackup extends Controller
             'backupDirectory' => $service->directory(),
             'maxUploadSize' => config('Backup')->maxUploadSize,
             'emailRecipients' => (string) session()->get('database_backup_email'),
-            'emailSettings' => $settings,\n            'isAdmin' => strtoupper((string) session()->get('role')) === 'ADMIN',
+            'emailSettings' => $settings,
+            'isAdmin' => strtoupper((string) session()->get('role')) === 'ADMIN',
         ]);
     }
 
