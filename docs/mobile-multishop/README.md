@@ -51,17 +51,16 @@ These are source-code observations, not runtime test results.
 | 05 | API contracts, authentication and security | Documented |
 | 06 | Flutter app experience and role-based navigation | Documented |
 | 07 | Database migration and legacy-data plan | Documented |
-| 08 | QA, rollout and release gates | Documented |\n| 09 | Dependency-ordered implementation plan and decision register | Documented |
+| 08 | QA, rollout and release gates | Documented |
+| 09 | Dependency-ordered implementation plan and decision register | Documented |
 
 ## Implementation sequence for the coding agent
 
-1. Review this pack and the current `ARCHITECTURE.md`, `DEVELOPMENT_PLAN.md`, `agent.md`, `TESTING.md`, `SQA.md`, `app/Services/PermissionService.php`, `app/Controllers/Users.php`, `app/Models/UserModel.php`, `app/Models/CustomerModel.php`, `app/Config/Routes.php`, and `database/schema.sql`.
-2. Produce a current-versus-target gap report and propose the migration/backfill strategy. Do not change production behavior yet.
-3. Implement backend foundations first: business/shop relationships, customer-to-shop ownership, staff shop assignments and server-side scope authorization.
-4. Add order tables and web-based staff order management before or alongside the API so the business can receive orders without depending on the mobile UI.
-5. Add versioned API endpoints and security tests.
-6. Build the Flutter app against the documented API; keep secrets and business calculations on the server.
-7. Pilot one business with two shops, then test business-wide and shop-level isolation before release.
+Read [the detailed implementation plan and decision register](09-implementation-plan-and-decision-register.md) before starting any coding. It defines work packages WP-0 through WP-10, dependencies, exit criteria, acceptance requirements and release gates.
+
+Implementation is **not authorized yet**. First review and approve the decision register, then complete WP-1 legacy data discovery using a safe non-production database copy. Do not make application/schema changes until the required business decisions and customer-to-shop mapping are approved.
+
+The ordered work is: source inventory and decisions → legacy customer/shop mapping → business/shop scope and customer identity → order data/state machine → backend services and web Order Management → versioned API/security → Flutter customer experience → Flutter staff/owner experience → POS fulfilment reconciliation → two-shop pilot and release.
 
 ## Decisions already fixed
 
