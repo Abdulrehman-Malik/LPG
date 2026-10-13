@@ -1,5 +1,31 @@
 # First-Time Database Installation
 
+## Configure the environment
+
+Before opening the installer, configure the environment for the target customer/deployment. Copy the repository's `env` example to `.env` for manual hosting, or enter equivalent values in your hosting provider's environment/Variables panel. Never commit real passwords or production secrets.
+
+| Variable | Purpose |
+| --- | --- |
+| `CI_ENVIRONMENT` | Use `production` for a public deployment; use `development` only locally. |
+| `app.baseURL` | Full application URL, including the trailing slash. |
+| `database.default.hostname` / `LPG_DB_HOST` | MySQL hostname. The explicit `LPG_DB_HOST` value takes precedence when provided. |
+| `database.default.database` / `LPG_DB_NAME` | Target database name. `LPG_DB_NAME` takes precedence when provided. |
+| `database.default.username` / `LPG_DB_USER` | MySQL username. |
+| `database.default.password` / `LPG_DB_PASS` | MySQL password; store secrets in the hosting provider, not source control. |
+| `database.default.port` / `LPG_DB_PORT` | MySQL port, commonly 3306. |
+| `database.default.DBDriver` / `LPG_DB_DRIVER` | Use `MySQLi` for MySQL; the explicit `LPG_DB_DRIVER` value takes precedence when provided. |
+| `encryption.key` | Recommended unique secret for production; keep stable between deployments and private. |
+| `app.companyName` | Optional company name shown on the login page and browser title. |
+| `FRESH_DATABASE_SETUP` | Installer feature flag described below. |
+
+## What the installation flag does
+
+- `FRESH_DATABASE_SETUP = false` is the safe default. It leaves the installation workflow disabled during normal application use.
+- Temporarily set `FRESH_DATABASE_SETUP = true` only while setting up a new deployment. If installation has not completed, opening login redirects to Installation Setup.
+- The installer creates the configured database if it does not exist, applies `database/schema.sql`, runs pending numbered migrations in order, and records completion only after success.
+- The destructive transactional-data refresh migration (`011_20261003_refresh_transactional_data.sql`) is excluded from automatic installation.
+- After setup and administrator login have been verified, set `FRESH_DATABASE_SETUP = false` immediately.
+
 ## Normal operation
 
 Keep this setting disabled in the deployment .env file:
