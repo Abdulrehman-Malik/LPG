@@ -81,3 +81,7 @@ CI_ENVIRONMENT = development
 
 # Company name displayed on the login page and browser title.
 app.companyName = 'Perfect LPG (Pvt.) LTD'
+
+# Enable only during first-time deployment. Existing database replacement requires an active ADMIN password,
+# explicit destructive confirmation, and a verified safety backup. Leave false during normal operation.
+FRESH_DATABASE_SETUP = false
