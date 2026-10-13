@@ -32,6 +32,7 @@ class Users extends Controller
     {
         if($r=$this->guard()) return $r;
 
+        $currentPermissions=PermissionService::current();
         $db=Database::connect();
         $rolePermissions=$db->table('role_permissions rp')
             ->select('rp.role_id,rp.permission_id')
@@ -54,7 +55,7 @@ class Users extends Controller
             'roles'=>$this->roles->orderBy('name')->findAll(),
             'permissions'=>$this->permissions->orderBy('code')->findAll(),
             'rolePermissions'=>$map,
-            'currentPermissions'=>PermissionService::current(),
+            'currentPermissions'=>$currentPermissions,
         ]);
     }
 
