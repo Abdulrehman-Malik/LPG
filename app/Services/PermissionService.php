@@ -32,6 +32,8 @@ class PermissionService
             'SUPPLIER_MANAGE' => 'Manage suppliers',
             'RATE_MANAGE' => 'Manage LPG rates',
             'INVENTORY_MANAGE' => 'Manage inventory',
+            'INVENTORY_CONTROLS_MANAGE' => 'Manage inventory controls',
+            'GAS_WASTAGE_MANAGE' => 'Manage gas wastage',
             'PURCHASE_MANAGE' => 'Manage purchases',
             'CASH_MANAGE' => 'Manage counter cash',
             'EXPENSE_MANAGE' => 'Manage expenses',
