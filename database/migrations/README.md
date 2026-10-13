@@ -53,7 +53,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
 3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031**.
-4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive transactional-data refresh intended for disposable staging/test databases. Its refresh list is authoritative for transactional/test state: whenever a later migration introduces a new transactional table, update the controlled refresh script/rule so that table is reset too, while master/configuration data remains preserved.
+4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive refresh intended for disposable staging/test databases. It clears transactional records plus customers, suppliers, cylinder types, rate cards, and rate-change history. Users, roles, permissions, locations, shop settings, cash registers, inventory policies, and other application configuration remain. Whenever a later migration introduces a new transactional table, update the controlled refresh service/script so that table is reset too.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
 7. Keep migration files idempotent where practical so a partially completed deployment can be safely retried.
@@ -68,7 +68,7 @@ Before deployment, identify the latest sequence already applied and continue fro
 
 ## Staging refresh
 
-To intentionally reset transactional/test data:
+To intentionally reset transactional/test data, parties (customers and suppliers), cylinder types, and LPG rates/rate history:
 
 ```sql
 USE perfect_lpg;
@@ -76,7 +76,7 @@ SET @lpg_refresh_transactional_data = 1;
 SOURCE database/migrations/011_20261003_refresh_transactional_data.sql;
 ```
 
-Never execute the staging refresh against production unless a deliberate full transactional reset is explicitly intended.
+After the refresh, re-create customers/suppliers, cylinder types, and rates before resuming normal POS and inventory operations. Never execute the staging refresh against production unless a deliberate full reset of these records is explicitly intended.
 
 ## Future migration naming standard
 
