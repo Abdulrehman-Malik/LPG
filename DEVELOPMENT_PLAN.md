@@ -94,7 +94,7 @@ Legend:
 
 ## Phase 7 — Mobile App and Multi-Shop Customer Ordering
 **Requirements branch:** `feature/mobile-multishop-ordering-requirements`
-**Current status:** requirements pack documented; implementation not started. This phase must be developed and tested on a feature branch, not directly on `main`.
+**Current status:** planning pack complete; implementation not started. Business decisions and legacy data mapping remain approval gates. Keep all work on the feature branch, never directly on `main`.
 
 - [x] Module 01 — Product scope and target architecture documented
 - [x] Module 02 — Business, shops, staff roles, permissions and scope requirements documented
@@ -103,8 +103,11 @@ Legend:
 - [x] Module 05 — API contract and security requirements documented
 - [x] Module 06 — Flutter Android/iOS app requirements documented
 - [x] Module 07 — Database model and non-destructive legacy migration plan documented
-- [x] Module 08 — QA and release gates documented\n- [x] Module 09 — Dependency-ordered implementation plan and decision register documented
-- [x] Complete documentation-only development planning on the feature branch\n- [ ] Review/approve the mobile multi-shop decision register with the owner\n- [ ] Inspect current data in a safe non-production copy and produce customer-to-shop legacy mapping report
+- [x] Module 08 — QA and release gates documented
+- [x] Module 09 — Dependency-ordered implementation plan and decision register documented
+- [x] Complete documentation-only development planning on the feature branch
+- [ ] Review/approve the mobile multi-shop decision register with the owner
+- [ ] Inspect current data in a safe non-production copy and produce customer-to-shop legacy mapping report
 - [ ] Finalize the remaining owner decisions listed in docs/mobile-multishop/09-implementation-plan-and-decision-register.md
 - [ ] Implement business-to-location model and shop-scoped authorization
 - [ ] Add verified customer-to-shop assignment and customer mobile-account linking
@@ -114,6 +117,16 @@ Legend:
 - [ ] Build Flutter app for Android and iOS
 - [ ] Run two-shop isolation pilot and existing POS regression suite
 - [ ] Obtain explicit approval before merge/deployment
+
+## Mobile / Multi-Shop Planning Gate
+
+- [x] Requirements and architecture modules 01–08 documented on `feature/mobile-multishop-ordering-requirements`.
+- [x] Module 09 implementation plan, decision register, dependency order, acceptance criteria and release gates documented.
+- [x] Documentation-only planning completed; no mobile/order application code or database schema was changed.
+- [ ] Owner reviews/approves the business decisions in `docs/mobile-multishop/09-implementation-plan-and-decision-register.md`.
+- [ ] Inspect current data in a safe non-production copy and prepare/review customer-to-shop mapping.
+- [ ] Explicit approval to begin implementation.
+- [ ] Until approval, do not modify application code, schema/migrations, production data, or `main`.
 
 ## Workflow Gate
 
