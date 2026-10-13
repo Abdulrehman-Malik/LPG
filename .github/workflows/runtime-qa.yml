@@ -52,8 +52,9 @@ jobs:
       - name: Prepare test environment
         run: |
           cp env .env
-          sed -i "s# app.baseURL = 'http://localhost:180/LPG/public/'#app.baseURL = 'http://localhost:8080/'#" .env
-          sed -i "s# app_baseURL = 'http://localhost:180/LPG/public/'#app_baseURL = 'http://localhost:8080/'#" .env
+          # Normalize either CodeIgniter base URL spelling, independent of leading whitespace or old value.
+          sed -i -E "s#^[[:space:]]*(app\\.baseURL|app_baseURL)[[:space:]]*=.*#\\1 = 'http://localhost:8080/'#" .env
+          grep -Eq "^(app\\.baseURL|app_baseURL)[[:space:]]*=[[:space:]]*'http://localhost:8080/'$" .env
           sed -i "s/^CI_ENVIRONMENT[[:space:]]*=.*/CI_ENVIRONMENT = development/" .env
           cat >> .env <<'EOF'
           database.default.hostname = 127.0.0.1
