@@ -7,8 +7,8 @@
 <div class="row g-3 mb-4">
   <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="small text-muted">Cylinder Code</div><div class="fw-bold fs-5"><?=esc($unit['unit_code'])?></div></div></div></div>
   <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Type</div><div class="fw-bold"><?=esc($unit['cylinder_code'])?></div></div></div></div>
-  <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Capacity</div><div class="fw-bold"><?=number_format((float)$unit['capacity_kg'],3)?> KG</div></div></div></div>
-  <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Current Gas</div><div class="fw-bold"><?=number_format((float)$unit['gas_weight_kg'],3)?> KG</div></div></div></div>
+  <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Capacity</div><div class="fw-bold"><?=number_format((float)$unit['capacity_kg'], 2)?> KG</div></div></div></div>
+  <div class="col-md-2"><div class="card h-100"><div class="card-body"><div class="small text-muted">Current Gas</div><div class="fw-bold"><?=number_format((float)$unit['gas_weight_kg'], 2)?> KG</div></div></div></div>
   <?php $gas=(float)$unit['gas_weight_kg'];$cap=(float)$unit['capacity_kg'];$status=$gas<=0?'Empty':($gas<$cap?'Partially Filled':'Filled'); ?>
   <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="small text-muted">Status</div><div class="fw-bold fs-5"><?=esc($status)?></div></div></div></div>
 </div>
@@ -37,7 +37,7 @@
  $out=$m['inventory_type']==='gas_kg'&&$m['direction']==='out'?(float)$m['quantity']:0;
  $badge=$m['status_after']==='Filled'?'text-bg-success':($m['status_after']==='Partially Filled'?'text-bg-warning':'text-bg-secondary');
 ?>
-<tr><td><?=esc($m['movement_at'])?></td><td><?=esc(ucwords(str_replace('_',' ',(string)$m['source_type'])))?><?= $m['inventory_type']==='gas_kg'?' — Gas':' — '.esc(ucwords(str_replace('_',' ',$m['inventory_type']))) ?></td><td><?=esc($m['source_reference'])?></td><td><?=number_format($in,3)?></td><td><?=number_format($out,3)?></td><td class="fw-semibold"><?=number_format((float)$m['running_gas'],3)?> KG</td><td><span class="badge <?=$badge?>"><?=esc($m['status_after'])?></span></td><td><?=esc($m['full_name']??'')?></td><td><?=esc($m['notes']??'')?></td></tr>
+<tr><td><?=esc($m['movement_at'])?></td><td><?=esc(ucwords(str_replace('_',' ',(string)$m['source_type'])))?><?= $m['inventory_type']==='gas_kg'?' — Gas':' — '.esc(ucwords(str_replace('_',' ',$m['inventory_type']))) ?></td><td><?=esc($m['source_reference'])?></td><td><?=number_format($in, 2)?></td><td><?=number_format($out, 2)?></td><td class="fw-semibold"><?=number_format((float)$m['running_gas'], 2)?> KG</td><td><span class="badge <?=$badge?>"><?=esc($m['status_after'])?></span></td><td><?=esc($m['full_name']??'')?></td><td><?=esc($m['notes']??'')?></td></tr>
 <?php endforeach;?>
 <?php if(!$movements):?><tr><td colspan="9" class="text-center text-muted py-4">No inventory history found for this cylinder.</td></tr><?php endif;?>
 </tbody></table></div></div>
