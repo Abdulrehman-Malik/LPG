@@ -86,8 +86,8 @@ $groups=[
             ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/opening','label'=>'Opening Inventory','icon'=>'bi-archive'],
             ['permission'=>'INVENTORY_MANAGE','url'=>'cylinder-types','label'=>'Cylinder Types','icon'=>'bi-box'],
             ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/adjustments','label'=>'Stock Adjustment & History','icon'=>'bi-sliders2-vertical'],
-            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/controls','label'=>'Inventory Controls','icon'=>'bi-sliders'],
-            ['permission'=>'INVENTORY_MANAGE','url'=>'inventory/wastage','label'=>'Gas Wastage','icon'=>'bi-droplet-half'],
+            ['permission'=>'INVENTORY_CONTROLS_MANAGE','url'=>'inventory/controls','label'=>'Inventory Controls','icon'=>'bi-sliders'],
+            ['permission'=>'GAS_WASTAGE_MANAGE','url'=>'inventory/wastage','label'=>'Gas Wastage','icon'=>'bi-droplet-half'],
         ],
     ],
     'parties'=>[
