@@ -30,6 +30,13 @@
             <i class="bi bi-envelope-gear me-1"></i>Email Configuration
         </button>
     </li>
+    <?php if (!empty($isAdmin)): ?>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="refresh-tab" data-bs-toggle="tab" data-bs-target="#refresh-pane" type="button" role="tab">
+            <i class="bi bi-arrow-repeat me-1"></i>Transactional Data Refresh
+        </button>
+    </li>
+    <?php endif; ?>
 </ul>
 
 <div class="tab-content" id="backupTabsContent">
@@ -196,6 +203,34 @@
             </div>
         </div>
     </div>
+    <?php if (!empty($isAdmin)): ?>
+    <div class="tab-pane fade" id="refresh-pane" role="tabpanel" aria-labelledby="refresh-tab">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-white text-danger fw-semibold">Refresh Transactional Data</div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <strong>Destructive operation:</strong> This permanently removes transactional records such as sales, purchases, receipts, supplier payments, inventory movements, physical cylinder records, cash sessions/transactions, expenses, custody/deposit records and audit logs. Customer and supplier opening balances are reset to zero.
+                    A safety database backup is created first. This does not replace a separately stored backup.
+                </div>
+                <p>Master data and application configuration—including users, roles, locations, customers, suppliers, cylinder types, rates, shop settings, cash registers and inventory policies—are intended to remain.</p>
+                <form method="post" action="<?= site_url('database-backup/transactional-refresh') ?>"
+                      onsubmit="return confirm('FINAL WARNING: This will remove transactional data from the current database. A safety backup will be created first. Continue?');">
+                    <?= csrf_field() ?>
+                    <div class="mb-3">
+                        <label for="refreshConfirmation" class="form-label">Type <code>RESET TRANSACTIONAL DATA</code> to confirm</label>
+                        <input type="text" class="form-control" id="refreshConfirmation" name="confirmation"
+                               autocomplete="off" required pattern="RESET TRANSACTIONAL DATA"
+                               title="Enter exactly: RESET TRANSACTIONAL DATA">
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Back Up and Refresh Transactional Data
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
 </div>
 
 <div class="card shadow-sm mt-3">
