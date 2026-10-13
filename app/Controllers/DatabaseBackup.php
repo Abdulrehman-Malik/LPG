@@ -250,6 +250,35 @@ class DatabaseBackup extends Controller
         return $this->response->setStatusCode(404)->setBody('Backup file not found.');
     }
 
+
+    /**
+     * Admin-only destructive refresh of transactional data.
+     * A safety backup must complete before any data is removed.
+     */
+    public function refreshTransactionalData()
+    {
+        if (strtoupper((string) session()->get('role')) !== 'ADMIN') {
+            return $this->response->setStatusCode(403)->setBody('Forbidden');
+        }
+        if ($this->request->getPost('confirmation') !== 'RESET TRANSACTIONAL DATA') {
+            return redirect()->to('/database-backup')->with('error', 'Refresh cancelled. Enter the exact confirmation phrase to continue.');
+        }
+
+        try {
+            $backup = (new DatabaseBackupService())->createBackup(false);
+            $result = (new \App\Services\TransactionalDataRefreshService())->refresh();
+            $message = 'Transactional data refresh completed. Safety backup: ' . ($backup['name'] ?? 'created') .
+                '. Tables cleared: ' . count($result['tables_cleared']) . '. Master data and application settings were preserved.';
+            return redirect()->to('/database-backup')->with('success', $message);
+        } catch (\Throwable $e) {
+            log_message('error', 'Transactional data refresh failed for user ID {user_id}: {error}', [
+                'user_id' => (int) session()->get('user_id'),
+                'error' => $e->getMessage(),
+            ]);
+            return redirect()->to('/database-backup')->with('error', 'Transactional data refresh failed: ' . $e->getMessage());
+        }
+    }
+
     public function restore()
     {
         if ($r = $this->guard()) return $r;
