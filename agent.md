@@ -4,7 +4,23 @@
 - Read `issue_cylinder.md` before changing POS custody, security-deposit, cylinder-return, return-gas, or related stock/ledger behavior.
 - Preserve atomic posting, physical cylinder identity, customer custody history, separate deposit balance, and server-side validation.
 - Update relevant documentation/test cases when changing these workflows.
-- Project owner requires implementation directly on `main`.
+- **Branch safety:** work on the task's designated feature branch. Do not commit task changes to `main), do not merge automatically, and do not change unrelated feature branches. Merge only after explicit owner approval.
+- The current mobile/multi-shop requirements branch is `feature/mobile-multishop-ordering-requirements`. Start with `docs/mobile-multishop/README.md) and complete the documented gap analysis before implementing schema or application code.
+
+## Mobile / Multi-Shop Ordering Rules — MUST FOLLOW
+
+- One Flutter app supports Android and iOS, with Customer and Shop Staff/Owner experiences.
+- One business can own multiple shops (`locations`). Each customer belongs to exactly one shop; a shop can have many customers.
+- A customer can place orders only for their assigned shop. One order belongs to one business, one shop and one customer; split orders across shops are out of MVP scope.
+- A business owner can access only shops and records belonging to their business. Shop managers/order staff can access only explicitly assigned shop(s).
+- Preserve the existing `roles`, `permissions`, `role_permissions`, and `PermissionService` system. Extend it with capabilities and explicit business/shop scope; do not introduce a parallel permission engine or trust role names alone.
+- Current schema gap to address through reviewed, backward-compatible migrations: `locations) has no business parent and `customers) has no `location_id). Never guess legacy customer ownership or silently move historic ledger/financial records.
+- Mobile API requests must not depend on browser session state and must never connect directly to MySQL. Use versioned HTTPS JSON endpoints with token/session authentication.
+- An order is not a sale. Pending/accepted orders must not post revenue, payments, cash movements, customer OS, security deposits, cylinder custody or inventory movements.
+- Revalidate shop/customer ownership, permissions, prices, product eligibility and stock at acceptance/fulfilment. Prevent duplicate order submissions and duplicate order-to-sale posting.
+- Reuse existing validated application services for actual POS posting; do not duplicate financial or inventory rules in Flutter.
+- Read all requirements in `docs/mobile-multishop/` before changing implementation. Update requirements/status as decisions are made. Record unresolved product decisions rather than inventing behavior.
+- Run relevant automated tests, current-commit runtime QA for affected screens, and existing POS/security/ledger regression tests. Never claim a test passed without execution evidence.
 
 ## Transaction-Type Isolation Rule — MUST FOLLOW
 

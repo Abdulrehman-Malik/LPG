@@ -56,7 +56,6 @@ Legend:
 - [x] Inventory-key concurrency locking for sales and reversals
 - [x] Customer-row locking and in-transaction credit-limit recheck
 - [x] Concurrency/reversal safeguards implemented; execution evidence is tracked in SQA.md
-
 - [x] Configurable gas stock validation with explicit POS override confirmation
 - [x] Gas wastage/leakage recording with physical-cylinder conversion to empty stock and filtered wastage report
 
@@ -90,11 +89,49 @@ Legend:
 - [x] Expenses
 - [x] Outstanding balance foundations
 - [x] Audit log
-- [x] Branch-level Shop Settings with POS defaults, sale stock validation, payment/receipt, and backup endpoint configuration.
+- [x] Branch-level Shop Settings with POS defaults, sale stock validation, payment/receipt, and backup endpoint configuration
 - [x] Phase 6 functional scope implemented and released for SQA
 
+## Phase 7 — Mobile App and Multi-Shop Customer Ordering
+**Requirements branch:** `feature/mobile-multishop-ordering-requirements`
+**Current status:** planning pack complete; implementation not started. Business decisions and legacy data mapping remain approval gates. Keep all work on the feature branch, never directly on `main`.
+
+- [x] Module 01 — Product scope and target architecture documented
+- [x] Module 02 — Business, shops, staff roles, permissions and scope requirements documented
+- [x] Module 03 — Customer mobile accounts and one-customer-to-one-shop assignment documented
+- [x] Module 04 — Order lifecycle and safe POS integration documented
+- [x] Module 05 — API contract and security requirements documented
+- [x] Module 06 — Flutter Android/iOS app requirements documented
+- [x] Module 07 — Database model and non-destructive legacy migration plan documented
+- [x] Module 08 — QA and release gates documented
+- [x] Module 09 — Dependency-ordered implementation plan and decision register documented
+- [x] Complete documentation-only development planning on the feature branch
+- [ ] Review/approve the mobile multi-shop decision register with the owner
+- [ ] Inspect current data in a safe non-production copy and produce customer-to-shop legacy mapping report
+- [ ] Finalize the remaining owner decisions listed in docs/mobile-multishop/09-implementation-plan-and-decision-register.md
+- [ ] Implement business-to-location model and shop-scoped authorization
+- [ ] Add verified customer-to-shop assignment and customer mobile-account linking
+- [ ] Add order tables, idempotency and status history
+- [ ] Add web Order Management screen
+- [ ] Add versioned mobile API and security tests
+- [ ] Build Flutter app for Android and iOS
+- [ ] Run two-shop isolation pilot and existing POS regression suite
+- [ ] Obtain explicit approval before merge/deployment
+
+## Mobile / Multi-Shop Planning Gate
+
+- [x] Requirements and architecture modules 01–08 documented on `feature/mobile-multishop-ordering-requirements`.
+- [x] Module 09 implementation plan, decision register, dependency order, acceptance criteria and release gates documented.
+- [x] Documentation-only planning completed; no mobile/order application code or database schema was changed.
+- [ ] Owner reviews/approves the business decisions in `docs/mobile-multishop/09-implementation-plan-and-decision-register.md`.
+- [ ] Inspect current data in a safe non-production copy and prepare/review customer-to-shop mapping.
+- [ ] Explicit approval to begin implementation.
+- [ ] Until approval, do not modify application code, schema/migrations, production data, or `main`.
+
 ## Workflow Gate
+
 Functional development can be marked [x] when the requested module has been implemented and is packaged for user/SQA testing. User testing is recorded separately in TESTING.md and must not be represented as PASS until the user executes it.
+
 Phase 3 transaction-integrity hardening tests are explicitly postponed by user request and remain pending.
 
 ## Final Development Review
