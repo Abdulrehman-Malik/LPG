@@ -310,3 +310,64 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 Stock adjustments are recorded as dedicated transactions with references such as `ADJ-000123`. The adjustment header stores the branch, item, scope, direction, quantity, reason, user, and before/after stock state. All related `inventory_movements` rows point to the adjustment reference, so a multi-row physical-cylinder change can be reviewed as one transaction.
 
 The Stock Adjustment screen provides guided item/scope selection, current-stock preview, required adjustment reason, date/type/direction filters, search, and an adjustment detail page showing before/after state and all linked inventory movements. Historical movements remain append-only; corrections should be posted as new adjustments rather than editing old movement history.
+
+## Repository Structure (Agent Orientation)
+
+This project is a PHP application built on CodeIgniter 4. Start by reading this README, then inspect the relevant controller, service/model, view, route, database, and test files before changing behavior.
+
+```text
+LPG/
+├── app/                       # Application code
+│   ├── Config/                # Framework and application configuration
+│   ├── Controllers/           # HTTP request handlers and page actions
+│   ├── Models/                # Database-backed models
+│   ├── Services/              # Business rules and transaction workflows
+│   ├── Views/                 # PHP templates and UI screens
+│   ├── Database/              # CodeIgniter database-related classes, if present
+│   └── ...                    # Other CodeIgniter application components
+├── public/                    # Web document root; front controller and public assets
+├── system/                    # CodeIgniter framework source (avoid app-specific edits here)
+├── writable/                  # Runtime writable files such as logs and cache
+├── database/
+│   ├── schema.sql             # Baseline database schema
+│   └── migrations/            # Ordered SQL deployment migrations and migration guidance
+├── docs/                      # Setup and deployment guides
+├── tests/                     # Automated tests and test support
+├── .github/
+│   └── workflows/             # GitHub Actions CI workflows (including ci.yml)
+├── env                        # Environment-variable template/documentation
+├── .env.example               # Local environment template, if present
+├── composer.json              # PHP dependencies and Composer scripts/autoloading
+├── composer.lock              # Locked dependency versions
+├── phpunit.xml.dist           # PHPUnit configuration, if present
+├── TESTING.md                 # Test process and release-gate notes
+├── SQA.md                     # Manual/software QA execution matrix
+├── claude.md                  # Agent guidance and project-specific working notes
+└── README.md                  # Project overview, setup, business rules, and this map
+```
+
+> **Structure accuracy note:** This is a navigational overview of the project's principal areas, not a promise that every optional file shown exists in every checkout. Confirm exact paths on the current branch before editing or referencing an optional file.
+
+### Where an agent should look first
+
+| Task | Start here |
+| --- | --- |
+| HTTP endpoints and page actions | `app/Controllers/` and route definitions in `app/Config/Routes.php` or the project's custom route bootstrap, if used |
+| Business rules and posting/ledger logic | `app/Services/` |
+| Database queries and persistence | `app/Models/`, then `app/Config/Database.php` and schema/migrations |
+| Screen markup and frontend behavior | `app/Views/` and the relevant public assets |
+| Baseline schema and data changes | `database/schema.sql` and `database/migrations/` |
+| Local setup and Railway deployment | `docs/first-install-setup.md`, `docs/railway-deployment.md`, `env`, and deployment environment variables |
+| Automated checks | `.github/workflows/ci.yml`, `TESTING.md`, `SQA.md`, and `tests/` |
+| Agent-specific conventions and project history | `claude.md` and this README |
+
+### Agent change-safety checklist
+
+1. Confirm the active branch and inspect the latest code before editing. The primary branch is `main`; follow the task's explicit branch instruction if it specifies another branch.
+2. Trace the full request path: route → controller → service/model → database, plus the corresponding view and JavaScript where applicable.
+3. For financial or inventory behavior, preserve server-side validation, transaction atomicity, physical-cylinder stock rules, ledger consistency, and audit history. Client-side validation alone is not sufficient.
+4. Check existing SQL migrations before adding a new one. Apply only migrations not already applied, in sequence; never run the transactional-data refresh migration against production as a routine deployment step.
+5. Never commit `.env`, credentials, production data, or generated backup files. Use the environment template and deployment secrets.
+6. Run the relevant automated tests and CI checks. Record what actually ran; do not claim browser/manual QA passed unless it was executed.
+7. Keep documentation and tests aligned with behavior changes, and review the final diff before committing.
+
