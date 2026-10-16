@@ -11,14 +11,6 @@
     <link rel="stylesheet" href="<?= base_url('css/lpg-theme.css') ?>">
 </head>
 <body class="login-page font-system">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-    <defs>
-        <linearGradient id="sv"><stop offset="0" stop-color="#8d9d97"/><stop offset=".22" stop-color="#e9f0ed"/><stop offset=".45" stop-color="#fff"/><stop offset=".78" stop-color="#bccac4"/><stop offset="1" stop-color="#74857e"/></linearGradient>
-        <linearGradient id="gd"><stop offset="0" stop-color="#b9820d"/><stop offset=".5" stop-color="#f7d06b"/><stop offset="1" stop-color="#b9820d"/></linearGradient>
-        <linearGradient id="em"><stop offset="0" stop-color="#04261e"/><stop offset=".4" stop-color="#0f7d5e"/><stop offset="1" stop-color="#04261e"/></linearGradient>
-        <radialGradient id="sh"><stop offset="0" stop-opacity=".5"/><stop offset="1" stop-opacity="0"/></radialGradient>
-    </defs>
-</svg>
 <?php
 $shop = $shop ?? [];
 $shopName = trim((string)($shop['name'] ?? '')) ?: 'Perfect LPG';
