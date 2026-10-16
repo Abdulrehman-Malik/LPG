@@ -57,7 +57,7 @@
                     </td>
                     <td><?= esc(trim(($r['cylinder_code'] ?? '') . ' ' . ($r['cylinder_name'] ?? '')) ?: '—') ?></td>
                     <td><?= number_format((float) $r['quantity'], 0) ?></td>
-                    <td><?= number_format((float) ($r['gas_stock'] ?? 0), 3) ?></td>
+                    <td><?= number_format((float) ($r['gas_stock'] ?? 0), 2) ?></td>
                     <td><?= esc($r['comments'] ?? '') ?></td>
                     <td class="text-nowrap">
                         <button
@@ -232,7 +232,7 @@ function prepareEdit(row) {
     document.getElementById('quantity').value = row.quantity;
 
     const averageGas = row.quantity > 0 ? Number(row.gasStock || 0) / Number(row.quantity) : 0;
-    document.getElementById('actualGasWeight').value = averageGas.toFixed(3);
+    document.getElementById('actualGasWeight').value = averageGas.toFixed(2);
     document.getElementById('comments').value = row.comments || '';
 
     document.getElementById('cylinderTypeId').disabled = true;

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Services\MigrationRunnerService;
+use App\Services\InstallationSetupService;
 use CodeIgniter\Controller;
 use CodeIgniter\HTTP\RedirectResponse;
 
@@ -20,6 +21,10 @@ class Auth extends Controller
     public function showLogin()
     {
         if(session()->get('isLoggedIn')) return redirect()->to(site_url('dashboard'));
+
+        if ((new InstallationSetupService())->shouldRedirectToSetup()) {
+            return redirect()->to(site_url('installation'));
+        }
 
         try {
             $migrationGate=(new MigrationRunnerService())->status();
@@ -43,6 +48,9 @@ class Auth extends Controller
 
     public function attemptLogin(): RedirectResponse
     {
+        if ((new InstallationSetupService())->shouldRedirectToSetup()) {
+            return redirect()->to(site_url('installation'));
+        }
         try {
             $migrationGate=(new MigrationRunnerService())->status();
             if(!$migrationGate['ready']) {

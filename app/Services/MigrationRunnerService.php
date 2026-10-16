@@ -112,6 +112,10 @@ class MigrationRunnerService
             20 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='pos_visible_transaction_types'",
             21 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME IN ('smtp_host','smtp_port','smtp_username','smtp_password','smtp_encryption','smtp_from_email','smtp_from_name','smtp_enabled')",
             22 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_opening_balances' AND COLUMN_NAME='opening_batch_key') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='inventory_opening_balances' AND INDEX_NAME='uq_inventory_opening_batch')) ok",
+            23 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='cylinder_type_id' AND IS_NULLABLE='YES'",
+            24 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='include_security_deposit_in_os') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND COLUMN_NAME='return_gas_ledger_amount') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_custody' AND COLUMN_NAME='issued_gas_weight_kg')) ok",
+            25 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sale_payments' AND COLUMN_NAME='payment_type') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sale_payments' AND INDEX_NAME='idx_sale_payment_type')) ok",
+            26 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME IN ('smtp_host','smtp_port','smtp_username','smtp_password','smtp_encryption','smtp_from_email','smtp_from_name','smtp_enabled')",
             27 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='deposit_payment_allocation_rule'",
             28 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_HISTORY'",
             29 => "SELECT IF(COUNT(*)=0,1,0) ok FROM shop_settings WHERE deposit_payment_allocation_rule='gas_first'",
@@ -132,6 +136,7 @@ class MigrationRunnerService
                 15 => 4,
                 17 => 2,
                 21 => 8,
+            26 => 8,
             ][$migration['seq']];
             $ok = $ok === $expected ? 1 : 0;
         }

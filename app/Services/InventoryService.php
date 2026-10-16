@@ -202,7 +202,7 @@ class InventoryService{
     if($direction==='out'){
      if($unit['status']!=='filled') throw new RuntimeException('Gas KG decrease requires a filled source cylinder.');
      $current=(float)$unit['gas_weight_kg'];
-     if($qty>$current+0.00001) throw new RuntimeException('Gas quantity cannot exceed the selected cylinder current gas weight ('.number_format($current,3).' KG).');
+     if($qty>$current+0.00001) throw new RuntimeException('Gas quantity cannot exceed the selected cylinder current gas weight ('.number_format($current, 2).' KG).');
      $remaining=$current-$qty;
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$qty,'direction'=>'out',
@@ -227,7 +227,7 @@ class InventoryService{
     }else{
      if(!in_array($unit['status'],['filled','empty'],true)) throw new RuntimeException('Gas KG increase requires an available filled or empty cylinder.');
      $current=(float)$unit['gas_weight_kg'];$capacity=(float)$unit['capacity_kg'];$after=$current+$qty;
-     if($after>$capacity+0.00001) throw new RuntimeException('Gas quantity exceeds the selected cylinder capacity. Available capacity: '.number_format(max(0,$capacity-$current),3).' KG.');
+     if($after>$capacity+0.00001) throw new RuntimeException('Gas quantity exceeds the selected cylinder capacity. Available capacity: '.number_format(max(0,$capacity-$current), 2).' KG.');
      $this->db->table('inventory_movements')->insert([
       'location_id'=>$locationId,'inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$qty,'direction'=>'in',
       'movement_at'=>$now,'source_type'=>'adjustment','source_id'=>$adjustmentId,'cylinder_unit_id'=>$sourceCylinderUnitId,

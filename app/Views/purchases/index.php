@@ -374,9 +374,9 @@
                                                                     <td><?= (int) $item['line_no'] ?></td>
                                                                     <td><?= esc(ucwords(str_replace('_', ' ', $item['line_type']))) ?></td>
                                                                     <td><?= esc(trim(($item['cylinder_code'] ?? '') . ' ' . ($item['cylinder_name'] ?? '')) ?: '—') ?></td>
-                                                                    <td class="text-end"><?= number_format((float) $item['quantity'], 3) ?></td>
+                                                                    <td class="text-end"><?= number_format((float) $item['quantity'], 2) ?></td>
                                                                     <td class="text-end">
-                                                                        <?= $item['line_type'] === 'filled_cylinder' ? number_format((float) $item['actual_gas_weight_kg'], 3) : '—' ?>
+                                                                        <?= $item['line_type'] === 'filled_cylinder' ? number_format((float) $item['actual_gas_weight_kg'], 2) : '—' ?>
                                                                     </td>
                                                                     <td class="text-end">Rs. <?= number_format((float) $item['unit_rate'], 2) ?></td>
                                                                     <td class="text-end fw-semibold">Rs. <?= number_format((float) $item['line_total'], 2) ?></td>

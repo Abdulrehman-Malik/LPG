@@ -50,7 +50,11 @@ class CylinderUnitService
 
     public function availableForDisplay(int $locationId,int $typeId,string $status='filled'): array
     {
-        return $this->db->table('cylinder_units')->where(['location_id'=>$locationId,'cylinder_type_id'=>$typeId,'status'=>$status])->orderBy('id')->get()->getResultArray();
+        return $this->db->table('cylinder_units cu')
+            ->select('cu.*,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')
+            ->join('cylinder_types ct','ct.id=cu.cylinder_type_id')
+            ->where(['cu.location_id'=>$locationId,'cu.cylinder_type_id'=>$typeId,'cu.status'=>$status])
+            ->orderBy('cu.id')->get()->getResultArray();
     }
 
     public function availableCompanyUnits(int $locationId, ?int $typeId=null, ?string $status=null): array

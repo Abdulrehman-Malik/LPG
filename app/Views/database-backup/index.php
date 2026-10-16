@@ -209,10 +209,10 @@
             <div class="card-header bg-white text-danger fw-semibold">Refresh Transactional Data</div>
             <div class="card-body">
                 <div class="alert alert-danger">
-                    <strong>Destructive operation:</strong> This permanently removes transactional records such as sales, purchases, receipts, supplier payments, inventory movements, physical cylinder records, cash sessions/transactions, expenses, custody/deposit records and audit logs. Customer and supplier opening balances are reset to zero.
+                    <strong>Destructive operation:</strong> This permanently removes transactional records such as sales, purchases, receipts, supplier payments, inventory movements, physical cylinder records, cash sessions/transactions, expenses, custody/deposit records and audit logs. It also deletes party records (customers and suppliers), cylinder types, LPG rates and rate-change history.
                     A safety database backup is created first. This does not replace a separately stored backup.
                 </div>
-                <p>Master data and application configuration—including users, roles, locations, customers, suppliers, cylinder types, rates, shop settings, cash registers and inventory policies—are intended to remain.</p>
+                <p>Users, roles, permissions, locations and application configuration—including shop settings, cash registers and inventory policies—remain. Customers, suppliers, cylinder types and rates are cleared and must be configured again after refresh.</p>
                 <form method="post" action="<?= site_url('database-backup/transactional-refresh') ?>"
                       onsubmit="return confirm('FINAL WARNING: This will remove transactional data from the current database. A safety backup will be created first. Continue?');">
                     <?= csrf_field() ?>
