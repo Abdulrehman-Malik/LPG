@@ -19,3 +19,10 @@ php_errors.log
 .env.*
 !.env.example
 .env
+
+# Composer dependencies (installed by `composer install`)
+/vendor/
+
+# Local build output and database backups
+/build/
+/writable/backups/
