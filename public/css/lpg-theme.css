@@ -230,3 +230,23 @@ body.login-page{
   .wl-cyls>div:nth-child(2){animation-delay:.08s}.wl-cyls>div:nth-child(3){animation-delay:.16s}
   @keyframes wl-rise{from{opacity:0;transform:translateY(24px)}}
 }
+
+/* Language switch (English / Urdu) */
+.wl-tools{display:flex;align-items:center;gap:20px}
+.wl-lang{display:inline-flex;gap:2px;padding:4px;border:1px solid var(--w-line);border-radius:999px;background:rgba(255,255,255,.06)}
+.wl-lang button{min-height:40px;min-width:76px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--w-soft);font:600 15px 'DM Sans',sans-serif;cursor:pointer;transition:background .15s,color .15s}
+.wl-lang button:hover{color:#fff}
+.wl-lang button[lang="ur"]{font-family:'Noto Naskh Arabic','DM Sans',sans-serif;font-size:17px}
+.wl-lang button[aria-pressed="true"]{background:var(--w-flame-2);color:#10261E}
+
+/* Urdu: Naskh face, no letter-spacing (it breaks Arabic-script joining), roomier lines */
+html[lang="ur"] body.login-page,
+html[lang="ur"] .wl h1,html[lang="ur"] .wl-card h2,html[lang="ur"] .wl-card .gp-btn,html[lang="ur"] .wl-stat b{font-family:'Noto Naskh Arabic','DM Sans',system-ui,sans-serif}
+html[lang="ur"] .wl *{letter-spacing:0}
+html[lang="ur"] .wl{line-height:1.75}
+html[lang="ur"] .wl h1{line-height:1.45;font-weight:700}
+html[lang="ur"] .wl-ur{display:none}
+html[lang="ur"] .wl-eyebrow{letter-spacing:0}
+@media (max-width:520px){.wl-tools{gap:0}}
+html[lang="ur"] .wl-card label,html[lang="ur"] .wl-card .wl-sub,html[lang="ur"] .wl-card .wl-help,html[lang="ur"] .wl-card .login-meta,html[lang="ur"] .wl-stat small,html[lang="ur"] .wl-foot,html[lang="ur"] .wl-clock{font-size:16px}
+html[lang="ur"] .wl-card .gp-btn{font-size:20px}

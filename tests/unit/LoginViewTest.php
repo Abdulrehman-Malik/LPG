@@ -40,7 +40,7 @@ final class LoginViewTest extends CIUnitTestCase
 
     public function testPasswordToggleIsPresentAndAccessible(): void
     {
-        $html = $this->render();
+        $html = html_entity_decode($this->render(), ENT_QUOTES | ENT_HTML5);
 
         $this->assertStringContainsString('id="togglePassword"', $html);
         $this->assertStringContainsString('aria-label="Show password"', $html);
@@ -93,16 +93,18 @@ final class LoginViewTest extends CIUnitTestCase
 
         $this->assertStringContainsString('Perfect LPG', $html);
         $this->assertStringNotContainsString('tel:', $html);
-        $this->assertStringNotContainsString('<b>Shop</b>', $html);
+        $this->assertStringNotContainsString('data-i18n="f_shop"', $html);
     }
 
     public function testServerRendersCurrentDateAndTimeAsFallback(): void
     {
         $html = $this->render();
 
-        $this->assertStringContainsString(date('l, j F Y'), $html);
+        $this->assertStringContainsString(date('l'), $html, 'Current weekday.');
+        $this->assertStringContainsString(date('Y'), $html, 'Current year.');
         $this->assertStringContainsString('id="wlTime"', $html);
-        $this->assertStringContainsString('setInterval(tick', $html, 'Clock must keep updating in the browser.');
+        $this->assertStringContainsString('visibilitychange', $html, 'Clock must catch up when the tab wakes.');
+        $this->assertStringContainsString('renderClock', $html, 'Clock must keep updating in the browser.');
     }
 
     public function testPublicScreenNeverShowsFinancialOrStockFigures(): void

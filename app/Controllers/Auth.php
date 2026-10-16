@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UiLanguage;
 use App\Models\UserModel;
 use App\Services\MigrationRunnerService;
 use App\Services\InstallationSetupService;
@@ -27,24 +28,29 @@ class Auth extends Controller
         }
 
         try {
-            $migrationGate=(new MigrationRunnerService())->status();
-            $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
-            return view('auth/login',['title'=>'Login','companyName'=>$companyName,'migrationGate'=>$migrationGate,'shop'=>$this->publicShopInfo()]);
+            return $this->loginView((new MigrationRunnerService())->status());
         } catch (\Throwable $e) {
-            return view('auth/login',[
-                'title'=>'Login',
-                'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
-                'shop'=>$this->publicShopInfo(),
-                'migrationGate'=>[
-                    'ready'=>false,
-                    'blocked_message'=>'Database migration status could not be checked.',
-                    'system_error'=>$e->getMessage(),
-                    'migrations'=>[],
-                    'total'=>0,
-                    'completed'=>0,
-                ],
+            return $this->loginView([
+                'ready'=>false,
+                'blocked_message'=>'Database migration status could not be checked.',
+                'system_error'=>$e->getMessage(),
+                'migrations'=>[],
+                'total'=>0,
+                'completed'=>0,
             ]);
         }
+    }
+
+    protected function loginView(array $migrationGate): string
+    {
+        return view('auth/login',[
+            'title'=>'Login',
+            'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
+            'migrationGate'=>$migrationGate,
+            'shop'=>$this->publicShopInfo(),
+            // service('request'), not $this->request: Landing builds this controller directly.
+            'lang'=>UiLanguage::resolve(service('request')->getCookie(UiLanguage::COOKIE)),
+        ]);
     }
 
     /**
