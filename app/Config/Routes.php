@@ -1,6 +1,7 @@
 <?php
 use CodeIgniter\Router\RouteCollection;
 /** @var RouteCollection $routes */
+$routes->get('language/(:segment)','Language::set/$1'); $routes->get('i18n/(:segment).js','Language::dictionary/$1');
 $routes->get('/','Landing::index'); $routes->get('login','Auth::showLogin'); $routes->post('login','Auth::attemptLogin'); $routes->get('installation','Installation::index'); $routes->post('installation/run','Installation::run'); $routes->post('migrations/run','Migrations::run'); $routes->get('logout','Auth::logout'); $routes->get('database-backup','DatabaseBackup::index'); $routes->get('database-backup/download','DatabaseBackup::download'); $routes->post('database-backup/create','DatabaseBackup::create'); $routes->post('database-backup/restore','DatabaseBackup::restore'); $routes->post('database-backup/email-settings/save','DatabaseBackup::saveEmailSettings'); $routes->post('database-backup/email-settings/test','DatabaseBackup::testEmail'); $routes->post('database-backup/delete-selected','DatabaseBackup::deleteSelected'); $routes->post('database-backup/email-selected','DatabaseBackup::emailSelected');
 $routes->group('', ['filter'=>'auth'], static function(RouteCollection $routes){
     $routes->get('dashboard','Dashboard::index'); $routes->post('database-backup/transactional-refresh','DatabaseBackup::refreshTransactionalData');

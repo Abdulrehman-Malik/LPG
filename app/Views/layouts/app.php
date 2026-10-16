@@ -18,11 +18,13 @@ if ($fontFamilyKey === 'system') {
     $fontStack = "'DM Sans',system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif";
 }
 $themeMode = ($appSettings['theme_mode'] ?? 'light') === 'dark' ? 'dark' : 'light';
+$uiLang = \App\Libraries\UiLanguage::fromRequest();
+$uiDir = \App\Libraries\UiLanguage::meta($uiLang)['dir'];
 $current=uri_string(); $isActive=static fn(string $n):string=>str_starts_with($current,$n)?'active':'';
 ?>
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= esc($title ?? 'Dashboard') ?> — <?= esc($location['name'] ?? 'Perfect LPG') ?></title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"><link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<html lang="<?= esc($uiLang, 'attr') ?>" dir="<?= esc($uiDir, 'attr') ?>"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= esc($title ?? 'Dashboard') ?> — <?= esc($location['name'] ?? 'Perfect LPG') ?></title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/<?= $uiDir === 'rtl' ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css' ?>" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"><link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--lpg-dark:<?= esc($appSettings['primary_color'] ?? '#06382F') ?>;--lpg-accent:<?= esc($appSettings['accent_color'] ?? '#E3A01A') ?>;--sidebar-w:260px;--sidebar-collapsed-w:72px;--app-font-size:<?= esc((float)($appSettings['pos_font_size_px'] ?? 14)) ?>px;--app-font-family:<?= esc($fontStack ?? 'system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif') ?>}
@@ -54,6 +56,7 @@ body{background:var(--lpg-page);color:var(--lpg-text);-webkit-font-smoothing:ant
 @media(max-width:767.98px){.content-wrap{padding:.9rem}.topbar{padding:.65rem .9rem}.topbar h5{font-size:.95rem}.topbar .small{display:none}}
 </style>
 <link rel="stylesheet" href="<?= base_url('css/lpg-theme.css') ?>">
+<?= view('partials/i18n_head', ['uiLang' => $uiLang]) ?>
 <?= $this->renderSection('styles') ?></head>
 <body class="theme-<?= esc($themeMode) ?> font-<?= esc($fontFamilyKey) ?>">
 <nav class="sidebar d-flex flex-column" id="sidebar"><div class="brand d-flex align-items-center"><i class="bi bi-fire me-2 flex-shrink-0"></i><div class="brand-text"><div class="fw-bold text-white"><?= esc($branchName) ?></div><div class="ls" style="font-size:.7rem;">LPG POS & ERP</div></div></div>
@@ -180,7 +183,7 @@ unset($group);
 </li>
 <?php endforeach; ?>
 </ul><div class="p-3 border-top border-white border-opacity-10"><a href="<?= site_url('logout') ?>" class="nav-link text-white-50" title="Logout"><i class="bi bi-box-arrow-right"></i><span class="menu-label">Logout</span></a></div></nav><div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-<div class="main-content"><div class="topbar"><button class="btn btn-sm btn-outline-secondary sidebar-toggle tbtn" id="sidebarToggle" type="button" aria-label="Hide or show sidebar" title="Hide / Show menu"><i class="bi bi-layout-sidebar-inset"></i></button><h5 class="mb-0"><?= esc($title ?? 'Dashboard') ?></h5><div class="d-flex align-items-center gap-2"><span class="small"><?= esc($branchName) ?></span><span class="small" style="color:#B07A00;font-weight:600"><?= esc(session()->get('full_name')??'User') ?></span><span class="badge bg-secondary"><?= esc(session()->get('role')??'') ?></span></div></div>
+<div class="main-content"><div class="topbar"><button class="btn btn-sm btn-outline-secondary sidebar-toggle tbtn" id="sidebarToggle" type="button" aria-label="Hide or show sidebar" title="Hide / Show menu"><i class="bi bi-layout-sidebar-inset"></i></button><h5 class="mb-0"><?= esc($title ?? 'Dashboard') ?></h5><div class="d-flex align-items-center gap-2"><?= view('partials/language_switch', ['uiLang' => $uiLang]) ?><span class="small"><?= esc($branchName) ?></span><span class="small" style="color:#B07A00;font-weight:600"><?= esc(session()->get('full_name')??'User') ?></span><span class="badge bg-secondary"><?= esc(session()->get('role')??'') ?></span></div></div>
 <div class="content-wrap"><?php
 $pendingMigrationNotice = null;
 try {
@@ -202,4 +205,4 @@ document.addEventListener('wheel',event=>{
  const field=event.target instanceof Element?event.target.closest('input[type="number"]'):null;
  if(field&&document.activeElement===field)field.blur();
 },{capture:true,passive:true});
-$('.datatable').DataTable({pageLength:25});</script><?= $this->renderSection('scripts') ?></body></html>
+$('.datatable').DataTable({pageLength:25});</script><?= $this->renderSection('scripts') ?><?= view('partials/i18n_foot', ['uiLang' => $uiLang]) ?></body></html>

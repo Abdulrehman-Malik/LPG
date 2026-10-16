@@ -250,3 +250,10 @@ html[lang="ur"] .wl-eyebrow{letter-spacing:0}
 @media (max-width:520px){.wl-tools{gap:0}}
 html[lang="ur"] .wl-card label,html[lang="ur"] .wl-card .wl-sub,html[lang="ur"] .wl-card .wl-help,html[lang="ur"] .wl-card .login-meta,html[lang="ur"] .wl-stat small,html[lang="ur"] .wl-foot,html[lang="ur"] .wl-clock{font-size:16px}
 html[lang="ur"] .wl-card .gp-btn{font-size:20px}
+
+/* Language switch in the top bar */
+.lang-switch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--lpg-border,#e2e8f0);border-radius:999px;background:var(--lpg-surface,#fff)}
+.lang-switch a{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:999px;color:var(--lpg-muted,#64748b);font-weight:600;font-size:.9em;text-decoration:none}
+.lang-switch a:hover{color:var(--lpg-text,#172033)}
+.lang-switch a[aria-current="true"]{background:var(--lpg-dark,#06382F);color:#fff}
+.lang-switch a[lang="ur"]{font-family:'Noto Naskh Arabic','DM Sans',sans-serif;font-size:1.05em}

@@ -33,6 +33,9 @@ final class UiLanguage
     /** @var array<string, string>|null English message => catalog key */
     private static ?array $messageKeys = null;
 
+    /** @var array<string, array<string, string>> */
+    private static array $appDictionaries = [];
+
     /** @return list<string> */
     public static function supported(): array
     {
@@ -43,6 +46,12 @@ final class UiLanguage
     public static function resolve(?string $requested): string
     {
         return is_string($requested) && isset(self::META[$requested]) ? $requested : self::DEFAULT_LANG;
+    }
+
+    /** The visitor's language, from the (whitelisted) cookie. Safe to call anywhere in a request. */
+    public static function fromRequest(): string
+    {
+        return self::resolve(service('request')->getCookie(self::COOKIE));
     }
 
     /** @return array{name:string,dir:string,date:string,time:string} */
@@ -147,5 +156,82 @@ final class UiLanguage
         $text      = $formatter->format($at);
 
         return $text === false ? null : $text;
+    }
+
+    // ---- whole-app dictionary ---------------------------------------------
+
+    /**
+     * English text => translation, merged from app/Language/{lang}/app/*.php.
+     * English is the source language, so it needs no dictionary (returns []).
+     * A key containing {0}, {1}... is a pattern; the numbers are the parts that
+     * vary at runtime (amounts, names, counts).
+     *
+     * @return array<string, string>
+     */
+    public static function appDictionary(string $lang): array
+    {
+        $lang = self::resolve($lang);
+        if ($lang === self::DEFAULT_LANG) {
+            return [];
+        }
+
+        return self::$appDictionaries[$lang] ??= (static function () use ($lang): array {
+            $merged = [];
+            foreach (self::appDictionaryFiles($lang) as $file) {
+                $part = require $file;
+                foreach (is_array($part) ? $part : [] as $english => $translated) {
+                    $merged[(string) $english] = (string) $translated;
+                }
+            }
+
+            return $merged;
+        })();
+    }
+
+    /** @return list<string> */
+    public static function appDictionaryFiles(string $lang): array
+    {
+        $files = glob(APPPATH . 'Language/' . self::resolve($lang) . '/app/*.php') ?: [];
+        sort($files);
+
+        return $files;
+    }
+
+    /** Collapse whitespace the same way the browser translator does before matching. */
+    public static function normalize(string $text): string
+    {
+        return trim((string) preg_replace('/\s+/u', ' ', $text));
+    }
+
+    /**
+     * Dictionary split for the browser: exact strings, and {n} patterns (most specific first).
+     *
+     * @return array{lang:string,exact:array<string,string>,patterns:list<array{0:string,1:string}>}
+     */
+    public static function appPayload(string $lang): array
+    {
+        $exact    = [];
+        $patterns = [];
+        foreach (self::appDictionary($lang) as $english => $translated) {
+            if (preg_match('/\{\d+\}/', $english) === 1) {
+                $patterns[] = [$english, $translated];
+            } else {
+                $exact[$english] = $translated;
+            }
+        }
+        usort($patterns, static fn (array $a, array $b): int => strlen($b[0]) <=> strlen($a[0]));
+
+        return ['lang' => self::resolve($lang), 'exact' => $exact, 'patterns' => $patterns];
+    }
+
+    /** Changes whenever a dictionary file does, so browsers can cache the dictionary for a year. */
+    public static function appVersion(string $lang): string
+    {
+        $stamp = '';
+        foreach (self::appDictionaryFiles($lang) as $file) {
+            $stamp .= basename($file) . filemtime($file);
+        }
+
+        return substr(md5($stamp), 0, 10);
     }
 }
