@@ -7,7 +7,7 @@
     <title><?= esc(($title ?? 'Login') . ' — ' . $companyName) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= base_url('css/lpg-theme.css') ?>">
 </head>
 <body class="login-page font-system">
@@ -19,19 +19,27 @@
         <radialGradient id="sh"><stop offset="0" stop-opacity=".5"/><stop offset="1" stop-opacity="0"/></radialGradient>
     </defs>
 </svg>
-<div class="lg">
-    <div class="art">
-        <div class="brand"><span class="logo-mark"><i class="bi bi-fire"></i></span>Perfect LPG</div>
-        <div style="display:flex;gap:14px;align-items:flex-end;justify-content:center">
-            <div><?= view('partials/cylinder_svg', ['fill' => 64]) ?></div>
-            <div style="transform:scale(1.1);transform-origin:bottom"><?= view('partials/cylinder_svg', ['fill' => 88]) ?></div>
-        </div>
-        <h2>Close the day knowing every rupee and every cylinder.</h2>
-    </div>
-    <div class="fm">
-        <div>
-            <h1>Welcome back</h1>
-            <p class="lead">Sign in to your shop.</p>
+<?php
+$shop = $shop ?? [];
+$shopName = trim((string)($shop['name'] ?? '')) ?: 'Perfect LPG';
+$shopPlace = trim(implode(', ', array_filter([trim((string)($shop['address'] ?? '')), trim((string)($shop['city'] ?? ''))])));
+$shopPhone = trim((string)($shop['phone'] ?? ''));
+$gateReady = (bool)(($migrationGate ?? ['ready' => true])['ready'] ?? false);
+?>
+<div class="wl">
+    <header class="wl-top"><div class="wl-in">
+        <div class="wl-brand"><span class="logo-mark"><i class="bi bi-fire"></i></span>Perfect LPG</div>
+        <div class="wl-clock" aria-live="off"><b id="wlTime"><?= esc(date('g:i A')) ?></b><span id="wlDate"><?= esc(date('l, j F Y')) ?></span></div>
+    </div></header>
+
+    <main class="wl-main"><div class="wl-in">
+        <section>
+            <span class="wl-eyebrow"><i></i><?= esc($shopName) ?></span>
+            <h1>Your shop. <em>Every cylinder</em> counted.</h1>
+            <p class="wl-ur" lang="ur" dir="rtl">آپ کی دکان، آپ کا حساب۔</p>
+            <div class="wl-card">
+            <h2>Sign in</h2>
+            <p class="wl-sub">Use the username your shop admin gave you.</p>
             <?php
             $migrationGate=$migrationGate ?? ['ready'=>true,'blocked_message'=>null,'migrations'=>[],'total'=>0,'completed'=>0];
             $migrationReady=(bool)($migrationGate['ready'] ?? false);
@@ -164,13 +172,47 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="gp-btn">Sign in to dashboard</button>
+                    <button type="submit" class="gp-btn">Sign in</button>
                 </form>
-                <p class="lead" style="margin-top:22px;text-align:center">Need access? Ask your shop admin.</p>
+                <p class="wl-help">Need access? Ask your shop admin.</p>
             <?php endif; ?>
+            </div>
+        </section>
+
+        <section class="wl-stage" aria-label="Shop">
+            <div class="wl-glow"></div>
+            <div class="wl-stat wl-s1"><small>Branch</small><b><?= esc($shopName) ?></b></div>
+            <div class="wl-stat wl-s2"><small>System</small><b class="<?= $gateReady ? 'ok' : 'warn' ?>"><?= $gateReady ? 'Ready' : 'Update needed' ?></b></div>
+            <div class="wl-cyls" role="img" aria-label="LPG cylinders">
+                <div><?= view('partials/cylinder_svg', ['fill' => 78]) ?></div>
+                <div><?= view('partials/cylinder_svg', ['fill' => 92]) ?></div>
+                <div><?= view('partials/cylinder_svg', ['fill' => 35]) ?></div>
+            </div>
+            <div class="wl-floor"></div>
+        </section>
+    </div></main>
+
+    <footer class="wl-foot"><div class="wl-in">
+        <div class="grp">
+            <?php if ($shopPlace !== '') : ?><span><b>Shop</b> <?= esc($shopPlace) ?></span><?php endif; ?>
+            <?php if ($shopPhone !== '') : ?><span><b>Call</b> <a href="tel:<?= esc(preg_replace('/[^0-9+]/', '', $shopPhone), 'attr') ?>"><?= esc($shopPhone) ?></a></span><?php endif; ?>
+            <span><b><?= esc($companyName) ?></b></span>
         </div>
-    </div>
+        <span class="wl-health <?= $gateReady ? '' : 'bad' ?>"><i></i><?= $gateReady ? 'Database connected · Up to date' : 'Database update required' ?></span>
+    </div></footer>
 </div>
+<script>
+(function () {
+    var t = document.getElementById('wlTime'), d = document.getElementById('wlDate');
+    function tick() {
+        var n = new Date();
+        if (t) t.textContent = n.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'});
+        if (d) d.textContent = n.toLocaleDateString('en-GB', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+    }
+    tick();
+    setInterval(tick, 15000);
+})();
+</script>
 <script>
 (function () {
     var input = document.getElementById('password');

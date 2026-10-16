@@ -4,16 +4,15 @@ namespace App\Controllers;
 
 use CodeIgniter\Controller;
 
+/**
+ * Single-shop install: the landing page and the sign-in page are one screen.
+ * "/" renders exactly what "/login" renders (installation redirect, migration
+ * gate, and signed-in redirect to the dashboard all live in Auth::showLogin).
+ */
 class Landing extends Controller
 {
     public function index()
     {
-        $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
-
-        return view('landing/index', [
-            'title' => 'LPG POS & ERP',
-            'companyName' => $companyName,
-            'isLoggedIn' => (bool) session()->get('isLoggedIn'),
-        ]);
+        return (new Auth())->showLogin();
     }
 }

@@ -29,11 +29,12 @@ class Auth extends Controller
         try {
             $migrationGate=(new MigrationRunnerService())->status();
             $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
-            return view('auth/login',['title'=>'Login','companyName'=>$companyName,'migrationGate'=>$migrationGate]);
+            return view('auth/login',['title'=>'Login','companyName'=>$companyName,'migrationGate'=>$migrationGate,'shop'=>$this->publicShopInfo()]);
         } catch (\Throwable $e) {
             return view('auth/login',[
                 'title'=>'Login',
                 'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
+                'shop'=>$this->publicShopInfo(),
                 'migrationGate'=>[
                     'ready'=>false,
                     'blocked_message'=>'Database migration status could not be checked.',
@@ -43,6 +44,24 @@ class Auth extends Controller
                     'completed'=>0,
                 ],
             ]);
+        }
+    }
+
+    /**
+     * Non-sensitive shop identity for the sign-in screen (name, address, phone).
+     * Never include sales, cash or stock figures here: this page is public.
+     */
+    protected function publicShopInfo(): array
+    {
+        try {
+            $row = \Config\Database::connect()->table('locations')
+                ->select('name,address,city,phone')
+                ->where('is_active', 1)
+                ->orderBy('id', 'ASC')
+                ->get(1)->getRowArray();
+            return $row ?: [];
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 
