@@ -44,6 +44,7 @@ class Rates extends Controller
         if($type==='cylinder_package') $customerId=null;
         if($type==='filled_cylinder_price' && !$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type for filled-cylinder prices.');
         if($type==='cylinder_package' && !$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type for package rates.');
+        if($customerId && (!$this->request->getPost('customer_id') || !(new CustomerModel())->where('is_active',1)->find($customerId))) return redirect()->back()->withInput()->with('error','Select an active customer for the customer-specific rate.');
 
         $db=Database::connect();
         $db->transStart();
