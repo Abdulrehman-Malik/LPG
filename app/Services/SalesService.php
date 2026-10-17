@@ -652,7 +652,7 @@ class SalesService
                 }
                 $standardFilledRateInfo=$this->rates->currentFilledCylinderRate($typeId,$locationId,null,$transactionAt);
                 $filledRateInfo=$this->rates->currentFilledCylinderRate($typeId,$locationId,$customerId,$transactionAt);
-                if(!$filledRateInfo || (float)$filledRateInfo['rate']<0) throw new RuntimeException('No effective filled-cylinder selling price is configured for '.$type['name'].'. Configure a shop filled-cylinder price first.');
+                if(!$filledRateInfo || (float)$filledRateInfo['rate']<=0) throw new RuntimeException('No effective filled-cylinder selling price is configured for '.$type['name'].'. Configure a shop filled-cylinder price first.');
                 $stdCylinderRate=$standardFilledRateInfo ? (float)$standardFilledRateInfo['rate'] : (float)$filledRateInfo['rate'];
                 $cylRate=(float)$filledRateInfo['rate'];
                 $gasRate=0;
@@ -731,7 +731,7 @@ class SalesService
                     }
                 }
 
-                $lineTotal=$row['status']==='filled' ? $row['quantity']*$row['cyl_rate'] : $row['quantity']*$row['cyl_rate'];
+                $lineTotal=$row['quantity']*$row['cyl_rate'];
                 $row['line_total']=$lineTotal;
                 $lineAmounts[]=$lineTotal;$subtotal+=$lineTotal;$totalKg+=(float)$row['gas_kg'];
             }
