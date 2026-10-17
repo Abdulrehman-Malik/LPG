@@ -50,7 +50,7 @@ class Sales extends Controller
         }
         if(strlen($asOf)===16) $asOf.=':00';
         $customerId=max(0,(int)$this->request->getGet('customer_id'));
-        $db=\\Config\\Database::connect();
+        $db=\Config\Database::connect();
         $types=(new CylinderTypeModel())->activeOrdered();
         $rateModel=new GasRateModel();
         $cylinderRates=[];$filledCylinderRates=[];
