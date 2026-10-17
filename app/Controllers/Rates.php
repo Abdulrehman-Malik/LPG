@@ -40,6 +40,7 @@ class Rates extends Controller
         $effective=str_replace('T',' ',trim((string)$this->request->getPost('effective_from')));
         $reason=trim((string)$this->request->getPost('reason')) ?: null;
         if(!in_array($type,['gas_per_kg','cylinder_package','filled_cylinder_price'],true)||$value<0||$effective==='') return redirect()->back()->withInput()->with('error','Valid rate type, value and effective date/time are required.');
+        if($type==='filled_cylinder_price' && $value<=0) return redirect()->back()->withInput()->with('error','Filled-cylinder selling price must be greater than zero.');
         if($type==='gas_per_kg') { $typeId=null; $customerId=null; }
         if($type==='cylinder_package') $customerId=null;
         if($type==='filled_cylinder_price' && !$typeId) return redirect()->back()->withInput()->with('error','Select a cylinder type for filled-cylinder prices.');
