@@ -15,9 +15,16 @@ class GasRateModel extends RateCardModel
         return $row?(float)$row['rate_value']:null;
     }
 
-    public function currentKgRate(?string $asOf=null): ?float
+    public function currentKgRate(?string $asOf=null, ?int $locationId=null): ?float
     {
-        $row=$this->where('rate_type','gas_per_kg')->where('cylinder_type_id',null)->where('effective_from <=',$asOf??date('Y-m-d H:i:s'))->orderBy('effective_from','DESC')->first();
+        $asOf=$asOf??date('Y-m-d H:i:s');
+        $builder=$this->where('rate_type','gas_per_kg')
+            ->where('cylinder_type_id',null)
+            ->where('customer_id',null)
+            ->where('effective_from <=',$asOf)
+            ->groupStart()->where('effective_to',null)->orWhere('effective_to >=',$asOf)->groupEnd();
+        if($locationId!==null) $builder->groupStart()->where('location_id',$locationId)->orWhere('location_id',null)->groupEnd()->orderBy('location_id','DESC');
+        $row=$builder->orderBy('effective_from','DESC')->orderBy('id','DESC')->first();
         return $row?(float)$row['rate_value']:null;
     }
  
