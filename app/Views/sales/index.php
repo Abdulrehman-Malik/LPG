@@ -486,7 +486,20 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
 
 <script>
 const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)?>;
-const rates=<?=json_encode($cylinderRates)?>,filledCylinderRates=<?=json_encode($filledCylinderRates)?>,customerFilledCylinderRates=<?=json_encode($customerFilledCylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
+let rates=<?=json_encode($cylinderRates)?>,filledCylinderRates=<?=json_encode($filledCylinderRates)?>,customerFilledCylinderRates=<?=json_encode($customerFilledCylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
+const rateLookupUrl=<?=json_encode(site_url('sales/rates'))?>;
+async function refreshEffectiveRates(){
+ const timeInput=document.querySelector('input[name="transaction_at"]');
+ if(!timeInput||!timeInput.value)return;
+ const query=new URLSearchParams({as_of:timeInput.value,customer_id:String(selectedCustomerId()||'')});
+ try{
+   const response=await fetch(rateLookupUrl+'?'+query.toString(),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
+   const data=await response.json();
+   if(!response.ok||!data||!data.cylinderRates)return;
+   rates=data.cylinderRates;filledCylinderRates=data.filledCylinderRates||{};customerFilledCylinderRates=data.customerFilledCylinderRates||{};kgRate=data.kgRate;
+   tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{if(tr.querySelector('.cylStatus'))refreshCylinderSaleLine.call(tr);});
+ }catch(error){console.error('Unable to refresh effective POS rates',error);}
+}
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
 const balances=<?=json_encode($balances)?>,creditLimits=<?=json_encode($creditLimits)?>,creditSaleAllowed=<?=json_encode(array_reduce($customers,static function($out,$customer){$out[(string)$customer['id']]=(int)($customer['allow_credit_sale']??0);return $out;},[]))?>;
 const creditLimitMode=<?=json_encode($creditLimitMode??'none')?>,shopCreditLimit=<?=json_encode((float)($shopCreditLimit??0))?>,shopOutstanding=<?=json_encode((float)($shopOutstanding??0))?>;
@@ -1035,7 +1048,10 @@ document.getElementById('customer_id').onchange=()=>{
     document.getElementById('customerOsBalanceValue').textContent='0.00';
   }
   recalc();
+  refreshEffectiveRates();
 };
+const transactionAtInput=document.querySelector('input[name="transaction_at"]');
+if(transactionAtInput)transactionAtInput.addEventListener('change',refreshEffectiveRates);
 document.getElementById('addLine').onclick=()=>{if(transactionType()==='gas_sale')addGasLine();else if(transactionType()==='cylinder_sale')addCylinderSaleLine();};
 document.getElementById('discount').oninput=recalc;document.getElementById('securityDeposit').oninput=recalc;const returnUnitsEl=document.getElementById('returnUnits');if(returnUnitsEl)returnUnitsEl.onchange=updateRefund;document.getElementById('addPayment').onclick=()=>addPayment();document.getElementById('amountToCollectHelp').onclick=()=>document.getElementById('amountToCollectHelpMessage').classList.toggle('d-none');
 
