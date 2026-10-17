@@ -219,10 +219,11 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 ### 5. Cylinder Sale and Replacement Rules
 
 - Physical-cylinder quantities must be whole numbers.
-- Filled-cylinder sale charges **actual gas KG × gas/kg rate + cylinder quantity × cylinder rate**.
-- Actual gas weight, not nominal capacity, is used for gas pricing.
-- Same-capacity replacement requires a named customer when an empty cylinder is returned.
-- Different-capacity replacement requires a named customer and a received type different from the sold type.
+- **Filled Cylinder Sale** uses a fixed, effective-dated filled-cylinder selling price that already includes gas; do not add a gas/kg charge again.
+- **Empty Cylinder Sale** uses the separate empty-cylinder price and does not reduce gas stock.
+- Actual gas weight is still tracked and removed from the selected physical filled cylinders for inventory accuracy; it does not change the fixed filled-cylinder selling price.
+- A customer-specific filled-cylinder price may override the shop's standard price for that customer, cylinder type, shop and effective date. The server resolves the applicable rate.
+- **Gas Sale / Refill** remains priced by actual gas KG × the effective gas/kg rate.
 - Empty-cylinder-only sale consumes empty physical-cylinder inventory and does not consume gas.
 - Filled/empty availability is revalidated during posting.
 
