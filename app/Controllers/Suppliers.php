@@ -49,10 +49,22 @@ class Suppliers extends Controller
         )->getResultArray();
 
         $credit=(float)$supplier['opening_balance'];
-        foreach($purchases as $row) if($row['status']==='posted') $credit+=(float)$row['credit_amount'];
-        foreach($payments as $row) if($row['status']==='posted' && $row['source']==='Supplier Account Payment') $credit-=(float)$row['amount'];
+        $totalPurchase=0.0;
+        $totalPayments=0.0;
+        foreach($purchases as $row) {
+            if($row['status']==='posted') {
+                $credit+=(float)$row['credit_amount'];
+                $totalPurchase+=(float)$row['total_amount'];
+            }
+        }
+        foreach($payments as $row) {
+            if($row['status']==='posted') {
+                $totalPayments+=(float)$row['amount'];
+                if($row['source']==='Supplier Account Payment') $credit-=(float)$row['amount'];
+            }
+        }
         $supplier['credit_due']=$credit;
-        return view('suppliers/ledger',['title'=>'Supplier Ledger — '.$supplier['name'],'supplier'=>$supplier,'purchases'=>$purchases,'payments'=>$payments]);
+        return view('suppliers/ledger',['title'=>'Supplier Ledger — '.$supplier['name'],'supplier'=>$supplier,'purchases'=>$purchases,'payments'=>$payments,'totalPurchase'=>$totalPurchase,'totalPayments'=>$totalPayments]);
     }
 
     public function save()
