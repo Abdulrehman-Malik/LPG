@@ -496,8 +496,16 @@ async function refreshEffectiveRates(){
    const response=await fetch(rateLookupUrl+'?'+query.toString(),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
    const data=await response.json();
    if(!response.ok||!data||!data.cylinderRates)return;
+   const previousKgRate=Number(kgRate||0);
    rates=data.cylinderRates;filledCylinderRates=data.filledCylinderRates||{};customerFilledCylinderRates=data.customerFilledCylinderRates||{};kgRate=data.kgRate;
-   tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{if(tr.querySelector('.cylStatus'))refreshCylinderSaleLine.call(tr);});
+   tbody.querySelectorAll('tr:not(.cylinderPickerRow)').forEach(tr=>{
+     if(tr.querySelector('.cylStatus'))refreshCylinderSaleLine.call(tr);
+     else if(tr.querySelector('.gasRate')){
+       const rateInput=tr.querySelector('.gasRate'),current=Number(rateInput.value||0);
+       if(current<=0||Math.abs(current-previousKgRate)<0.00001)rateInput.value=Number(kgRate||0).toFixed(2);
+     }
+   });
+   recalc();
  }catch(error){console.error('Unable to refresh effective POS rates',error);}
 }
 const filledStock=<?=json_encode($filledStock)?>,filledUnits=<?=json_encode($filledUnits)?>,emptyStock=<?=json_encode($emptyStock)?>,gasStock=<?=json_encode($gasStock)?>;
