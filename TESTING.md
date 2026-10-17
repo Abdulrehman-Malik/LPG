@@ -65,8 +65,8 @@ A filled physical cylinder has:
 POS transaction behavior is explicit:
 - **Sell Gas Only:** the user selects exactly one filled physical source cylinder; gas stock decreases only from that cylinder. The selected unit keeps its remaining actual gas when partially consumed and changes from filled to empty when its gas reaches zero.
 - **Same-Capacity Replacement:** customer returns an empty cylinder and receives a filled cylinder of the same type; gas is charged by actual gas weight and the returned empty is added to physical stock.
-- **Filled + Gas:** gas is charged by actual gas weight plus cylinder price; gas and filled-cylinder stock decrease.
-- **Different-Capacity Replacement:** same as Filled + Gas, but the returned empty cylinder is a different type/capacity.
+- **Header-level Cylinder Sale (filled):** charge quantity × effective fixed filled-cylinder price (gas included); deduct each selected physical filled cylinder and its actual gas KG without adding a separate gas/kg charge.
+- **Different-Capacity Replacement:** retain the existing replacement-specific gas/cylinder pricing and returned-empty inventory flow; this is separate from header-level Cylinder Sale fixed-inclusive pricing.
 - **Empty Only:** only empty-cylinder stock is reduced; gas stock is unchanged.
 - Branch administrators set the default POS transaction type in Shop Settings; the POS uses that branch default for new sales.
 
