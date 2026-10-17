@@ -311,7 +311,12 @@ class MigrationRunnerService
                         if ($statement === '') {
                             continue;
                         }
-                        $this->db->query($statement);
+                        if (strtolower(trim($statement)) === 'alter table rate_cards drop check rate_cards_chk_2') {
+                            // MySQL-generated CHECK names can differ between installations.
+                            $this->dropLegacyRateTypeCheckIfPresent();
+                        } else {
+                            $this->db->query($statement);
+                        }
                         $statementCount++;
                         $this->db->table($this->historyTable)->where('id', $attemptId)->update([
                             'executed_statements' => $statementCount,
@@ -380,6 +385,27 @@ class MigrationRunnerService
             ];
         } finally {
             $this->db->query('SELECT RELEASE_LOCK(?)', [$this->lockKey]);
+        }
+    }
+
+    protected function dropLegacyRateTypeCheckIfPresent(): void
+    {
+        $checks=$this->db->query("SELECT tc.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+            FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+            INNER JOIN INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc
+              ON cc.CONSTRAINT_SCHEMA=tc.CONSTRAINT_SCHEMA AND cc.CONSTRAINT_NAME=tc.CONSTRAINT_NAME
+            WHERE tc.CONSTRAINT_SCHEMA=DATABASE() AND tc.TABLE_NAME='rate_cards'
+              AND tc.CONSTRAINT_TYPE='CHECK'
+              AND cc.CHECK_CLAUSE LIKE '%rate_type%'
+              AND cc.CHECK_CLAUSE LIKE '%cylinder_type_id%'
+              AND cc.CHECK_CLAUSE LIKE '%gas_per_kg%'
+              AND cc.CHECK_CLAUSE LIKE '%cylinder_package%'
+              AND cc.CHECK_CLAUSE NOT LIKE '%filled_cylinder_price%'")->getResultArray();
+
+        foreach($checks as $check){
+            $name=(string)($check['CONSTRAINT_NAME']??'');
+            if($name==='' || !preg_match('/^[A-Za-z0-9_]+$/',$name)) continue;
+            $this->db->query('ALTER TABLE rate_cards DROP CHECK '.$name);
         }
     }
 
