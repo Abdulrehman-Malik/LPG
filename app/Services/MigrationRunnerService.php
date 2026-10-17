@@ -120,6 +120,7 @@ class MigrationRunnerService
             28 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_HISTORY'",
             29 => "SELECT IF(COUNT(*)=0,1,0) ok FROM shop_settings WHERE deposit_payment_allocation_rule='gas_first'",
             31 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='default_gas_entry_mode'",
+            32 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='customer_id') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='rate_type' AND COLUMN_TYPE LIKE '%filled_cylinder_price%') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_change_log' AND COLUMN_NAME='customer_id')) ok",
         ];
 
         if (!isset($checks[$migration['seq']])) {
