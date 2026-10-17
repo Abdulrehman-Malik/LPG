@@ -9,3 +9,8 @@ ALTER TABLE rate_cards
 -- Customer overrides are only valid for filled-cylinder prices.
 ALTER TABLE rate_cards
     ADD CONSTRAINT chk_rate_customer_type CHECK (customer_id IS NULL OR rate_type='filled_cylinder_price');
+
+ALTER TABLE rate_change_log
+    ADD COLUMN customer_id BIGINT UNSIGNED NULL AFTER cylinder_type_id,
+    ADD KEY idx_rate_change_customer(location_id,customer_id,changed_at),
+    ADD CONSTRAINT fk_rate_change_customer FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE RESTRICT;
