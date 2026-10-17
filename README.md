@@ -20,7 +20,7 @@ A branch-aware LPG retail POS/ERP built with CodeIgniter 4, PHP 8.2+ and MySQL 8
 
 1. **Sell Gas Only** — customer brings their own cylinder; the cashier selects exactly one filled physical source cylinder, gas stock is reduced only from that unit, and the same unit becomes empty when its gas reaches zero.
 2. **Sell Gas by Replacing Same-Capacity Cylinder** — customer returns an empty cylinder and receives the same capacity filled cylinder.
-3. **Sell Filled Cylinder with Gas + Cylinder Price** — gas is charged by actual gas weight plus the cylinder price.
+3. **Sell Filled Cylinder** — charge the effective fixed filled-cylinder price, inclusive of gas; record actual gas weight for inventory without adding a second gas/kg charge.
 4. **Sell Filled Cylinder with Gas + Replace Different-Capacity Cylinder** — same as mode 3, with a different empty cylinder type received.
 5. **Sell Empty Cylinder Only** — only empty-cylinder inventory is affected.
 
@@ -298,7 +298,7 @@ This is the consolidated business-rule reference for the recent LPG/POS changes.
 - Empty-cylinder price is configured per cylinder type and can be overridden at sale time.
 - Filled-cylinder sales require explicit physical-cylinder checkbox selection.
 - Gas KG and cylinder quantity for filled-cylinder sales are **read-only** and derived from the selected physical cylinders.
-- Gas rate and cylinder price remain editable for filled-cylinder sales.
+- Filled-cylinder price is resolved from the effective shop/customer rate card and is read-only in POS; gas/kg pricing is not added to the filled-cylinder sale total.
 - Partially-filled cylinders use their actual current gas quantity.
 - Empty + filled cylinder lines can be posted together.
 - Server-side posting locks and revalidates the selected physical cylinders.
