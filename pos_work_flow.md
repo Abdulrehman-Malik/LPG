@@ -87,7 +87,7 @@ This document describes the current four POS header transaction types in `app/Se
 
 ### Important distinction
 
-A **filled cylinder sale** charges for the gas contained in the physical cylinder plus the cylinder price. An **empty cylinder sale** charges only the cylinder price. It must not deduct gas KG or add the sold empty cylinder back into stock.
+A header-level **filled cylinder sale** charges the effective fixed filled-cylinder price, inclusive of gas; do not add a separate gas/kg charge. Inventory still deducts the selected physical cylinder and its actual gas KG. An **empty cylinder sale** charges only the empty-cylinder price and must not deduct gas KG or add the sold empty cylinder back into stock.
 
 ## 4. Security Deposit / Issue Cylinder
 
