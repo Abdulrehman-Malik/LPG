@@ -508,3 +508,17 @@ Before considering the application release-ready, explicitly execute and record:
 - Credit eligibility and credit-limit validation remain the same as Gas Sale: projected customer OS must remain within the applicable limit.
 - A positive Security Deposit Amount still requires an actual non-credit deposit payment; deposit liability is never converted into gas-sale revenue.
 - The payment collection row remains compact, the delete button is reduced in size, and Reference / Note remains after Add Payment.
+
+
+## Filled / Empty Cylinder Selling Rates (Feature Branch)
+
+| ID | Scenario | Expected result | Status |
+|---|---|---|---|
+| R01 | Configure standard filled-cylinder price by shop and cylinder type | Fixed price is saved with effective date and audit history | NOT EXECUTED |
+| R02 | Configure customer-specific filled-cylinder price | Matching customer receives override; other customers use shop standard | NOT EXECUTED |
+| R03 | Sell filled/partially filled cylinder | Total = quantity × fixed filled-cylinder price; gas KG and cylinder inventory are still posted correctly | NOT EXECUTED |
+| R04 | Sell empty cylinder | Existing empty-cylinder price applies; no gas inventory reduction | NOT EXECUTED |
+| R05 | Attempt sale using only a browser-submitted filled price | Server rejects if no configured applicable price exists | NOT EXECUTED |
+| R06 | Change rates after a sale | Historical sale rate and total remain unchanged | NOT EXECUTED |
+| R07 | Cross-shop rate lookup | A different shop's rate is never used | NOT EXECUTED |
+| R08 | Gas Sale / Refill regression | Existing per-KG pricing is unchanged | NOT EXECUTED |
