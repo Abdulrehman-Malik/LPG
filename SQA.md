@@ -521,4 +521,5 @@ Before considering the application release-ready, explicitly execute and record:
 | R05 | Attempt sale using only a browser-submitted filled price | Server rejects if no configured applicable price exists | NOT EXECUTED |
 | R06 | Change rates after a sale | Historical sale rate and total remain unchanged | NOT EXECUTED |
 | R07 | Cross-shop rate lookup | A different shop's rate is never used | NOT EXECUTED |
+| R08 | Effective-dated POS rates | Change transaction date/time across a rate boundary for gas/kg, empty-cylinder, standard-filled, and customer-filled rates | POS display and server-posted totals use the same effective rates; expired rates are not reused | NOT EXECUTED |
 | R08 | Gas Sale / Refill regression | Existing per-KG pricing is unchanged | NOT EXECUTED |
