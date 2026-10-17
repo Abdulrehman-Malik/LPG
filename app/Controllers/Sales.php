@@ -49,6 +49,10 @@ class Sales extends Controller
             return $this->response->setStatusCode(422)->setJSON(['error'=>'A valid transaction date/time is required.']);
         }
         if(strlen($asOf)===16) $asOf.=':00';
+        $parsedDate=\\DateTimeImmutable::createFromFormat('!Y-m-d H:i:s',$asOf);
+        if(!$parsedDate || $parsedDate->format('Y-m-d H:i:s')!==$asOf) {
+            return $this->response->setStatusCode(422)->setJSON(['error'=>'A valid transaction date/time is required.']);
+        }
         $customerId=max(0,(int)$this->request->getGet('customer_id'));
         $db=\Config\Database::connect();
         $types=(new CylinderTypeModel())->activeOrdered();
