@@ -852,7 +852,7 @@ class SalesService
             if($cfg['status']==='filled'&&$enteredGasRate<=0&&$stdGas===null){
                 throw new RuntimeException('No effective gas/kg rate exists.');
             }
-            $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt);
+            $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt,$locationId);
             $stdCyl=($stdCyl!==null&&$stdCyl>0)?$stdCyl:(float)$row['empty_cylinder_price'];
             $gasRate=$enteredGasRate>0?$enteredGasRate:($stdGas??0);
             $cylRate=$cfg['cylinder_rate']>0?$cfg['cylinder_rate']:$stdCyl;
