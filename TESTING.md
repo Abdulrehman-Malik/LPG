@@ -373,3 +373,19 @@ The server must not report **“No effective gas/kg rate exists.”** when a val
 - [ ] Verify sale amount, KG, receipt/payment, customer OS, saved rate, and inventory movements reconcile.
 
 Status: **Code updated; runtime/browser/database regression not yet executed.**
+
+
+## Filled and Empty Cylinder Rate Pricing — Feature Branch
+
+- [ ] Configure a shop-level filled-cylinder selling price for each cylinder type; verify it is effective-dated and appears in rate history.
+- [ ] Configure a customer-specific filled-cylinder price; verify it is shown for that customer only and the shop price is used for other customers.
+- [ ] Attempt a filled-cylinder sale with no applicable configured filled price; verify the server rejects the sale even if a browser-submitted price is present.
+- [ ] Sell a filled or partially filled physical cylinder; verify line total equals quantity × fixed filled-cylinder price, with no additional gas-per-KG charge.
+- [ ] Verify the physical cylinder and its actual gas KG are still removed from inventory and the transaction stores the applied fixed price.
+- [ ] Sell an empty cylinder; verify the existing empty-cylinder price applies and gas inventory is unchanged.
+- [ ] Verify Gas Sale / Refill still uses its existing gas-per-KG calculation.
+- [ ] Verify future-effective rates do not apply early and old posted sale values remain unchanged after rates are updated.
+- [ ] Verify cash, credit, void/reversal, receipt, ledger, and all four POS transaction types still work as before.
+- [ ] Verify a shop-specific filled-cylinder rate is not resolved from another shop's rate cards.
+
+Runtime/database execution remains required before release.
