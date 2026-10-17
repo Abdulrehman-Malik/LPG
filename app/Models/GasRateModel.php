@@ -11,7 +11,7 @@ class GasRateModel extends RateCardModel
             ->where('effective_from <=',$asOf)
             ->groupStart()->where('effective_to',null)->orWhere('effective_to >=',$asOf)->groupEnd();
         if($locationId!==null) $builder->groupStart()->where('location_id',$locationId)->orWhere('location_id',null)->groupEnd()->orderBy('location_id','DESC');
-        $row=$builder->orderBy('effective_from','DESC')->first();
+        $row=$builder->orderBy('effective_from','DESC')->orderBy('id','DESC')->first();
         return $row?(float)$row['rate_value']:null;
     }
 
