@@ -28,13 +28,48 @@ class Sales extends Controller
         foreach($customers as $c){$balances[$c['id']]=$service->customerBalance((int)$c['id']);$creditLimits[$c['id']]=(float)$c['credit_limit'];}
         foreach($balances as $balance){if((float)$balance>0)$shopOutstanding+=(float)$balance;}
         $rateModel=new GasRateModel();
-        $cylinderRates=[];
-        foreach($types as $type) $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']);
+        $cylinderRates=[];$filledCylinderRates=[];$customerFilledCylinderRates=[];
+        $locationId=(int)session()->get('location_id');
+        foreach($types as $type){$typeId=(int)$type['id'];$cylinderRates[$typeId]=$rateModel->currentCylinderRate($typeId,null,$locationId);$filled=$rateModel->currentFilledCylinderRate($typeId,$locationId,null);$filledCylinderRates[$typeId]=$filled['rate']??0.0;}
+        $rateRows=\Config\Database::connect()->table('rate_cards')->select('customer_id,cylinder_type_id,rate_value,effective_from')->where(['location_id'=>$locationId,'rate_type'=>'filled_cylinder_price'])->where('effective_from <=',date('Y-m-d H:i:s'))->groupStart()->where('effective_to',null)->orWhere('effective_to >=',date('Y-m-d H:i:s'))->groupEnd()->orderBy('effective_from','DESC')->orderBy('id','DESC')->get()->getResultArray();
+        foreach($rateRows as $rateRow){$cid=(int)($rateRow['customer_id']??0);$tid=(int)$rateRow['cylinder_type_id'];if($cid>0&&!isset($customerFilledCylinderRates[$cid][$tid]))$customerFilledCylinderRates[$cid][$tid]=(float)$rateRow['rate_value'];}
         $shopSettings=(new ShopSettingsModel())->forLocation((int)session()->get('location_id')); $defaultTransactionType=(string)($shopSettings['default_transaction_type']??'gas_sale'); $defaultGasEntryMode=(string)($shopSettings['default_gas_entry_mode']??'quantity');
         $locationId=(int)session()->get('location_id'); $cashSession=(new \App\Services\CashService())->openSessionForLocation($locationId); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=0.0; foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock($locationId,'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay($locationId,$typeId,'filled'); foreach($filledUnits[$typeId] as $unit) $gasStock+=(float)$unit['gas_weight_kg']; $emptyStock[$typeId]=$inv->stock($locationId,'empty_cylinder',$typeId);} 
         $db=\Config\Database::connect(); $depositRows=$db->table('customer_security_deposits')->select("customer_id,SUM(CASE WHEN entry_type='hold' THEN amount ELSE -amount END) AS balance")->where('location_id',$locationId)->groupBy('customer_id')->get()->getResultArray(); $depositBalances=[]; foreach($depositRows as $dr) $depositBalances[(int)$dr['customer_id']]=max(0,(float)$dr['balance']); $custodyUnits=$db->table('cylinder_custody cc')->select('cc.id custody_id,cc.customer_id,cc.deposit_amount,cu.id unit_id,cu.unit_code,cu.cylinder_type_id,cu.gas_weight_kg,cu.status cylinder_status,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cc.location_id'=>$locationId,'cc.status'=>'issued'])->orderBy('cu.id')->get()->getResultArray(); 
         $availableCustodyUnits=$cylinders->availableCompanyUnits($locationId);
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultTransactionType'=>$defaultTransactionType,'defaultGasEntryMode'=>$defaultGasEntryMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy($locationId),'creditLimitMode'=>$shopSettings['credit_limit_validation_mode']??'none','shopCreditLimit'=>(float)($shopSettings['shop_credit_limit']??0),'shopOutstanding'=>$shopOutstanding,'individualCylinderTracking'=>(int)($shopSettings['individual_cylinder_tracking']??0),'allowPosSourceCylinderSelection'=>(int)($shopSettings['allow_pos_source_cylinder_selection']??0),'custodyUnits'=>$custodyUnits,'depositBalances'=>$depositBalances,'availableCustodyUnits'=>$availableCustodyUnits,'canVoidSales'=>PermissionService::allows('POS_VOID')]);
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(null,$locationId),'cylinderRates'=>$cylinderRates,'filledCylinderRates'=>$filledCylinderRates,'customerFilledCylinderRates'=>$customerFilledCylinderRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultTransactionType'=>$defaultTransactionType,'defaultGasEntryMode'=>$defaultGasEntryMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy($locationId),'creditLimitMode'=>$shopSettings['credit_limit_validation_mode']??'none','shopCreditLimit'=>(float)($shopSettings['shop_credit_limit']??0),'shopOutstanding'=>$shopOutstanding,'individualCylinderTracking'=>(int)($shopSettings['individual_cylinder_tracking']??0),'allowPosSourceCylinderSelection'=>(int)($shopSettings['allow_pos_source_cylinder_selection']??0),'custodyUnits'=>$custodyUnits,'depositBalances'=>$depositBalances,'availableCustodyUnits'=>$availableCustodyUnits,'canVoidSales'=>PermissionService::allows('POS_VOID')]);
+    }
+
+    public function ratesForTransaction()
+    {
+        if($r=$this->guard()) return $r;
+        $locationId=(int)session()->get('location_id');
+        $asOf=str_replace('T',' ',trim((string)$this->request->getGet('as_of')));
+        if($asOf==='' || !preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}(?::\\d{2})?$/',$asOf)) {
+            return $this->response->setStatusCode(422)->setJSON(['error'=>'A valid transaction date/time is required.']);
+        }
+        if(strlen($asOf)===16) $asOf.=':00';
+        $parsedDate=\DateTimeImmutable::createFromFormat('!Y-m-d H:i:s',$asOf);
+        if(!$parsedDate || $parsedDate->format('Y-m-d H:i:s')!==$asOf) {
+            return $this->response->setStatusCode(422)->setJSON(['error'=>'A valid transaction date/time is required.']);
+        }
+        $customerId=max(0,(int)$this->request->getGet('customer_id'));
+        $db=\Config\Database::connect();
+        $types=(new CylinderTypeModel())->activeOrdered();
+        $rateModel=new GasRateModel();
+        $cylinderRates=[];$filledCylinderRates=[];
+        foreach($types as $type){
+            $typeId=(int)$type['id'];
+            $cylinderRates[$typeId]=$rateModel->currentCylinderRate($typeId,$asOf,$locationId);
+            $filled=$rateModel->currentFilledCylinderRate($typeId,$locationId,null,$asOf);
+            $filledCylinderRates[$typeId]=$filled['rate']??0.0;
+        }
+        $customerFilledCylinderRates=[];
+        if($customerId>0){
+            $rows=$db->query("SELECT cylinder_type_id,rate_value FROM rate_cards WHERE location_id=? AND customer_id=? AND rate_type='filled_cylinder_price' AND effective_from<=? AND (effective_to IS NULL OR effective_to>=?) ORDER BY effective_from DESC,id DESC",[$locationId,$customerId,$asOf,$asOf])->getResultArray();
+            foreach($rows as $row){$typeId=(int)$row['cylinder_type_id'];if(!isset($customerFilledCylinderRates[$customerId][$typeId]))$customerFilledCylinderRates[$customerId][$typeId]=(float)$row['rate_value'];}
+        }
+        return $this->response->setJSON(['as_of'=>$asOf,'cylinderRates'=>$cylinderRates,'filledCylinderRates'=>$filledCylinderRates,'customerFilledCylinderRates'=>$customerFilledCylinderRates,'kgRate'=>$rateModel->currentKgRate($asOf,$locationId)]);
     }
 
     public function custody(int $customerId)

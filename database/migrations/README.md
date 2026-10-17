@@ -52,7 +52,7 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031 → 032**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive refresh intended for disposable staging/test databases. It clears transactional records plus customers, suppliers, cylinder types, rate cards, and rate-change history. Users, roles, permissions, locations, shop settings, cash registers, inventory policies, and other application configuration remain. Whenever a later migration introduces a new transactional table, update the controlled refresh service/script so that table is reset too.
 5. Do not automatically run migration 011 during production deployment.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
@@ -105,3 +105,4 @@ Never reuse an existing sequence number.
 - These rules are enforced server-side; POS display/JavaScript is only an early user-feedback layer.
 
 - `031_20261009_default_gas_entry_mode.sql` — adds the branch-level default Gas Entry option (KG, Amount, or Cylinders) for Gas Sale / Refill.
+- **032** — adds fixed filled-cylinder prices and optional shop-scoped customer-specific overrides; existing cylinder-package rates remain empty-cylinder prices.
