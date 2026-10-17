@@ -34,7 +34,7 @@ The requested functional scope is implemented and the repository has undergone a
 - Users, roles and permissions.
 - Opening inventory.
 - Physical cylinder-unit inventory with per-cylinder actual gas weight.
-- POS five-mode transaction model: Sell Gas Only; Same-Capacity Replacement; Filled + Gas; Different-Capacity Replacement; Empty Only.
+- POS header-level transaction model: Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return; legacy replacement-specific rules are tested separately.
 - Cash/cheque/online/credit payments.
 - Customer credit-limit enforcement.
 - Customer receipts.
