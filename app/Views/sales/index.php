@@ -488,13 +488,16 @@ $initialTransactionType = in_array((string)$defaultTransactionType, $posVisibleT
 const types=<?=json_encode(array_values($types),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)?>;
 let rates=<?=json_encode($cylinderRates)?>,filledCylinderRates=<?=json_encode($filledCylinderRates)?>,customerFilledCylinderRates=<?=json_encode($customerFilledCylinderRates)?>,kgRate=<?=json_encode($kgRate)?>;
 const rateLookupUrl=<?=json_encode(site_url('sales/rates'))?>;
+let rateLookupRequest=0;
 async function refreshEffectiveRates(){
+ const requestId=++rateLookupRequest;
  const timeInput=document.querySelector('input[name="transaction_at"]');
  if(!timeInput||!timeInput.value)return;
  const query=new URLSearchParams({as_of:timeInput.value,customer_id:String(selectedCustomerId()||'')});
  try{
    const response=await fetch(rateLookupUrl+'?'+query.toString(),{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
    const data=await response.json();
+   if(requestId!==rateLookupRequest)return;
    if(!response.ok||!data||!data.cylinderRates)return;
    const previousKgRate=Number(kgRate||0);
    rates=data.cylinderRates;filledCylinderRates=data.filledCylinderRates||{};customerFilledCylinderRates=data.customerFilledCylinderRates||{};kgRate=data.kgRate;
