@@ -49,7 +49,8 @@ class Rates extends Controller
 
         $db=Database::connect();
         $db->transStart();
-        $current=$this->rates->where('location_id',$locationId)->where('rate_type',$type)->where('cylinder_type_id',$typeId)->where('customer_id',$customerId)->where('effective_from <=',date('Y-m-d H:i:s'))->orderBy('effective_from','DESC')->orderBy('id','DESC')->first();
+        $effectiveForLookup=strlen($effective)===16?$effective.':00':$effective;
+        $current=$this->rates->where('location_id',$locationId)->where('rate_type',$type)->where('cylinder_type_id',$typeId)->where('customer_id',$customerId)->where('effective_from <=',$effectiveForLookup)->groupStart()->where('effective_to',null)->orWhere('effective_to >=',$effectiveForLookup)->groupEnd()->orderBy('effective_from','DESC')->orderBy('id','DESC')->first();
         $row=[
             'location_id'=>$locationId,'rate_type'=>$type,'cylinder_type_id'=>$typeId,'customer_id'=>$customerId,'rate_value'=>$value,
             'effective_from'=>$effective,'created_by'=>(int)session()->get('user_id'),'created_at'=>date('Y-m-d H:i:s')
