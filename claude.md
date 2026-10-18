@@ -139,5 +139,6 @@ Do not expose the production application/database. Use a dedicated test database
 
 
 ## Git Workflow Rule
-- Never push directly to `main`. Create a feature branch first (`feature/`, `fix/`, `chore/`), push it, open a PR, and merge only after CI passes.
+- Flow is feature -> stage -> main. Never push directly to `main` or `stage`.
+- Branch from `stage` (`feature/`, `fix/`, `chore/`), push, open a PR into `stage`, merge after CI passes. Promote with a PR from `stage` into `main`.
 - Run `git config core.hooksPath .githooks` once per clone to enable the pre-push guard.

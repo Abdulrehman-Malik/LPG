@@ -1,14 +1,14 @@
 # Contributing
 
-## Workflow (mandatory)
-1. Never commit or push directly to `main`.
-2. Create a feature branch first: `git switch -c feature/<short-name>` (also `fix/`, `chore/`, `docs/`).
-3. Commit and push the branch: `git push -u origin <branch>`.
-4. Open a pull request into `main`.
-5. Merge only after both CI checks pass: **Lint and static checks** and **Database and PHPUnit**.
+## Workflow (mandatory): feature -> stage -> main
+1. Never commit or push directly to `main` or `stage`.
+2. Branch from `stage`: `git switch stage && git pull && git switch -c feature/<short-name>` (also `fix/`, `chore/`, `docs/`).
+3. Push the branch and open a PR into **`stage`**. Merge after both CI checks pass: **Lint and static checks** and **Database and PHPUnit**.
+4. Test on `stage`. When it is verified, open a PR from **`stage` into `main`**. The **Only stage can merge into main** check rejects any other source branch.
+5. Merge into `main` only after all checks pass.
 
 ## One-time setup after cloning
-Enable the shared git hooks, which block direct pushes to `main`:
+Enable the shared git hooks, which block direct pushes to `main` and `stage`:
 
     git config core.hooksPath .githooks
 
