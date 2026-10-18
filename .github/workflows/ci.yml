@@ -15,7 +15,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint and static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring
+          coverage: none
+
+      - name: PHP syntax (php -l)
+        shell: bash
+        run: |
+          fail=0
+          while IFS= read -r -d '' f; do
+            php -l "$f" >/dev/null || fail=1
+          done < <(find app public tests -type f -name '*.php' -print0)
+          exit $fail
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish --no-check-lock
+
+      - name: Block committed env files and secrets
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)\.{0,2}env(\..*)?$' | grep -vE '(^|/)(env|\.env\.example)$'; then
+            echo "::error::Environment file with possible credentials is tracked"; exit 1
+          fi
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Dependency vulnerability audit
+        run: composer audit --locked --no-dev
+
   php-and-db-smoke:
+    name: Database and PHPUnit
+    needs: lint
     runs-on: ubuntu-latest
 
     services:
