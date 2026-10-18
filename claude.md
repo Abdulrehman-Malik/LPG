@@ -136,3 +136,8 @@ Do not expose the production application/database. Use a dedicated test database
 - For production, set `app.baseURL` in the production machine's local `.env` to the production URL.
 - Do not commit tunnel URLs, environment-specific hostnames, production URLs, or environment secrets to the repository.
 - Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
+
+
+## Git Workflow Rule
+- Never push directly to `main`. Create a feature branch first (`feature/`, `fix/`, `chore/`), push it, open a PR, and merge only after CI passes.
+- Run `git config core.hooksPath .githooks` once per clone to enable the pre-push guard.
