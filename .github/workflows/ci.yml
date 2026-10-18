@@ -2,11 +2,17 @@ name: LPG CI
 
 on:
   push:
-    branches:
-      - main
-      - qa/workflow-cleanup
+    branches: [main, lolcay]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   php-and-db-smoke:

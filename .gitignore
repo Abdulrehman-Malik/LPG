@@ -26,3 +26,6 @@ php_errors.log
 # Local build output and database backups
 /build/
 /writable/backups/
+
+# Stray env copy (contains credentials)
+/..env
