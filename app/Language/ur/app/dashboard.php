@@ -91,4 +91,5 @@ return [
     'Items' => 'آئٹمز',
     'filled cylinders in shop, by company and plant' => 'دکان میں بھرے ہوئے سلنڈرز، کمپنی اور پلانٹ کے مطابق',
     '{0} filled cylinders' => '{0} بھرے ہوئے سلنڈرز',
+    'View {0} cylinder(s)' => '{0} سلنڈر دیکھیں',
 ];
