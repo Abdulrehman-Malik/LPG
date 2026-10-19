@@ -100,12 +100,44 @@ class Sales extends Controller
     {
         if($r=$this->guard()) return $r;
         $db=\Config\Database::connect();
-        $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone')->join('customers c','c.id=s.customer_id','left')->where('s.id',$id)->where('s.location_id',(int)session()->get('location_id'))->get()->getRowArray();
+        $sale=$db->table('sales s')->select('s.*,c.code customer_code,c.name customer_name,c.phone customer_phone,u.full_name cashier_name')->join('customers c','c.id=s.customer_id','left')->join('users u','u.id=s.created_by','left')->where('s.id',$id)->where('s.location_id',(int)session()->get('location_id'))->get()->getRowArray();
         if(!$sale) return $this->response->setStatusCode(404)->setBody('Sale not found');
         $items=$db->table('sale_items')->where('sale_id',$id)->orderBy('line_no')->get()->getResultArray();
         $payments=$db->table('sale_payments')->where('sale_id',$id)->orderBy('id')->get()->getResultArray();
         $shopSettings=(new \App\Models\ShopSettingsModel())->forLocation((int)session()->get('location_id')); $location=$db->table('locations')->where('id',(int)session()->get('location_id'))->get()->getRowArray() ?: [];
-        return view('sales/receipt',['sale'=>$sale,'items'=>$items,'payments'=>$payments,'shopSettings'=>$shopSettings,'location'=>$location]);
+        return view('sales/receipt',['sale'=>$sale,'items'=>$this->groupReceiptItems($items),'payments'=>$payments,'shopSettings'=>$shopSettings,'location'=>$location]);
+    }
+
+    /**
+     * Presentation-only grouping: identical lines (same type, rates and per-unit gas/amount) are
+     * printed once with a quantity and the physical cylinder codes listed underneath.
+     * Posted sale items are never altered.
+     */
+    private function groupReceiptItems(array $items): array
+    {
+        $groups=[];
+        foreach($items as $i){
+            $qty=(float)$i['quantity'];
+            $note=trim((string)($i['notes']??''));
+            $code=null;
+            if(preg_match('/^Custody issued:\s*(\S+)$/',$note,$m)){ $code=$m[1]; $note=''; }
+            $isCylinder=in_array($i['line_type'],['filled_cylinder','empty_cylinder'],true);
+            $perUnitGas=$qty>0?round((float)$i['gas_weight_kg']/$qty,3):0;
+            $perUnitAmount=$qty>0?round((float)$i['line_total']/$qty,2):0;
+            // Only whole-cylinder lines are merged; KG gas lines stay as entered.
+            $key=$isCylinder
+                ? implode('|',[$i['line_type'],$i['cylinder_type_id'],$i['gas_rate'],$i['cylinder_price'],$i['applied_rate'],$perUnitGas,$perUnitAmount,$note])
+                : 'line-'.$i['id'];
+            if(!isset($groups[$key])){
+                $groups[$key]=$i+['codes'=>[],'is_cylinder'=>$isCylinder,'display_note'=>$note,'unit_gas'=>$perUnitGas,'unit_amount'=>$perUnitAmount];
+                $groups[$key]['quantity']=0.0;$groups[$key]['gas_weight_kg']=0.0;$groups[$key]['line_total']=0.0;
+            }
+            $groups[$key]['quantity']+=$qty;
+            $groups[$key]['gas_weight_kg']+=(float)$i['gas_weight_kg'];
+            $groups[$key]['line_total']+=(float)$i['line_total'];
+            if($code!==null) $groups[$key]['codes'][]=$code;
+        }
+        return array_values($groups);
     }
 
     public function historyPage()
