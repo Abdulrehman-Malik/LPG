@@ -480,4 +480,13 @@ return [
     'Cylinder refill posting failed.' => 'سلنڈر ری فل پوسٹنگ ناکام ہو گئی۔',
     'Refilled physical cylinder {0} could not be found.' => 'ری فل شدہ فزیکل سلنڈر {0} نہیں ملا۔',
     'Purchase {0} cannot be voided because refilled cylinder {1} has already been used in another stock transaction.' => 'خریداری {0} منسوخ نہیں ہو سکتی کیونکہ ری فل شدہ سلنڈر {1} پہلے ہی کسی دوسری اسٹاک ٹرانزیکشن میں استعمال ہو چکا ہے۔',
+    'Rate not found.' => 'ریٹ نہیں ملا۔',
+    'A valid rate and effective date/time are required.' => 'درست ریٹ اور مؤثر تاریخ/وقت ضروری ہیں۔',
+    'No changes to save.' => 'محفوظ کرنے کے لیے کوئی تبدیلی نہیں۔',
+    'Edited' => 'ترمیم شدہ',
+    'Edited: {0}' => 'ترمیم شدہ: {0}',
+    'Rate could not be updated.' => 'ریٹ اپ ڈیٹ نہیں ہو سکا۔',
+    'Rate updated and history recorded.' => 'ریٹ اپ ڈیٹ ہو گیا اور ہسٹری محفوظ ہو گئی۔',
+    'Rate could not be deleted.' => 'ریٹ حذف نہیں ہو سکا۔',
+    'Rate deleted.' => 'ریٹ حذف ہو گیا۔',
 ];

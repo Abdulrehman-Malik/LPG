@@ -57,4 +57,60 @@ class Rates extends Controller
         $db->transComplete();
         return redirect()->to('/rates')->with('success','Rate saved and history recorded.');
     }
+
+    /**
+     * Correct the value / effective time of an existing rate. The rate type and cylinder type are fixed
+     * (delete and re-add to change them). Posted sales keep the rate they were sold at, so this never
+     * rewrites past transactions.
+     */
+    public function update(int $id)
+    {
+        if($r=$this->guard()) return $r;
+        $locationId=(int)(session()->get('location_id') ?? 0);
+        $row=$this->rates->where('id',$id)->where('location_id',$locationId)->first();
+        if(!$row) return redirect()->to('/rates')->with('error','Rate not found.');
+
+        $value=(float)$this->request->getPost('rate_value');
+        $effectiveRaw=str_replace('T',' ',trim((string)$this->request->getPost('effective_from')));
+        $reason=trim((string)$this->request->getPost('reason')) ?: null;
+        $logReason=$reason;
+        if($logReason===null) $logReason='Edited';
+        $ts=$effectiveRaw===''?false:strtotime($effectiveRaw);
+        if($value<0 || $ts===false) return redirect()->to('/rates')->with('error','A valid rate and effective date/time are required.');
+        $effective=date('Y-m-d H:i:s',$ts);
+
+        if(abs($value-(float)$row['rate_value'])<0.00005 && $effective===date('Y-m-d H:i:s',strtotime((string)$row['effective_from']))){
+            return redirect()->to('/rates')->with('success','No changes to save.');
+        }
+
+        $db=Database::connect();
+        $db->transStart();
+        $this->rates->update($id,['rate_value'=>$value,'effective_from'=>$effective]);
+        (new RateChangeLogModel())->insert([
+            'rate_card_id'=>$id,'location_id'=>$locationId,'rate_type'=>$row['rate_type'],'cylinder_type_id'=>$row['cylinder_type_id'],
+            'old_rate'=>$row['rate_value'],'new_rate'=>$value,'changed_by'=>(int)session()->get('user_id'),
+            'reason'=>$logReason
+        ]);
+        \App\Services\AuditService::log('UPDATE','rate_card',$id,['rate_value'=>$row['rate_value'],'effective_from'=>$row['effective_from']],['rate_value'=>$value,'effective_from'=>$effective],(int)session()->get('user_id'),$locationId);
+        $db->transComplete();
+        if(!$db->transStatus()) return redirect()->to('/rates')->with('error','Rate could not be updated.');
+        return redirect()->to('/rates')->with('success','Rate updated and history recorded.');
+    }
+
+    /** Removes a rate row. The delete is audit-logged; sales already posted keep their own saved rate. */
+    public function delete(int $id)
+    {
+        if($r=$this->guard()) return $r;
+        $locationId=(int)(session()->get('location_id') ?? 0);
+        $row=$this->rates->where('id',$id)->where('location_id',$locationId)->first();
+        if(!$row) return redirect()->to('/rates')->with('error','Rate not found.');
+
+        $db=Database::connect();
+        $db->transStart();
+        \App\Services\AuditService::log('DELETE','rate_card',$id,$row,null,(int)session()->get('user_id'),$locationId);
+        $this->rates->delete($id);
+        $db->transComplete();
+        if(!$db->transStatus()) return redirect()->to('/rates')->with('error','Rate could not be deleted.');
+        return redirect()->to('/rates')->with('success','Rate deleted.');
+    }
 }
