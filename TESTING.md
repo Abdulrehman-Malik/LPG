@@ -399,3 +399,10 @@ Run migration `032_20261019_client_feedback_plants_wholesale_refill.sql` first (
    - [ ] Total Filled Cylinders card shows a count only (no KG); drills Company → Plant → cylinder type.
 
 Status: **Automated checks passed (PHP lint, unit tests, scratch-DB service and HTTP render checks); browser/UI runtime not yet executed.**
+
+### Wholesale pricing on Issue Cylinder and Cylinder Sale — 19 Oct 2026
+
+- [ ] Wholesale customer + Security Deposit / Issue Cylinder (filled): column reads *Price / Cylinder*; a full cylinder costs exactly the wholesale cylinder price, a partly filled cylinder is pro-rated by gas weight.
+- [ ] Wholesale customer + Cylinder Sale (filled): gas component uses the per-cylinder price (*Rs/Cyl*), same pro-rating rule.
+- [ ] Wholesale customer with no wholesale rate for the type: blocked with a clear message unless a price per cylinder is typed.
+- [ ] Retail customers unchanged (Rs per KG).

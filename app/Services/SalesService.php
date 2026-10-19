@@ -387,6 +387,20 @@ class SalesService
         return $this->postCylinderReturnHeader($payload,$userId,$locationId,$customerId,$transactionAt,$notes,$returnUnitIds);
     }
 
+    protected function isWholesaleCustomer(?int $customerId): bool
+    {
+        if(!$customerId) return false;
+        $customer=$this->customers->find($customerId);
+        return $customer && (string)($customer['customer_type']??'retail')==='wholesale';
+    }
+
+    /** Wholesale per-cylinder price expressed per KG (null when no usable rate/capacity). */
+    protected function wholesaleRatePerKg(int $typeId,float $capacityKg,string $at): ?float
+    {
+        $price=$this->rates->currentWholesaleRate($typeId,$at);
+        return ($price!==null && $price>0 && $capacityKg>0) ? $price/$capacityKg : null;
+    }
+
     protected function postGasSaleHeader(array $payload,int $userId,int $locationId,?int $customerId,string $transactionAt,?string $notes,array $lines,array $payments): array
     {
         if(!$lines) throw new RuntimeException('At least one gas line is required.');
@@ -397,8 +411,7 @@ class SalesService
         if ((string)($lines[0]['gas_entry_mode']??'') === 'cylinders') $allowSourceSelection=false;
 
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
-        $customerRow=$customerId?$this->customers->find($customerId):null;
-        $isWholesale=$customerRow && (string)($customerRow['customer_type']??'retail')==='wholesale';
+        $isWholesale=$this->isWholesaleCustomer($customerId);
         foreach($lines as $i=>$line){
             $n=$i+1;
             $typeId=isset($line['cylinder_type_id'])&&$line['cylinder_type_id']!==''?(int)$line['cylinder_type_id']:0;
@@ -647,6 +660,7 @@ class SalesService
     {
         if(!$lines) throw new RuntimeException('At least one cylinder sale line is required.');
         if(!$payments) throw new RuntimeException('At least one payment is required.');
+        $isWholesale=$this->isWholesaleCustomer($customerId);
 
         $prepared=[];$subtotal=0;$customRate=false;$selectedAcrossLines=[];
         foreach($lines as $i=>$line){
@@ -683,9 +697,12 @@ class SalesService
                     if(isset($selectedAcrossLines[$selectedId])) throw new RuntimeException('Physical cylinder '.$selectedId.' is selected more than once in this sale.');
                     $selectedAcrossLines[$selectedId]=$n;
                 }
-                $stdGas=$this->rates->currentKgRate($transactionAt);
+                // Wholesale: the standard gas price is the per-cylinder price expressed per KG, so a
+                // partly filled cylinder is pro-rated and a full one costs exactly the cylinder price.
+                $stdGas=$isWholesale?$this->wholesaleRatePerKg($typeId,(float)$type['capacity_kg'],$transactionAt):$this->rates->currentKgRate($transactionAt);
                 if($stdGas!==null && $stdGas<=0) $stdGas=null;
                 $gasRate=$gasRateInput??$stdGas;
+                if($gasRate===null && $isWholesale) throw new RuntimeException('No wholesale cylinder rate is configured for '.$type['name'].'. Set it in LPG Rates or enter a price per cylinder.');
                 if($gasRate===null || $gasRate<=0){
                     throw new RuntimeException($gasRateInput===null
                         ? 'No effective gas/kg rate exists. Enter a positive Gas Rate for this line or configure an effective rate in Gas Rate Settings.'
@@ -876,6 +893,7 @@ class SalesService
         }
 
         $prepared=[];$subtotal=0;$totalKg=0;$customRate=false;
+        $isWholesale=$this->isWholesaleCustomer($customerId);
         foreach($rows as $row){
             $cfg=$lineByUnit[(int)$row['id']];
             // Security Deposit / Issue Cylinder allows the cashier to use the gas rate
@@ -883,9 +901,11 @@ class SalesService
             // when no usable rate was supplied by the POS. This keeps the custody workflow
             // independent from the normal gas-sale rate validation while preserving the
             // configured rate as the default.
-            $stdGas=$cfg['status']==='filled'?$this->rates->currentKgRate($transactionAt):0;
+            // Wholesale customers: standard gas price = wholesale per-cylinder price expressed per KG.
+            $stdGas=$cfg['status']==='filled'?($isWholesale?$this->wholesaleRatePerKg((int)$row['cylinder_type_id'],(float)$row['capacity_kg'],$transactionAt):$this->rates->currentKgRate($transactionAt)):0;
             $enteredGasRate=$cfg['status']==='filled'?(float)$cfg['gas_rate']:0;
             if($cfg['status']==='filled'&&$enteredGasRate<=0&&$stdGas===null){
+                if($isWholesale) throw new RuntimeException('No wholesale cylinder rate is configured for '.$row['cylinder_name'].'. Set it in LPG Rates or enter a price per cylinder.');
                 throw new RuntimeException('No effective gas/kg rate exists.');
             }
             $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt);
