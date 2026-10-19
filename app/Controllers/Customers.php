@@ -149,6 +149,7 @@ class Customers extends Controller
         $data=[
             'code'=>trim((string)$this->request->getPost('code')) ?: null,
             'name'=>trim((string)$this->request->getPost('name')),
+            'customer_type'=>$this->request->getPost('customer_type')==='wholesale' ? 'wholesale' : 'retail',
             'phone'=>trim((string)$this->request->getPost('phone')) ?: null,
             'city'=>trim((string)$this->request->getPost('city')) ?: null,
             'address'=>trim((string)$this->request->getPost('address')) ?: null,

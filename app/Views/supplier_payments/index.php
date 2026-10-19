@@ -79,20 +79,24 @@ const money = value => Number(value || 0).toFixed(2);
 
 function refreshBalance() {
     const supplierId = document.getElementById('supplier_id').value;
-    const outstanding = Math.max(0, Number(balances[supplierId] || 0));
+    // A negative balance means the supplier is already overpaid (advance).
+    const outstanding = Number(balances[supplierId] || 0);
     const amount = Math.max(0, Number(document.getElementById('amount').value || 0));
-    const remaining = Math.max(0, outstanding - amount);
+    const remaining = outstanding - amount;
 
-    document.getElementById('outstanding').textContent = 'Rs. ' + money(outstanding);
-    document.getElementById('remaining').textContent = 'Rs. ' + money(remaining);
-
-    const over = amount > outstanding + 0.01;
-    document.getElementById('amount').classList.toggle('is-invalid', over);
-    document.getElementById('payButton').disabled = !supplierId || outstanding <= 0 || amount <= 0 || over;
+    document.getElementById('outstanding').textContent = balanceLabel(outstanding);
+    document.getElementById('remaining').textContent = balanceLabel(remaining);
+    document.getElementById('amount').classList.remove('is-invalid');
+    document.getElementById('payButton').disabled = !supplierId || amount <= 0;
 
     if (!supplierId) {
+        document.getElementById('outstanding').textContent = 'Rs. 0.00';
         document.getElementById('remaining').textContent = 'Rs. 0.00';
     }
+}
+
+function balanceLabel(value) {
+    return value < -0.005 ? 'Advance Rs. ' + money(Math.abs(value)) : 'Rs. ' + money(value);
 }
 
 document.getElementById('supplier_id').addEventListener('change', refreshBalance);
@@ -100,18 +104,11 @@ document.getElementById('amount').addEventListener('input', refreshBalance);
 
 document.getElementById('supplierPaymentForm').addEventListener('submit', function (event) {
     const supplierId = document.getElementById('supplier_id').value;
-    const outstanding = Number(balances[supplierId] || 0);
     const amount = Number(document.getElementById('amount').value || 0);
 
-    if (!supplierId || outstanding <= 0) {
+    if (!supplierId || amount <= 0) {
         event.preventDefault();
-        alert('This supplier has no outstanding payable.');
-        return;
-    }
-
-    if (amount <= 0 || amount > outstanding + 0.01) {
-        event.preventDefault();
-        alert('Payment amount cannot exceed the outstanding supplier payable.');
+        alert('Select a supplier and enter a payment amount greater than zero.');
     }
 });
 

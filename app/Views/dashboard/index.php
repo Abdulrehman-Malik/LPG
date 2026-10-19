@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   const modal=document.getElementById('dashboardDetailModal'); if(!modal)return;
   const body=document.getElementById('dashboardDetailBody'), title=document.getElementById('dashboardDetailTitle');
-  const titles={gas:'Available Gas KG — Cylinder Type & Individual Cylinders',empty:'Empty Gas Cylinders in Shop — Type & Individual Cylinders',issued:'Issued Cylinders — Customers & Cylinder Details',sales:'Sales — Payment & Transaction Details',cash:'Cash Counter — Register In / Out Movements',receivable:'Credit Sales / Accounts Receivable — Customer OS',expenses:'Expenses — Category & Transaction Details'};
+  const titles={purchases:'Purchases — Company, Plant & Payment Details',filled:'Total Filled Cylinders — Company & Plant',gas:'Available Gas KG — Cylinder Type & Individual Cylinders',empty:'Empty Gas Cylinders in Shop — Type & Individual Cylinders',issued:'Issued Cylinders — Customers & Cylinder Details',sales:'Sales — Payment & Transaction Details',cash:'Cash Counter — Register In / Out Movements',receivable:'Credit Sales / Accounts Receivable — Customer OS',expenses:'Expenses — Category & Transaction Details'};
   modal.addEventListener('show.bs.modal',function(e){const target=e.relatedTarget?.getAttribute('data-detail-target');const source=document.getElementById(target);if(!source)return;title.textContent=titles[target.replace('detail-','')]||'Details';body.innerHTML=source.innerHTML;});
 });
 </script>
@@ -128,6 +128,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         <div class="row g-2 dashboard-summary-grid">
             <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card purchase-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-purchases">
+                    <div class="dashboard-card-top"><span class="dashboard-icon issued"><i class="bi bi-bag-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Purchases</div>
+                    <div class="dashboard-value"><?= $money((float)$purchaseSummary['total']) ?></div>
+                    <div class="dashboard-sub"><?= number_format((int)$purchaseSummary['count']) ?> purchases · <?= number_format((int)$purchaseSummary['cylinders']) ?> cylinders · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
+                    <div class="dashboard-payment-mini"><span>Paid <?= $money((float)$purchaseSummary['paid']) ?></span><span>Pending <?= $money((float)$purchaseSummary['pending']) ?></span></div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card sale-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-sales">
+                    <div class="dashboard-card-top"><span class="dashboard-icon sale"><i class="bi bi-cart-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Sales</div>
+                    <div class="dashboard-value"><?= $money((float)$saleSummary['total']) ?></div>
+                    <div class="dashboard-sub"><?= number_format((int)$saleSummary['count']) ?> sales · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
+                    <div class="dashboard-payment-mini"><span>Cash <?= $money((float)$saleSummary['cash']) ?></span><span>Online <?= $money((float)$saleSummary['online']) ?></span><span>Credit <?= $money((float)$saleSummary['credit']) ?></span></div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card filled-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-filled">
+                    <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-fuel-pump-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Total Filled Cylinders</div>
+                    <div class="dashboard-value"><?= number_format((int)$filledCylinderCount) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($filledCompanies)) ?> source(s) · <?= number_format(count($gasTypes)) ?> types</div>
+                    <div class="dashboard-hint">Company → plant → cylinder type</div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
                 <button type="button" class="dashboard-card gas-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-gas">
                     <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-fuel-pump-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
                     <div class="dashboard-label">Available Gas KG</div>
@@ -152,15 +179,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="dashboard-value"><?= number_format((int)$issuedCylinderCount) ?></div>
                     <div class="dashboard-sub"><?= number_format(count($issuedCustomers)) ?> customers · <?= $money((float)$issuedDepositTotal) ?> deposit</div>
                     <div class="dashboard-hint">Customer → cylinder details</div>
-                </button>
-            </div>
-            <div class="col-12 col-md-6 col-xl-3">
-                <button type="button" class="dashboard-card sale-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-sales">
-                    <div class="dashboard-card-top"><span class="dashboard-icon sale"><i class="bi bi-cart-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
-                    <div class="dashboard-label">Sales</div>
-                    <div class="dashboard-value"><?= $money((float)$saleSummary['total']) ?></div>
-                    <div class="dashboard-sub"><?= number_format((int)$saleSummary['count']) ?> sales · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
-                    <div class="dashboard-payment-mini"><span>Cash <?= $money((float)$saleSummary['cash']) ?></span><span>Online <?= $money((float)$saleSummary['online']) ?></span><span>Credit <?= $money((float)$saleSummary['credit']) ?></span></div>
                 </button>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
@@ -192,9 +210,45 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         </div>
 
-        <div class="dashboard-note mt-3"><i class="bi bi-info-circle me-2"></i>Sales, Cash Counter and Expenses follow the selected date range. Accounts Receivable is the current outstanding OS as of today.</div>
+        <div class="dashboard-note mt-3"><i class="bi bi-info-circle me-2"></i>Purchases, Sales, Cash Counter and Expenses follow the selected date range. Accounts Receivable is the current outstanding OS as of today.</div>
 
         <div class="d-none">
+            <div id="detail-purchases">
+                <div class="detail-kpi-grid"><div><span>Total Purchases</span><strong><?= $money((float)$purchaseSummary['total']) ?></strong></div><div><span>Paid</span><strong><?= $money((float)$purchaseSummary['paid']) ?></strong></div><div><span>Pending</span><strong><?= $money((float)$purchaseSummary['pending']) ?></strong></div><div><span>Purchases</span><strong><?= number_format((int)$purchaseSummary['count']) ?></strong></div><div><span>Cylinders</span><strong><?= number_format((int)$purchaseSummary['cylinders']) ?></strong></div></div>
+                <?php if(!$purchaseCompanies): ?><div class="alert alert-light border">No purchases found for the selected date range.</div><?php endif; ?>
+                <?php foreach($purchaseCompanies as $company): ?>
+                    <details class="dashboard-drill-card"><summary><span class="type-color issued"></span><strong><?= esc($company['name']) ?></strong><span class="ms-auto small text-end"><?= number_format((int)$company['cylinders']) ?> cylinders · <?= $money((float)$company['total']) ?> · Paid <?= $money((float)$company['paid']) ?> · Pending <?= $money((float)$company['pending']) ?></span></summary>
+                        <div class="p-2">
+                        <?php foreach($company['plants'] as $plant): ?>
+                            <details class="dashboard-drill-card"><summary><i class="bi bi-building text-muted"></i><strong><?= esc($plant['name']) ?></strong><span class="ms-auto small text-end"><?= number_format((int)$plant['cylinders']) ?> cylinders · <?= $money((float)$plant['total']) ?> · Paid <?= $money((float)$plant['paid']) ?> · Pending <?= $money((float)$plant['pending']) ?></span></summary>
+                                <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Purchase</th><th>Date</th><th>Items</th><th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Pending</th></tr></thead><tbody>
+                                <?php foreach($plant['purchases'] as $row): ?><tr><td class="fw-semibold"><?= esc($row['purchase_no']) ?></td><td><?= esc($row['transaction_at']) ?></td><td><?php foreach($row['items'] as $it): ?><div class="small"><?= number_format((int)$it['quantity']) ?> × <?= esc($it['type_code'] ?: 'Gas') ?> <span class="text-muted"><?= esc(ucwords(str_replace('_',' ',$it['line_type']))) ?></span></div><?php endforeach; ?></td><td class="text-end fw-semibold"><?= $money((float)$row['total_amount']) ?></td><td class="text-end"><?= $money((float)$row['paid']) ?></td><td class="text-end"><?= $money((float)$row['credit_amount']) ?></td></tr><?php endforeach; ?>
+                                </tbody></table></div>
+                            </details>
+                        <?php endforeach; ?>
+                        </div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="detail-filled">
+                <div class="detail-intro gas-bg"><i class="bi bi-fuel-pump-fill"></i><div><strong><?= number_format((int)$filledCylinderCount) ?> cylinders</strong><span>filled cylinders in shop, by company and plant</span></div></div>
+                <?php if(!$filledCompanies): ?><div class="alert alert-light border">No filled cylinders are currently available.</div><?php endif; ?>
+                <?php foreach($filledCompanies as $company): ?>
+                    <details class="dashboard-drill-card"><summary><span class="type-color gas"></span><strong><?= esc($company['name']) ?></strong><span class="ms-auto"><?= number_format((int)$company['count']) ?> filled cylinders</span></summary>
+                        <div class="p-2">
+                        <?php foreach($company['plants'] as $plant): ?>
+                            <details class="dashboard-drill-card"><summary><i class="bi bi-building text-muted"></i><strong><?= esc($plant['name']) ?></strong><span class="ms-auto"><?= number_format((int)$plant['count']) ?> filled cylinders</span></summary>
+                                <div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Cylinder Type</th><th class="text-end">Filled Cylinders</th><th>Cylinders</th></tr></thead><tbody>
+                                <?php foreach($plant['types'] as $type): ?><tr><td class="fw-semibold"><?= esc($type['name']) ?></td><td class="text-end"><?= number_format(count($type['units'])) ?></td><td class="small text-muted"><?= esc(implode(', ',$type['units'])) ?></td></tr><?php endforeach; ?>
+                                </tbody></table></div>
+                            </details>
+                        <?php endforeach; ?>
+                        </div>
+                    </details>
+                <?php endforeach; ?>
+            </div>
+
             <div id="detail-gas">
                 <div class="detail-intro gas-bg"><i class="bi bi-fuel-pump-fill"></i><div><strong><?= number_format((float)$availableGasKg,2) ?> KG</strong><span>available gas in filled cylinders</span></div></div>
                 <?php if (!$gasTypes): ?><div class="alert alert-light border">No filled cylinders are currently available.</div><?php endif; ?>

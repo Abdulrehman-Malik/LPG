@@ -17,4 +17,8 @@ return [
     'Rate / Price' => 'ریٹ / قیمت',
     'Rate Type' => 'ریٹ کی قسم',
     'Save Rate' => 'ریٹ محفوظ کریں',
+    'Retail — Gas per KG' => 'ریٹیل — گیس فی KG',
+    'Wholesale — Price per Full Cylinder' => 'ہول سیل — فی بھرا سلنڈر قیمت',
+    'Retail Gas / KG' => 'ریٹیل گیس / KG',
+    'Wholesale Full Cylinder' => 'ہول سیل بھرا سلنڈر',
 ];

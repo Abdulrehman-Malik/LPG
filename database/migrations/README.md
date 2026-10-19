@@ -105,3 +105,4 @@ Never reuse an existing sequence number.
 - These rules are enforced server-side; POS display/JavaScript is only an early user-feedback layer.
 
 - `031_20261009_default_gas_entry_mode.sql` — adds the branch-level default Gas Entry option (KG, Amount, or Cylinders) for Gas Sale / Refill.
+- `032_20261019_client_feedback_plants_wholesale_refill.sql` — supplier plants, purchase plant, refill-empty purchase line, filled-cylinder purchase origin, customer retail/wholesale type and wholesale per-cylinder rate.
