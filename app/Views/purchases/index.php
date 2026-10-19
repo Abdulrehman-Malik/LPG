@@ -53,13 +53,7 @@
 </style>
 
 <div class="purchase-page">
-    <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-    <?php endif; ?>
-    <?php if (session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-    <?php endif; ?>
-
+    <?php /* Flash success/error messages are rendered once by layouts/app.php. */ ?>
     <ul class="nav nav-tabs purchase-tabs" role="tablist">
         <li class="nav-item" role="presentation">
             <a class="nav-link <?= ($activeTab ?? 'new') === 'new' ? 'active' : '' ?>" href="#new-purchase" data-bs-toggle="tab" role="tab" aria-controls="new-purchase" aria-selected="<?= ($activeTab ?? 'new') === 'new' ? 'true' : 'false' ?>">
