@@ -68,7 +68,7 @@
 
 <script>
 const balances = <?= json_encode($balances ?? []) ?>;
-const money = value => Number(value || 0).toFixed(2);
+const money = value => fmtMoney(value);
 
 function refreshBalance() {
     const supplierId = document.getElementById('supplier_id').value;

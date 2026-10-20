@@ -495,7 +495,7 @@ const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
 const plants = <?= json_encode($plants ?? []) ?>;
 
-const money = value => Number(value || 0).toFixed(2);
+const money = value => fmtMoney(value);
 
 // A negative previous payable is an advance already paid to the supplier.
 function getPreviousPayable() {
