@@ -538,28 +538,28 @@ function refreshWalkInCustomerOption(resetSelection=false){
 }
 function refreshCustomer(){
  const c=selectedCustomer(),box=document.getElementById('customerCreditStatus'),osBox=document.getElementById('customerOsBalanceValue');
- if(osBox)osBox.textContent=(c?c.balance:0).toFixed(2);
+ if(osBox)osBox.textContent=fmtMoney(c?c.balance:0);
  if(!box)return c;
  if(!c){box.className='small mt-1 text-danger';box.textContent='Walk-in / Cash: credit sale not allowed.';return c;}
  const depositBalance=Math.max(0,Number((window.depositBalances||{})[String(selectedCustomerId())]||0));
- const appendDeposit=(base)=>base+' | Deposit Balance: Rs. '+depositBalance.toFixed(2);
+ const appendDeposit=(base)=>base+' | Deposit Balance: Rs. '+fmtMoney(depositBalance);
  if(!c.allowCredit){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Enable Allow Credit Sale on the customer record.');return c;}
  if(creditLimitMode==='none'){
    if(c.limit>0){
      const available=Math.max(0,c.limit-Math.max(0,c.balance));
      if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
-     box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
+     box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+fmtMoney(c.limit)+' | Available: Rs. '+fmtMoney(available));return c;
    }
    box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Unlimited');return c;
  }
  if(creditLimitMode==='shop'){
    const available=Math.max(0,shopCreditLimit-shopOutstanding);
    if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Shop credit limit reached.');return c;}
-   box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+shopCreditLimit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
+   box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+fmtMoney(shopCreditLimit)+' | Available: Rs. '+fmtMoney(available));return c;
  }
  const available=Math.max(0,c.limit-Math.max(0,c.balance));
  if(available<=0){box.className='small mt-1 text-danger';box.textContent=appendDeposit('Credit Sale: Not Allowed — Customer credit limit reached.');return c;}
- box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+c.limit.toFixed(2)+' | Available: Rs. '+available.toFixed(2));return c;
+ box.className='small mt-1 text-success';box.textContent=appendDeposit('Credit Sale: Allowed — Credit Limit: Rs. '+fmtMoney(c.limit)+' | Available: Rs. '+fmtMoney(available));return c;
 }
 let balanceRefreshInProgress=false;
 async function refreshSelectedCustomerBalance(){
@@ -573,7 +573,7 @@ async function refreshSelectedCustomerBalance(){
   if(String(data.customer_id)!==String(id)||!Number.isFinite(Number(data.balance)))return;
   balances[id]=Number(data.balance);
   if(String(selectedCustomerId())!==String(id))return;
-  document.getElementById('previousOs').textContent=Number(data.balance).toFixed(2);
+  document.getElementById('previousOs').textContent=fmtMoney(Number(data.balance));
   refreshCustomer();
  }catch(error){
   console.warn('Unable to refresh POS customer OS balance.',error);
@@ -587,7 +587,7 @@ function companyUnitsFor(status,typeId){
   return availableCustodyUnits.filter(u=>(!status||u.status===status)&&(!typeId||String(u.cylinder_type_id)===String(typeId)));
 }
 function custodyOptions(){
-  return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+Number(u.deposit_amount||0).toFixed(2)+'</option>').join('');
+  return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+u.cylinder_name+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG — Deposit '+fmtMoney(u.deposit_amount)+'</option>').join('');
 }
 function refillLineOptions(typeId){
   return '<option value="">Select customer cylinder (optional)</option>'+allCustomerCustody.filter(u=>String(u.customer_id)===String(selectedCustomerId())&&(!typeId||String(u.cylinder_type_id)===String(typeId))).map(u=>'<option value="'+u.unit_id+'">'+u.unit_code+' — '+u.cylinder_code+' — '+Number(u.gas_weight_kg||0).toFixed(2)+' KG</option>').join('');
@@ -683,7 +683,7 @@ function gasForCylinderSale(tr){
  if(status!=='filled'||!typeId)return 0;
  return selectedFilledUnits(tr).reduce((sum,u)=>sum+Number(u.gas_weight_kg||0),0);
 }
-function saleTotalForPayment(){return Number(document.getElementById('saleTotal').textContent||0);}
+function saleTotalForPayment(){return parseMoney(document.getElementById('saleTotal').textContent);}
 function recalc(){
  let saleTotal=0,gasRequired=0;
  const t=transactionType();
@@ -737,7 +737,7 @@ function recalc(){
      amount=statusForCylinderSale(tr)==='filled'?gas*gr+q*cr:q*cr;
    }
    gasRequired+=gas;saleTotal+=amount;
-   tr.querySelector('.lineTotal').textContent=''+amount.toFixed(2);
+   tr.querySelector('.lineTotal').textContent=fmtMoney(amount);
  });
  // Show the total KG that will leave gas stock when Amount or cylinder-count entry is used.
  const gasQtyHeader=document.getElementById('gasQtyHeader');
@@ -761,25 +761,25 @@ function recalc(){
  const customer=selectedCustomer(),previousOs=customer?Number(customer.balance||0):0;
  const deposit=t==='security_deposit'?Math.max(0,Number(document.getElementById('securityDeposit').value||0)):0;
  const netReceivable=t==='security_deposit'?deposit:(t==='cylinder_return'?0:Math.max(0,saleTotal+previousOs));
- document.getElementById('saleTotal').textContent=saleTotal.toFixed(2);
- document.getElementById('previousOs').textContent=previousOs.toFixed(2);
- document.getElementById('netPayable').textContent=netReceivable.toFixed(2);
+ document.getElementById('saleTotal').textContent=fmtMoney(saleTotal);
+ document.getElementById('previousOs').textContent=fmtMoney(previousOs);
+ document.getElementById('netPayable').textContent=fmtMoney(netReceivable);
 
  let paid=0,balanceAfter=0;
  if(t==='security_deposit'){
    const totalDue=deposit+Math.max(0,saleTotal+previousOs),received=paymentTotal();
    paid=received;
    balanceAfter=Math.max(0,totalDue-received);
-   document.getElementById('combinedGasDue').textContent=Math.max(0,saleTotal+previousOs).toFixed(2);
-   document.getElementById('combinedAmountReceivedTotal').textContent=received.toFixed(2);
-   document.getElementById('combinedOsAfterPayment').textContent=balanceAfter.toFixed(2);
+   document.getElementById('combinedGasDue').textContent=fmtMoney(Math.max(0,saleTotal+previousOs));
+   document.getElementById('combinedAmountReceivedTotal').textContent=fmtMoney(received);
+   document.getElementById('combinedOsAfterPayment').textContent=fmtMoney(balanceAfter);
  }else{
    const refundPaid=t==='cylinder_return'?paymentTotal('security_deposit_refund'):paymentTotal();
    paid=refundPaid;
    const collected=[...payments.querySelectorAll('.payment')].reduce((sum,p)=>sum+((p.querySelector('.mode')?.value||'')==='credit'?0:Number(p.querySelector('.amount').value||0)),0);balanceAfter=t==='cylinder_return'?previousOs:previousOs+saleTotal-collected;
  }
- document.getElementById('receiptAmountValue').textContent=paid.toFixed(2);
- document.getElementById('customerOsBalanceValue').textContent=balanceAfter.toFixed(2);
+ document.getElementById('receiptAmountValue').textContent=fmtMoney(paid);
+ document.getElementById('customerOsBalanceValue').textContent=fmtMoney(balanceAfter);
  document.getElementById('paymentPurposeLabel').textContent=t==='security_deposit'?'Payment Collection':(t==='cylinder_return'?'Security Deposit Refund Payment':'Sale Payment');
  document.getElementById('combinedPaymentSection').style.display=t==='security_deposit'?'block':'none';
  document.getElementById('securityDepositSummary').style.display=t==='security_deposit'?'grid':'none';
@@ -890,8 +890,8 @@ function handleTransactionTypeChange(){
    rebuildLines();
    const c=selectedCustomer();
    const previousOs=c?c.balance:0;
-   document.getElementById('previousOs').textContent=previousOs.toFixed(2);
-   document.getElementById('customerOsBalanceValue').textContent=previousOs.toFixed(2);
+   document.getElementById('previousOs').textContent=fmtMoney(previousOs);
+   document.getElementById('customerOsBalanceValue').textContent=fmtMoney(previousOs);
    setCustodyLists();
    refreshCustomer();
    recalc();
@@ -939,8 +939,8 @@ function renderIssueLines(){
      +'<td>'+physical+'</td>'
      +'<td class="text-end">'+gas.toFixed(2)+'</td>'
      +'<td class="text-end">'+gasRate+'</td>'
-     +'<td class="text-end">'+Number(l.cylinder_rate||0).toFixed(2)+'</td>'
-     +'<td class="text-end fw-semibold">'+amount.toFixed(2)+'</td>'
+     +'<td class="text-end">'+fmtMoney(l.cylinder_rate)+'</td>'
+     +'<td class="text-end fw-semibold">'+fmtMoney(amount)+'</td>'
      +'<td><button type="button" class="btn btn-sm btn-outline-danger issue-line-remove" data-index="'+i+'">×</button></td>'
      +'</tr>';
  }).join('');
@@ -1010,7 +1010,7 @@ function renderReturnLines(){
 function openReturnPicker(){if(!selectedCustomerId()){alert('Select a customer first.');return;}document.getElementById('returnPickerType').value='';document.getElementById('returnPickerStatus').value='';returnPickerRender();bootstrap.Modal.getOrCreateInstance(document.getElementById('returnPickerModal')).show();}
 function addReturnSelection(){const ids=[...document.querySelectorAll('.returnPickCheck:checked')].map(x=>Number(x.value));if(!ids.length){alert('Select at least one cylinder.');return;}ids.forEach(id=>{const u=allCustomerCustody.find(x=>Number(x.unit_id)===id);if(u)returnLines.push({unit_id:id,unit_code:u.unit_code,cylinder_code:u.cylinder_code,issued_gas_weight_kg:Number(u.issued_gas_weight_kg??u.gas_weight_kg??0),issued_gas_rate:Number(u.issued_gas_rate||0),return_gas_kg:0,return_gas_rate:Number(u.issued_gas_rate||0)});});renderReturnLines();recalc();bootstrap.Modal.getInstance(document.getElementById('returnPickerModal')).hide();}
 function setCustodyLists(){renderIssueLines();renderReturnLines();updateRefund();}
-function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=available.toFixed(2);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
+function updateRefund(){const available=Number((window.depositBalances||{})[selectedCustomerId()]||0);const el=document.getElementById('refundAvailable');el.textContent=fmtMoney(available);el.dataset.value=available.toFixed(2);const refund=document.getElementById('refundAmount');if(Number(refund.value||0)>available)refund.value=available.toFixed(2);}
 
 
 document.getElementById('issuePickerType').onchange=issuePickerRender;document.getElementById('issuePickerStatus').onchange=issuePickerRender;document.getElementById('openIssuePicker').onclick=openIssuePicker;document.getElementById('confirmIssuePicker').onclick=addIssueSelection;
@@ -1043,8 +1043,8 @@ document.getElementById('customer_id').onchange=()=>{
   refreshForm();
   if(selected){
     const c=selectedCustomer();
-    document.getElementById('previousOs').textContent=(c?c.balance:0).toFixed(2);
-    document.getElementById('customerOsBalanceValue').textContent=(c?c.balance:0).toFixed(2);
+    document.getElementById('previousOs').textContent=fmtMoney((c?c.balance:0));
+    document.getElementById('customerOsBalanceValue').textContent=fmtMoney((c?c.balance:0));
   }else{
     document.getElementById('previousOs').textContent='0.00';
     document.getElementById('customerOsBalanceValue').textContent='0.00';
@@ -1109,22 +1109,22 @@ document.getElementById('saleForm').onsubmit=async(e)=>{
  }
  let pays=[];
  if(t==='security_deposit'){
-   const received=paymentTotal(),gasDue=Math.max(0,saleTotalForPayment()+Number(document.getElementById('previousOs').textContent||0)),depositDue=Number(document.getElementById('securityDeposit').value||0);
+   const received=paymentTotal(),gasDue=Math.max(0,saleTotalForPayment()+parseMoney(document.getElementById('previousOs').textContent)),depositDue=Number(document.getElementById('securityDeposit').value||0);
    if(received>gasDue+depositDue+0.01)return fail('Amount received cannot exceed the total amount due.');
    pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:depositPaymentAllocationRule==='manual'?(p.querySelector('.paymentType')?.value||'sale'):'combined',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:(document.getElementById('paymentReferenceNote')?.value||'')}));
    if(depositPaymentAllocationRule==='manual'){
      const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);
-     if(sp>gasDue+0.01)return fail('Gas / Cylinder payment allocation cannot exceed Rs. '+gasDue.toFixed(2)+'.');
+     if(sp>gasDue+0.01)return fail('Gas / Cylinder payment allocation cannot exceed Rs. '+fmtMoney(gasDue)+'.');
    }
  }else{
    pays=[...payments.querySelectorAll('.payment')].map(p=>({payment_type:p.querySelector('.paymentType')?.value||'sale',payment_mode:p.querySelector('.mode').value,amount:p.querySelector('.amount').value,reference_no:(document.getElementById('paymentReferenceNote')?.value||'')}));
  }
  document.getElementById('lines_json').value=JSON.stringify(lines);document.getElementById('payments_json').value=JSON.stringify(pays);
- const saleTotal=Number(document.getElementById('saleTotal').textContent||0),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0,refund=t==='cylinder_return'?Number(document.getElementById('refundAmount').value||0):0;
+ const saleTotal=parseMoney(document.getElementById('saleTotal').textContent),deposit=t==='security_deposit'?Number(document.getElementById('securityDeposit').value||0):0,refund=t==='cylinder_return'?Number(document.getElementById('refundAmount').value||0):0;
  if(t==='security_deposit'&&deposit<0)return fail('Security Deposit Amount cannot be negative.');
  if(t==='cylinder_return'&&refund>0){const refundTotal=paymentTotal('security_deposit_refund');if(!pays.length){addPayment('security_deposit_refund');return fail('Add a payment method for the security deposit refund.');}if(Math.abs(refundTotal-refund)>0.01)return fail('Refund payment total must equal the refund amount.');if(pays.some(p=>p.payment_type!=='security_deposit_refund'))return fail('Cylinder Return payments must be classified as Security Deposit Refund.');}
- if(t==='security_deposit'){const expectedGas=Math.max(0,saleTotal+Number(document.getElementById('previousOs').textContent||0)),totalDue=expectedGas+deposit,received=paymentTotal();if(received>totalDue+0.01)return fail('Amount Received cannot exceed the Total Due of Rs. '+totalDue.toFixed(2)+'.');if(!pays.length)return fail('Add a payment row or leave the default zero/blank payment row when the gas amount is going to customer credit.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(sp>expectedGas+0.01)return fail('Gas / Cylinder allocation cannot exceed Rs. '+expectedGas.toFixed(2)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
- if(['gas_sale','cylinder_sale'].includes(t)){const expected=Math.max(0,saleTotal+Number(document.getElementById('previousOs').textContent||0));if(!pays.length)return fail('Add at least one payment.');if(paymentTotal()>expected+0.01)return fail('Payment cannot exceed the net receivable.');}
+ if(t==='security_deposit'){const expectedGas=Math.max(0,saleTotal+parseMoney(document.getElementById('previousOs').textContent)),totalDue=expectedGas+deposit,received=paymentTotal();if(received>totalDue+0.01)return fail('Amount Received cannot exceed the Total Due of Rs. '+fmtMoney(totalDue)+'.');if(!pays.length)return fail('Add a payment row or leave the default zero/blank payment row when the gas amount is going to customer credit.');if(depositPaymentAllocationRule==='manual'){const dp=pays.filter(p=>p.payment_type==='security_deposit').reduce((s,p)=>s+Number(p.amount||0),0),sp=pays.filter(p=>p.payment_type==='sale').reduce((s,p)=>s+Number(p.amount||0),0);if(sp>expectedGas+0.01)return fail('Gas / Cylinder allocation cannot exceed Rs. '+fmtMoney(expectedGas)+'.');}else if(pays.some(p=>p.payment_type!=='combined'))return fail('Invalid payment allocation.');}
+ if(['gas_sale','cylinder_sale'].includes(t)){const expected=Math.max(0,saleTotal+parseMoney(document.getElementById('previousOs').textContent));if(!pays.length)return fail('Add at least one payment.');if(paymentTotal()>expected+0.01)return fail('Payment cannot exceed the net receivable.');}
  document.getElementById('stock_override_confirmed').value='0';saveBtn.disabled=true;const old=saveBtn.textContent;saveBtn.textContent='Posting...';
  try{const response=await fetch(document.getElementById('saleForm').action,{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'},body:new FormData(document.getElementById('saleForm'))});const raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{};}catch(_e){}if(!response.ok||data.success!==true){const serverMessage=String(data.error||'').trim();if(serverMessage)throw new Error(serverMessage);if(raw&&raw.trim()&&!/^\s*</.test(raw))throw new Error(raw.trim().slice(0,500));throw new Error('Sale request failed (HTTP '+response.status+'). The server returned no readable JSON error. Check Railway deployment logs for the POS sale posting error at this time.');}
  if(data.receipt_url){
