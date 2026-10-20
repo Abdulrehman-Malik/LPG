@@ -88,6 +88,7 @@
                                 <option value="<?= $s['id'] ?>"><?= esc($s['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <div id="supplierCreditInfo" class="small fw-semibold text-danger mt-1" style="display:none"></div>
                     </div>
                     <div class="col-lg-3">
                         <label class="form-label fw-semibold">Plant</label>
@@ -493,6 +494,7 @@
 const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
+const supplierLimits = <?= json_encode(array_column($suppliers, 'credit_limit', 'id')) ?>;
 const plants = <?= json_encode($plants ?? []) ?>;
 
 const money = value => fmtMoney(value);
@@ -611,6 +613,18 @@ function calculate() {
     document.getElementById('summaryCurrent').textContent = money(current);
     document.getElementById('summaryTotalPayable').textContent = money(totalPayable);
     document.getElementById('summaryBalance').textContent = money(balance);
+
+    const creditInfo = document.getElementById('supplierCreditInfo');
+    const supplierId = document.getElementById('supplier_id').value;
+    if (!supplierId) {
+        creditInfo.style.display = 'none';
+    } else {
+        const limit = Number(supplierLimits[supplierId] || 0);
+        const available = limit - balance;
+        creditInfo.textContent = 'Credit limit: Rs. ' + money(limit) + ' | Available: Rs. ' + money(Math.max(0, available))
+            + (available < -0.005 ? ' | Limit exceeded by Rs. ' + money(-available) : '');
+        creditInfo.style.display = '';
+    }
 }
 
 document.getElementById('add').onclick = addLine;
