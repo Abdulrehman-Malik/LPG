@@ -65,6 +65,8 @@ return [
     '{0} cylinder types available' => '{0} سلنڈر کی اقسام دستیاب',
     '{0} cylinders' => '{0} سلنڈرز',
     '{0} cylinders · {1}' => '{0} سلنڈرز · {1}',
+    '{0} filled · {1} empty · {2} issued' => '{0} بھرے ہوئے · {1} خالی · {2} جاری کردہ',
+    'Filled + empty in shop + issued to customers' => 'دکان میں بھرے + خالی + کسٹمرز کو جاری کردہ',
     '{0} due' => '{0} واجب الادا',
     '{0} entries' => '{0} اندراجات',
     '{0} expense entries' => '{0} اخراجات کے اندراجات',
