@@ -60,4 +60,7 @@ return [
     'Select a supplier first.' => 'پہلے سپلائر منتخب کریں۔',
     'Plant name for this supplier:' => 'اس سپلائر کے لیے پلانٹ کا نام:',
     'Plant could not be saved.' => 'پلانٹ محفوظ نہیں ہو سکا۔',
+    'Credit limit: Rs. {0}' => 'ادھار کی حد: Rs. {0}',
+    '| Available: Rs. {0}' => '| دستیاب: Rs. {0}',
+    '| Limit exceeded by Rs. {0}' => '| حد سے زیادہ: Rs. {0}',
 ];
