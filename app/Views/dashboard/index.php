@@ -138,13 +138,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 </button>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
-                <button type="button" class="dashboard-card sale-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-sales">
-                    <div class="dashboard-card-top"><span class="dashboard-icon sale"><i class="bi bi-cart-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
-                    <div class="dashboard-label">Sales</div>
-                    <div class="dashboard-value"><?= $money((float)$saleSummary['total']) ?></div>
-                    <div class="dashboard-sub"><?= number_format((int)$saleSummary['count']) ?> sales · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
-                    <div class="dashboard-payment-mini"><span>Cash <?= $money((float)$saleSummary['cash']) ?></span><span>Online <?= $money((float)$saleSummary['online']) ?></span><span>Credit <?= $money((float)$saleSummary['credit']) ?></span></div>
-                </button>
+                <div class="dashboard-card total-cylinders-card w-100 text-start">
+                    <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-collection-fill"></i></span></div>
+                    <div class="dashboard-label">Total Cylinders</div>
+                    <div class="dashboard-value"><?= number_format((int)$filledCylinderCount + (int)$emptyCylinderCount + (int)$issuedCylinderCount) ?></div>
+                    <div class="dashboard-sub"><?= number_format((int)$filledCylinderCount) ?> filled · <?= number_format((int)$emptyCylinderCount) ?> empty · <?= number_format((int)$issuedCylinderCount) ?> issued</div>
+                    <div class="dashboard-hint">Filled + empty in shop + issued to customers</div>
+                </div>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
                 <button type="button" class="dashboard-card filled-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-filled">
@@ -174,12 +174,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 </button>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
-                <button type="button" class="dashboard-card issued-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-issued">
-                    <div class="dashboard-card-top"><span class="dashboard-icon issued"><i class="bi bi-person-badge-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
-                    <div class="dashboard-label">Issued Cylinders</div>
-                    <div class="dashboard-value"><?= number_format((int)$issuedCylinderCount) ?></div>
-                    <div class="dashboard-sub"><?= number_format(count($issuedCustomers)) ?> customers · <?= $money((float)$issuedDepositTotal) ?> deposit</div>
-                    <div class="dashboard-hint">Customer → cylinder details</div>
+                <button type="button" class="dashboard-card sale-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-sales">
+                    <div class="dashboard-card-top"><span class="dashboard-icon sale"><i class="bi bi-cart-check-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Sales</div>
+                    <div class="dashboard-value"><?= $money((float)$saleSummary['total']) ?></div>
+                    <div class="dashboard-sub"><?= number_format((int)$saleSummary['count']) ?> sales · <?= $range['isToday'] ? 'Today' : esc($range['label']) ?></div>
+                    <div class="dashboard-payment-mini"><span>Cash <?= $money((float)$saleSummary['cash']) ?></span><span>Online <?= $money((float)$saleSummary['online']) ?></span><span>Credit <?= $money((float)$saleSummary['credit']) ?></span></div>
                 </button>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
@@ -207,6 +207,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="dashboard-value"><?= $money((float)$expenseTotal) ?></div>
                     <div class="dashboard-sub"><?= number_format(count($expenseRows)) ?> expense entries</div>
                     <div class="dashboard-hint">Category and payment breakdown</div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card issued-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-issued">
+                    <div class="dashboard-card-top"><span class="dashboard-icon issued"><i class="bi bi-person-badge-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Issued Cylinders</div>
+                    <div class="dashboard-value"><?= number_format((int)$issuedCylinderCount) ?></div>
+                    <div class="dashboard-sub"><?= number_format(count($issuedCustomers)) ?> customers · <?= $money((float)$issuedDepositTotal) ?> deposit</div>
+                    <div class="dashboard-hint">Customer → cylinder details</div>
                 </button>
             </div>
         </div>
