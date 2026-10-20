@@ -17,4 +17,11 @@ return [
     'Rate / Price' => 'ریٹ / قیمت',
     'Rate Type' => 'ریٹ کی قسم',
     'Save Rate' => 'ریٹ محفوظ کریں',
+    'Retail — Gas per KG' => 'ریٹیل — گیس فی KG',
+    'Wholesale — Price per Full Cylinder' => 'ہول سیل — فی بھرا سلنڈر قیمت',
+    'Retail Gas / KG' => 'ریٹیل گیس / KG',
+    'Wholesale Full Cylinder' => 'ہول سیل بھرا سلنڈر',
+    'Edit Rate' => 'ریٹ میں ترمیم کریں',
+    'Update Rate' => 'ریٹ اپ ڈیٹ کریں',
+    'Posted sales keep the price they were sold at. To change the rate type or cylinder type, delete this rate and add a new one.' => 'پوسٹ شدہ فروخت اسی قیمت پر رہتی ہے جس پر فروخت ہوئی تھی۔ ریٹ کی قسم یا سلنڈر کی قسم بدلنے کے لیے یہ ریٹ حذف کر کے نیا شامل کریں۔',
 ];

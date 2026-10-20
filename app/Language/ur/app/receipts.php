@@ -20,4 +20,6 @@ return [
     'Receive customer payments against outstanding balances. A receipt may exceed the current OS, which will result in a negative balance/credit.' => 'بقایا بیلنس کے مقابلے میں کسٹمر کی ادائیگیاں وصول کریں۔ رسید موجودہ OS سے زیادہ ہو سکتی ہے، جس کے نتیجے میں منفی بیلنس/کریڈٹ بنے گا۔',
     'Select a customer to see the current OS balance.' => 'موجودہ OS بیلنس دیکھنے کے لیے کسٹمر منتخب کریں۔',
     '— customer receipts and POS payment records' => '— کسٹمر رسیدیں اور POS ادائیگی کے ریکارڈ',
+    'Gas Rs. {0} + Cylinder Rs. {1} each' => 'گیس Rs. {0} + سلنڈر Rs. {1} فی عدد',
+    'Cylinder Rs. {0} each' => 'سلنڈر Rs. {0} فی عدد',
 ];

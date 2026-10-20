@@ -39,7 +39,12 @@ class InventoryService{
  public function receivePurchase(int $locationId,string $type,?int $typeId,float $qty,float $actualGasWeight,int $purchaseId,int $userId,?int $purchaseLineId=null): void
  {
   if($qty<=0) throw new RuntimeException('Purchase quantity must be greater than zero.');
-  if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase inventory type.');
+  if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder','refill_empty'],true)) throw new RuntimeException('Invalid purchase inventory type.');
+
+  if($type==='refill_empty'){
+   $this->refillEmptyCylinders($locationId,$typeId,$qty,$actualGasWeight,$purchaseId,$userId,$purchaseLineId);
+   return;
+  }
 
   if($type==='gas_kg'){
    if($typeId!==null) throw new RuntimeException('Gas purchase does not use a cylinder type.');
@@ -71,6 +76,10 @@ class InventoryService{
    $locationId,$typeId,$qtyInt,$status,$gasPerUnit,$userId,'purchase',$purchaseId
   );
 
+  if($type==='filled_cylinder' && $unitIds){
+   $this->db->table('cylinder_units')->whereIn('id',$unitIds)->update(['filled_purchase_id'=>$purchaseId]);
+  }
+
   foreach($unitIds as $unitId){
    $this->db->table('inventory_movements')->insert([
     'location_id'=>$locationId,'inventory_type'=>$type,'cylinder_type_id'=>$typeId,
@@ -94,6 +103,37 @@ class InventoryService{
    $message=trim((string)($error['message']??''));
    throw new RuntimeException('Purchase inventory posting failed.'.($message!==''?' '.$message:''));
   }
+ }
+
+ /**
+  * Refill existing empty company cylinders with purchased gas.
+  * Each empty cylinder becomes a filled cylinder holding $gasPerUnit KG.
+  */
+ protected function refillEmptyCylinders(int $locationId,?int $typeId,float $qty,float $gasPerUnit,int $purchaseId,int $userId,?int $purchaseLineId): void
+ {
+  if($typeId===null) throw new RuntimeException('Cylinder type is required to refill empty cylinders.');
+  if(floor($qty)!==$qty || $qty<1) throw new RuntimeException('Refill quantity must be a whole number.');
+  $ct=$this->db->table('cylinder_types')->where('id',$typeId)->get()->getRowArray();
+  if(!$ct || !(int)$ct['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
+  if($gasPerUnit<=0 || $gasPerUnit>(float)$ct['capacity_kg']) throw new RuntimeException('Actual gas weight must be greater than zero and cannot exceed cylinder capacity.');
+
+  $qtyInt=(int)$qty;
+  $units=$this->db->query(
+   "SELECT id FROM cylinder_units WHERE location_id=? AND cylinder_type_id=? AND status='empty' ORDER BY id LIMIT ".$qtyInt." FOR UPDATE",
+   [$locationId,$typeId]
+  )->getResultArray();
+  if(count($units)<$qtyInt) throw new RuntimeException('Only '.count($units).' empty '.$ct['name'].' cylinder(s) are available to refill; '.$qtyInt.' requested.');
+
+  $now=date('Y-m-d H:i:s');
+  foreach($units as $u){
+   $unitId=(int)$u['id'];
+   $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'filled','gas_weight_kg'=>$gasPerUnit,'filled_purchase_id'=>$purchaseId]);
+   $base=['location_id'=>$locationId,'cylinder_type_id'=>$typeId,'movement_at'=>$now,'source_type'=>'purchase','source_id'=>$purchaseId,'source_line_id'=>$purchaseLineId,'cylinder_unit_id'=>$unitId,'created_by'=>$userId];
+   $this->db->table('inventory_movements')->insert($base+['inventory_type'=>'empty_cylinder','quantity'=>1,'direction'=>'out','notes'=>'Empty cylinder refilled through purchase']);
+   $this->db->table('inventory_movements')->insert($base+['inventory_type'=>'filled_cylinder','quantity'=>1,'direction'=>'in','notes'=>'Cylinder refilled through purchase']);
+   $this->db->table('inventory_movements')->insert(array_merge($base,['inventory_type'=>'gas_kg','cylinder_type_id'=>null,'quantity'=>$gasPerUnit,'direction'=>'in','notes'=>'Gas added to refilled cylinder']));
+  }
+  if(!$this->db->transStatus()) throw new RuntimeException('Cylinder refill posting failed.');
  }
 
  public function adjust(int $locationId,string $type,?int $typeId,float $qty,string $direction,int $userId,string $notes='',float $actualGasWeight=0,?int $sourceCylinderUnitId=null,string $adjustmentScope='bulk',string $reason=''):string{

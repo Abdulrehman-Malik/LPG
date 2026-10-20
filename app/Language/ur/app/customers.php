@@ -27,4 +27,9 @@ return [
     'Upload Customers from Excel' => 'ایکسل سے کسٹمرز اپ لوڈ کریں',
     'Use the Excel template. Each row creates one customer. Existing customer codes are rejected and existing customers are never overwritten.' => 'ایکسل ٹیمپلیٹ استعمال کریں۔ ہر قطار ایک کسٹمر بناتی ہے۔ موجودہ کسٹمر کوڈ مسترد کر دیے جاتے ہیں اور موجودہ کسٹمرز کو کبھی اوور رائٹ نہیں کیا جاتا۔',
     'Vehicle' => 'گاڑی',
+    'Customer Type' => 'کسٹمر کی قسم',
+    'Retail (per KG)' => 'ریٹیل (فی KG)',
+    'Wholesale (per cylinder)' => 'ہول سیل (فی سلنڈر)',
+    'Retail' => 'ریٹیل',
+    'Wholesale' => 'ہول سیل',
 ];

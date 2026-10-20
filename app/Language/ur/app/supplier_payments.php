@@ -24,4 +24,6 @@ return [
     'Supplier Account Payment:' => 'سپلائر اکاؤنٹ کی ادائیگی:',
     'This supplier has no outstanding payable.' => 'اس سپلائر کی کوئی بقایا قابلِ ادائیگی رقم نہیں۔',
     'This transaction reduces the supplier\'s outstanding payable only. It does' => 'یہ ٹرانزیکشن صرف سپلائر کی بقایا قابلِ ادائیگی رقم کم کرتی ہے۔ یہ',
+    'Select a supplier and enter a payment amount greater than zero.' => 'سپلائر منتخب کریں اور صفر سے زیادہ ادائیگی کی رقم درج کریں۔',
+    'Advance Rs. {0}' => 'ایڈوانس Rs. {0}',
 ];

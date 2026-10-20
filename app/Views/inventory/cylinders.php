@@ -4,6 +4,28 @@
   <div><h4 class="mb-1">Physical Cylinders</h4><div class="text-muted small"><?=esc($type['code'].' — '.$type['name'])?> · Capacity <?=number_format((float)$type['capacity_kg'], 2)?> KG</div></div>
   <a class="btn btn-outline-secondary" href="<?=site_url('inventory')?>"><i class="bi bi-arrow-left me-1"></i>Inventory</a>
 </div>
+<style>
+.type-stock{display:flex;gap:.6rem;overflow-x:auto;padding-bottom:.35rem}
+.type-stock-card{flex:0 0 auto;min-width:11.5rem;border:1px solid #dde9e2;border-radius:.8rem;background:#fff;padding:.65rem .8rem;color:inherit;text-decoration:none;display:block}
+.type-stock-card:hover{border-color:#0B6E54;box-shadow:0 4px 14px #06382f1a}
+.type-stock-card.active{border-color:#0B6E54;background:#f0f8f4;box-shadow:inset 0 0 0 1px #0B6E54}
+.type-stock-name{font-weight:700;font-size:.92rem}.type-stock-total{font-size:1.35rem;font-weight:800;line-height:1.1}
+.type-stock-total small{font-size:.7rem;font-weight:600;color:#64748b}
+.type-stock-split{display:flex;gap:.3rem;margin-top:.35rem;flex-wrap:wrap}
+.type-stock-split span{font-size:.7rem;border-radius:999px;padding:.12rem .45rem;border:1px solid #e2e8f0;background:#f8fafc;color:#475569}
+.type-stock-split .full{background:#e7f6ee;border-color:#c5e6d3;color:#0b6e54}
+.type-stock-split .partial{background:#fff6e0;border-color:#f3dfa8;color:#8a6200}
+</style>
+<div class="mb-1 small text-uppercase fw-semibold text-muted">Stock by Cylinder Type</div>
+<div class="type-stock mb-3">
+<?php foreach($typeStock as $ts): $tot=(int)$ts['full_count']+(int)$ts['partial_count']+(int)$ts['empty_count']; ?>
+  <a class="type-stock-card <?=(int)$ts['id']===(int)$type['id']?'active':''?>" href="<?=site_url('inventory/cylinders/'.$ts['id'])?>">
+    <div class="type-stock-name"><?=esc($ts['code'].' — '.$ts['name'])?></div>
+    <div class="type-stock-total"><?=number_format($tot)?> <small>cylinders</small></div>
+    <div class="type-stock-split"><span class="full">Full <?=number_format((int)$ts['full_count'])?></span><span class="partial">Partial <?=number_format((int)$ts['partial_count'])?></span><span>Empty <?=number_format((int)$ts['empty_count'])?></span></div>
+  </a>
+<?php endforeach;?>
+</div>
 <form method="get" class="row g-2 mb-3">
   <div class="col-md-5"><input name="q" class="form-control" value="<?=esc($search)?>" placeholder="Search cylinder code"></div>
   <div class="col-md-3">

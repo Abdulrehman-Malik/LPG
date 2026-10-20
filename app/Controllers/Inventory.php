@@ -105,8 +105,25 @@ class Inventory extends Controller
 
         $units = $builder->orderBy('cu.id')->get()->getResultArray();
 
+        // One aggregate query: in-shop stock of every active cylinder type (same Full / Partial / Empty
+        // definitions as the filter above), shown as a quick switcher at the top of the page.
+        $typeStock = $db->query(
+            "SELECT ct.id,ct.code,ct.name,ct.capacity_kg,
+                    COALESCE(SUM(cu.status='filled' AND cu.gas_weight_kg>=ct.capacity_kg),0) full_count,
+                    COALESCE(SUM(cu.status='filled' AND cu.gas_weight_kg>0 AND cu.gas_weight_kg<ct.capacity_kg),0) partial_count,
+                    COALESCE(SUM(cu.status='empty' OR (cu.status='filled' AND cu.gas_weight_kg<=0)),0) empty_count,
+                    COALESCE(SUM(CASE WHEN cu.status='filled' THEN cu.gas_weight_kg ELSE 0 END),0) gas_kg
+               FROM cylinder_types ct
+               LEFT JOIN cylinder_units cu ON cu.cylinder_type_id=ct.id AND cu.location_id=? AND cu.status IN ('filled','empty')
+              WHERE ct.is_active=1
+              GROUP BY ct.id,ct.code,ct.name,ct.capacity_kg,ct.sort_order
+              ORDER BY ct.sort_order,ct.id",
+            [$locationId]
+        )->getResultArray();
+
         return view('inventory/cylinders', [
             'title' => 'Physical Cylinders',
+            'typeStock' => $typeStock,
             'type' => $type,
             'units' => $units,
             'search' => $search,

@@ -150,4 +150,7 @@ return [
     '{0} KG ({1}' => '{0} KG ({1}',
     '{0} KG gas)' => '{0} KG گیس)',
     '{0} KG — Deposit {1}' => '{0} KG — ڈپازٹ {1}',
+    'Price / Cylinder' => 'قیمت / سلنڈر',
+    'Price per full cylinder (pro-rated for partly filled cylinders)' => 'فی بھرا سلنڈر قیمت (جزوی بھرے سلنڈروں کے لیے تناسب سے)',
+    'Rate per KG' => 'ریٹ فی KG',
 ];
