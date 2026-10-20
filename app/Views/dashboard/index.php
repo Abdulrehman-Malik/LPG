@@ -156,20 +156,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 </button>
             </div>
             <div class="col-12 col-md-6 col-xl-3">
-                <button type="button" class="dashboard-card gas-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-gas">
-                    <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-fuel-pump-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
-                    <div class="dashboard-label">Available Gas KG</div>
-                    <div class="dashboard-value"><?= number_format((float)$availableGasKg,2) ?> <small>KG</small></div>
-                    <div class="dashboard-sub"><?= number_format(count($gasRows)) ?> filled cylinders · <?= number_format(count($gasTypes)) ?> types</div>
-                    <div class="dashboard-hint">Cylinder type → individual cylinder</div>
-                </button>
-            </div>
-            <div class="col-12 col-md-6 col-xl-3">
                 <button type="button" class="dashboard-card empty-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-empty">
                     <div class="dashboard-card-top"><span class="dashboard-icon empty"><i class="bi bi-circle-square"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
                     <div class="dashboard-label">Empty Gas Cylinders in Shop</div>
                     <div class="dashboard-value"><?= number_format((int)$emptyCylinderCount) ?></div>
                     <div class="dashboard-sub"><?= number_format(count($emptyTypes)) ?> cylinder types available</div>
+                    <div class="dashboard-hint">Cylinder type → individual cylinder</div>
+                </button>
+            </div>
+            <div class="col-12 col-md-6 col-xl-3">
+                <button type="button" class="dashboard-card gas-card w-100 text-start" data-bs-toggle="modal" data-bs-target="#dashboardDetailModal" data-detail-target="detail-gas">
+                    <div class="dashboard-card-top"><span class="dashboard-icon gas"><i class="bi bi-fuel-pump-fill"></i></span><span class="dashboard-chevron"><i class="bi bi-arrow-up-right"></i></span></div>
+                    <div class="dashboard-label">Available Gas KG</div>
+                    <div class="dashboard-value"><?= number_format((float)$availableGasKg,2) ?> <small>KG</small></div>
+                    <div class="dashboard-sub"><?= number_format(count($gasRows)) ?> filled cylinders · <?= number_format(count($gasTypes)) ?> types</div>
                     <div class="dashboard-hint">Cylinder type → individual cylinder</div>
                 </button>
             </div>
