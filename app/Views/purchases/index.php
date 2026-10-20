@@ -128,7 +128,8 @@
                         <thead class="border-bottom">
                             <tr>
                                 <th class="ps-3" style="width:18%">Stock Type</th>
-                                <th style="width:18%">Cylinder Type</th>
+                                <th style="width:16%">Cylinder Type</th>
+                                <th class="text-end" style="width:12%">Empty Available</th>
                                 <th class="text-end" style="width:10%">Quantity</th>
                                 <th class="text-end" style="width:16%">Actual Gas / Cylinder (KG)</th>
                                 <th class="text-end" style="width:15%">Cylinder Rate</th>
@@ -494,6 +495,7 @@
 const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
+const emptyStock = <?= json_encode((object) $emptyStock) ?>;
 const supplierLimits = <?= json_encode(array_column($suppliers, 'credit_limit', 'id')) ?>;
 const plants = <?= json_encode($plants ?? []) ?>;
 
@@ -553,7 +555,11 @@ function addLine() {
             </select>
         </td>
         <td>
+            <input class="form-control emptyAvail text-end" type="text" value="—" readonly tabindex="-1">
+        </td>
+        <td>
             <input class="form-control qty text-end" type="number" min=".001" step=".001" value="1">
+            <div class="invalid-feedback text-end stockMsg">Stock not available</div>
         </td>
         <td>
             <input class="form-control actual text-end" type="number" min="0" step=".001" placeholder="Filled cylinders only">
@@ -587,7 +593,32 @@ function addLine() {
     syncActual();
 }
 
+function checkEmptyStock() {
+    const requested = {};
+    const rows = [...document.querySelectorAll('.line')];
+    rows.forEach(row => {
+        const id = row.querySelector('.cyl').value;
+        const avail = id ? Number(emptyStock[id] || 0) : null;
+        row.querySelector('.emptyAvail').value = avail === null ? '—' : avail;
+        if (id && row.querySelector('.type').value === 'refill_empty') {
+            requested[id] = (requested[id] || 0) + Number(row.querySelector('.qty').value || 0);
+        }
+    });
+    rows.forEach(row => {
+        const id = row.querySelector('.cyl').value;
+        const isRefill = id && row.querySelector('.type').value === 'refill_empty';
+        const short = isRefill && requested[id] > Number(emptyStock[id] || 0);
+        const qty = row.querySelector('.qty');
+        const avail = row.querySelector('.emptyAvail');
+        qty.classList.toggle('is-invalid', !!short);
+        avail.classList.toggle('is-invalid', !!short);
+        row.querySelector('.stockMsg').style.display = short ? 'block' : 'none';
+    });
+    return !Object.keys(requested).some(id => requested[id] > Number(emptyStock[id] || 0));
+}
+
 function calculate() {
+    checkEmptyStock();
     let current = 0;
 
     document.querySelectorAll('.line').forEach(row => {
@@ -661,6 +692,11 @@ document.getElementById('purchaseForm').onsubmit = function () {
 
     if (!lines.length) {
         alert('Add at least one stock line.');
+        return false;
+    }
+
+    if (!checkEmptyStock()) {
+        alert('Stock not available: not enough empty cylinders to refill.');
         return false;
     }
 
