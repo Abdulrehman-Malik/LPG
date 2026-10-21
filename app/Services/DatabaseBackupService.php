@@ -180,8 +180,12 @@ class DatabaseBackupService
                 fwrite($handle, "\n-- Table: " . $table . "\nDROP TABLE IF EXISTS " . $quotedTable . ";\n");
                 fwrite($handle, rtrim($createSql, ";\r\n") . ";\n");
 
-                $rows = $db->query('SELECT * FROM ' . $quotedTable)->getResultArray();
-                foreach ($rows as $row) {
+                // Stream rows from an unbuffered result so large tables never sit fully in PHP memory.
+                $result = $db->connID->query('SELECT * FROM ' . $quotedTable, MYSQLI_USE_RESULT);
+                if ($result === false) {
+                    throw new \RuntimeException('Could not read data for table ' . $table . '.');
+                }
+                while (($row = $result->fetch_assoc()) !== null) {
                     $columns = [];
                     $values = [];
                     foreach ($row as $column => $value) {
@@ -196,6 +200,7 @@ class DatabaseBackupService
                             . ') VALUES (' . implode(', ', $values) . ");\n");
                     }
                 }
+                $result->free();
             }
             fwrite($handle, "\nSET FOREIGN_KEY_CHECKS=1;\n");
         } catch (\Throwable $e) {

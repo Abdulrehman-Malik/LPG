@@ -54,6 +54,7 @@ return [
     'Could not create cylinder type {0}: {1}' => 'سلنڈر کی قسم {0} نہیں بنائی جا سکی: {1}',
     'Could not read the generated Excel template.' => 'تیار کردہ ایکسل ٹیمپلیٹ پڑھا نہیں جا سکا۔',
     'Could not read the schema for table {0}.' => 'ٹیبل {0} کا اسکیما پڑھا نہیں جا سکا۔',
+    'Could not read data for table {0}.' => 'ٹیبل {0} کا ڈیٹا پڑھا نہیں جا سکا۔',
     'Counted cash cannot be negative.' => 'گنی گئی نقدی منفی نہیں ہو سکتی۔',
     'Credit cannot be used to settle a previous customer OS balance.' => 'ادھار کو کسٹمر کے پچھلے OS بیلنس کی ادائیگی کے لیے استعمال نہیں کیا جا سکتا۔',
     'Credit limit and opening balance cannot be negative.' => 'ادھار کی حد اور ابتدائی بیلنس منفی نہیں ہو سکتے۔',
