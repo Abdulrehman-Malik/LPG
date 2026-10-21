@@ -21,8 +21,14 @@ final class CustomerBalancesParityTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->db = Database::connect();
-        if ($this->db->DBDriver !== 'MySQLi' || !$this->db->tableExists('customers') || !$this->db->tableExists('shop_settings')) {
+        try {
+            $this->db = Database::connect();
+            $usable   = $this->db->DBDriver === 'MySQLi' && $this->db->tableExists('customers') && $this->db->tableExists('shop_settings');
+        } catch (\Throwable $e) {
+            $usable = false;
+        }
+        if (!$usable) {
+            $this->db = null;
             $this->markTestSkipped('Requires a MySQL tests database with the LPG schema (see class docblock).');
         }
         $this->db->transBegin();
@@ -30,7 +36,7 @@ final class CustomerBalancesParityTest extends CIUnitTestCase
 
     protected function tearDown(): void
     {
-        if ($this->db && $this->db->DBDriver === 'MySQLi') {
+        if ($this->db) {
             $this->db->transRollback();
         }
         parent::tearDown();
