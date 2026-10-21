@@ -105,6 +105,18 @@ class Purchases extends Controller
             }
         }
 
+        $emptyStock = [];
+        $emptyRows = $db->table('cylinder_units')
+            ->select('cylinder_type_id, COUNT(*) AS total')
+            ->where('location_id', (int) session()->get('location_id'))
+            ->where('status', 'empty')
+            ->groupBy('cylinder_type_id')
+            ->get()
+            ->getResultArray();
+        foreach ($emptyRows as $row) {
+            $emptyStock[(int) $row['cylinder_type_id']] = (int) $row['total'];
+        }
+
         return view('purchases/index', [
             'title'            => 'Purchases',
             'activeTab'        => $activeTab,
@@ -116,6 +128,7 @@ class Purchases extends Controller
             'supplierBalances' => $supplierBalances,
             'plants'           => $db->table('supplier_plants')->where('is_active', 1)->orderBy('name')->get()->getResultArray(),
             'canVoidPurchases' => $canVoidPurchases,
+            'emptyStock'       => $emptyStock,
             'types'            => $db->table('cylinder_types')
                 ->where('is_active', 1)
                 ->orderBy('sort_order')

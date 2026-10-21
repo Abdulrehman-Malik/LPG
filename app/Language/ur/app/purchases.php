@@ -63,4 +63,7 @@ return [
     'Credit limit: Rs. {0}' => 'ادھار کی حد: Rs. {0}',
     '| Available: Rs. {0}' => '| دستیاب: Rs. {0}',
     '| Limit exceeded by Rs. {0}' => '| حد سے زیادہ: Rs. {0}',
+    'Empty Available' => 'دستیاب خالی',
+    'Stock not available' => 'اسٹاک دستیاب نہیں',
+    'Stock not available: not enough empty cylinders to refill.' => 'اسٹاک دستیاب نہیں: ری فل کے لیے کافی خالی سلنڈر نہیں ہیں۔',
 ];
