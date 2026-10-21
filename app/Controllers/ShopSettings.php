@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\ShopSettingsModel;
 use App\Services\InventoryControlService;
 use App\Services\PermissionService;
+use App\Services\RateResolver;
 use CodeIgniter\Controller;
 use Config\Database;
 
@@ -119,6 +120,23 @@ class ShopSettings extends Controller
         if ($purchaseVoidEnabled && !$purchaseVoidUserIds) {
             return redirect()->back()->withInput()->with('error', 'Select at least one user allowed to void purchases, or disable Purchase Void.');
         }
+        $wholesalePriceListEnabled = $this->request->getPost('wholesale_price_list_enabled') ? 1 : 0;
+        $defaultPriceList = (string) $this->request->getPost('default_price_list');
+        $walkinPriceList = (string) $this->request->getPost('walkin_price_list');
+        $rateChangeMode = (string) $this->request->getPost('pos_rate_change_mode');
+        $priceListSwitch = $this->request->getPost('pos_price_list_switch') ? 1 : 0;
+        if (!in_array($rateChangeMode, RateResolver::RATE_CHANGE_MODES, true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid POS rate change setting.');
+        }
+        if (!$wholesalePriceListEnabled) {
+            // Wholesale off: everything is Retail and the invoice switch has nothing to switch to.
+            $defaultPriceList = 'retail';
+            $walkinPriceList = 'retail';
+            $priceListSwitch = 0;
+        }
+        if (!in_array($defaultPriceList, RateResolver::PRICE_LISTS, true) || !in_array($walkinPriceList, RateResolver::PRICE_LISTS, true)) {
+            return redirect()->back()->withInput()->with('error', 'Invalid default or walk-in price list.');
+        }
 
         $db = Database::connect();
         $db->transBegin();
@@ -158,6 +176,12 @@ class ShopSettings extends Controller
                 'allow_stock_override' => $this->request->getPost('allow_stock_override') ? 1 : 0,
                 'credit_limit_validation_mode' => $creditMode,
                 'shop_credit_limit' => $shopCreditLimit,
+                'wholesale_price_list_enabled' => $wholesalePriceListEnabled,
+                'default_price_list' => $defaultPriceList,
+                'walkin_price_list' => $walkinPriceList,
+                'customer_special_rates_enabled' => $this->request->getPost('customer_special_rates_enabled') ? 1 : 0,
+                'pos_rate_change_mode' => $rateChangeMode,
+                'pos_price_list_switch' => $priceListSwitch,
                 'purchase_void_enabled' => $purchaseVoidEnabled,
                 'backup_enabled' => $this->request->getPost('backup_enabled') ? 1 : 0,
                 'db_backup_url' => trim((string) $this->request->getPost('db_backup_url')) ?: null,

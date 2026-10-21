@@ -4,9 +4,9 @@ namespace App\Controllers;
 
 use App\Models\CustomerModel;
 use App\Models\CylinderTypeModel;
-use App\Models\GasRateModel;
 use App\Models\ShopSettingsModel;
 use App\Services\PermissionService;
+use App\Services\RateResolver;
 use App\Services\SalesService;
 use CodeIgniter\Controller;
 
@@ -27,15 +27,38 @@ class Sales extends Controller
         $balances=[];$creditLimits=[];$shopOutstanding=0.0;
         $bulkBalances=$service->customerBalances($customers);foreach($customers as $c){$balances[$c['id']]=$bulkBalances[(int)$c['id']]??0.0;$creditLimits[$c['id']]=(float)$c['credit_limit'];}
         foreach($balances as $balance){if((float)$balance>0)$shopOutstanding+=(float)$balance;}
-        $rateModel=new GasRateModel();
-        $cylinderRates=[];
-        $wholesaleRates=[];
-        foreach($types as $type){ $cylinderRates[$type['id']]=$rateModel->currentCylinderRate((int)$type['id']); $wholesaleRates[$type['id']]=$rateModel->currentWholesaleRate((int)$type['id']); }
         $shopSettings=(new ShopSettingsModel())->forLocation((int)session()->get('location_id')); $defaultTransactionType=(string)($shopSettings['default_transaction_type']??'gas_sale'); $defaultGasEntryMode=(string)($shopSettings['default_gas_entry_mode']??'quantity');
         $locationId=(int)session()->get('location_id'); $cashSession=(new \App\Services\CashService())->openSessionForLocation($locationId); $inv=new \App\Services\InventoryService(); $cylinders=new \App\Services\CylinderUnitService(); $filledStock=[]; $filledUnits=[]; $emptyStock=[]; $gasStock=0.0; foreach($types as $type){$typeId=(int)$type['id']; $filledStock[$typeId]=$inv->stock($locationId,'filled_cylinder',$typeId); $filledUnits[$typeId]=$cylinders->availableForDisplay($locationId,$typeId,'filled'); foreach($filledUnits[$typeId] as $unit) $gasStock+=(float)$unit['gas_weight_kg']; $emptyStock[$typeId]=$inv->stock($locationId,'empty_cylinder',$typeId);} 
         $db=\Config\Database::connect(); $depositRows=$db->table('customer_security_deposits')->select("customer_id,SUM(CASE WHEN entry_type='hold' THEN amount ELSE -amount END) AS balance")->where('location_id',$locationId)->groupBy('customer_id')->get()->getResultArray(); $depositBalances=[]; foreach($depositRows as $dr) $depositBalances[(int)$dr['customer_id']]=max(0,(float)$dr['balance']); $custodyUnits=$db->table('cylinder_custody cc')->select('cc.id custody_id,cc.customer_id,cc.deposit_amount,cu.id unit_id,cu.unit_code,cu.cylinder_type_id,cu.gas_weight_kg,cu.status cylinder_status,ct.code cylinder_code,ct.name cylinder_name,ct.capacity_kg')->join('cylinder_units cu','cu.id=cc.cylinder_unit_id')->join('cylinder_types ct','ct.id=cu.cylinder_type_id')->where(['cc.location_id'=>$locationId,'cc.status'=>'issued'])->orderBy('cu.id')->get()->getResultArray(); 
         $availableCustodyUnits=$cylinders->availableCompanyUnits($locationId);
-        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'kgRate'=>$rateModel->currentKgRate(),'cylinderRates'=>$cylinderRates,'wholesaleRates'=>$wholesaleRates,'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultTransactionType'=>$defaultTransactionType,'defaultGasEntryMode'=>$defaultGasEntryMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy($locationId),'creditLimitMode'=>$shopSettings['credit_limit_validation_mode']??'none','shopCreditLimit'=>(float)($shopSettings['shop_credit_limit']??0),'shopOutstanding'=>$shopOutstanding,'individualCylinderTracking'=>(int)($shopSettings['individual_cylinder_tracking']??0),'allowPosSourceCylinderSelection'=>(int)($shopSettings['allow_pos_source_cylinder_selection']??0),'custodyUnits'=>$custodyUnits,'depositBalances'=>$depositBalances,'availableCustodyUnits'=>$availableCustodyUnits,'canVoidSales'=>PermissionService::allows('POS_VOID')]);
+        return view('sales/index',['title'=>'POS Sales','types'=>$types,'customers'=>$customers,'balances'=>$balances,'creditLimits'=>$creditLimits,'priceBooks'=>$this->priceBooks($locationId,$types,$shopSettings,date('Y-m-d H:i:s')),'customerPriceLists'=>array_reduce($customers,static function($out,$c)use($shopSettings){$out[(string)$c['id']]=RateResolver::defaultPriceList($shopSettings,$c);return $out;},[]),'walkinPriceList'=>RateResolver::defaultPriceList($shopSettings,null),'cashSession'=>$cashSession,'filledStock'=>$filledStock,'filledUnits'=>$filledUnits,'emptyStock'=>$emptyStock,'gasStock'=>$gasStock,'defaultTransactionType'=>$defaultTransactionType,'defaultGasEntryMode'=>$defaultGasEntryMode,'shopSettings'=>$shopSettings,'inventoryPolicy'=>(new \App\Services\InventoryControlService())->policy($locationId),'creditLimitMode'=>$shopSettings['credit_limit_validation_mode']??'none','shopCreditLimit'=>(float)($shopSettings['shop_credit_limit']??0),'shopOutstanding'=>$shopOutstanding,'individualCylinderTracking'=>(int)($shopSettings['individual_cylinder_tracking']??0),'allowPosSourceCylinderSelection'=>(int)($shopSettings['allow_pos_source_cylinder_selection']??0),'custodyUnits'=>$custodyUnits,'depositBalances'=>$depositBalances,'availableCustodyUnits'=>$availableCustodyUnits,'canVoidSales'=>PermissionService::allows('POS_VOID')]);
+    }
+
+    /** Retail and (when enabled) Wholesale rates for every active cylinder type at one point in time. */
+    /** Price books for both lists, with this customer's special rates applied when a customer is given. */
+    private function priceBooks(int $locationId,array $types,array $shopSettings,string $at,?array $customer=null): array
+    {
+        $resolver=(new RateResolver($locationId,$shopSettings))->forCustomer($customer);
+        return [
+            'retail'=>$resolver->priceBook('retail',$types,$at),
+            'wholesale'=>(int)($shopSettings['wholesale_price_list_enabled']??1)?$resolver->priceBook('wholesale',$types,$at):null,
+        ];
+    }
+
+    /** POS refreshes its rates from here when the transaction time or customer changes, or the page regains focus. */
+    public function rates()
+    {
+        if($r=$this->guard()) return $r;
+        $at=str_replace('T',' ',trim((string)$this->request->getGet('at')));
+        $ts=$at===''?time():strtotime($at);
+        if($ts===false) return $this->response->setStatusCode(422)->setJSON(['error'=>'Invalid transaction date/time.']);
+        $ts=RateResolver::pricingTime($ts);
+        $locationId=(int)session()->get('location_id');
+        $shopSettings=(new ShopSettingsModel())->forLocation($locationId);
+        $types=(new CylinderTypeModel())->activeOrdered();
+        $customerId=(int)$this->request->getGet('customer_id');
+        $customer=$customerId>0?(new CustomerModel())->where('is_active',1)->find($customerId):null;
+        return $this->response->setJSON(['at'=>date('Y-m-d H:i:s',$ts),'customer_id'=>$customer?(int)$customer['id']:null,'books'=>$this->priceBooks($locationId,$types,$shopSettings,date('Y-m-d H:i:s',$ts),$customer)]);
     }
 
     public function custody(int $customerId)
@@ -58,7 +81,7 @@ class Sales extends Controller
             $lines=json_decode((string)$this->request->getPost('lines_json'),true);
             $payments=json_decode((string)$this->request->getPost('payments_json'),true);
             if(!is_array($lines)||!is_array($payments)) throw new \RuntimeException('Invalid POS line or payment data.');
-            $result=(new SalesService())->post(['transaction_type'=>$this->request->getPost('transaction_type'),'customer_id'=>$this->request->getPost('customer_id'),'transaction_at'=>$this->request->getPost('transaction_at'),'discount_amount'=>$this->request->getPost('discount_amount'),'security_deposit_amount'=>$this->request->getPost('security_deposit_amount'),'security_deposit_refund_amount'=>$this->request->getPost('security_deposit_refund_amount'),'custody_unit_ids'=>$this->request->getPost('custody_unit_ids')?:[],'return_unit_ids'=>$this->request->getPost('return_unit_ids')?:[],'lines'=>$lines,'payments'=>$payments,'notes'=>$this->request->getPost('notes'),'stock_override_confirmed'=>$this->request->getPost('stock_override_confirmed')],(int)session()->get('user_id'),(int)session()->get('location_id'));
+            $result=(new SalesService())->post(['transaction_type'=>$this->request->getPost('transaction_type'),'customer_id'=>$this->request->getPost('customer_id'),'transaction_at'=>$this->request->getPost('transaction_at'),'discount_amount'=>$this->request->getPost('discount_amount'),'security_deposit_amount'=>$this->request->getPost('security_deposit_amount'),'security_deposit_refund_amount'=>$this->request->getPost('security_deposit_refund_amount'),'custody_unit_ids'=>$this->request->getPost('custody_unit_ids')?:[],'return_unit_ids'=>$this->request->getPost('return_unit_ids')?:[],'lines'=>$lines,'payments'=>$payments,'notes'=>$this->request->getPost('notes'),'price_list'=>$this->request->getPost('price_list'),'rate_change_reason'=>$this->request->getPost('rate_change_reason'),'stock_override_confirmed'=>$this->request->getPost('stock_override_confirmed')],(int)session()->get('user_id'),(int)session()->get('location_id'));
             if ($this->request->isAJAX() || str_contains(strtolower((string)$this->request->getHeaderLine('Accept')), 'application/json')) {
                 session()->setFlashdata('success','Transaction '.$result['sale_no'].' posted successfully.');
                 session()->setFlashdata('receipt_url',site_url('sales/receipt/'.$result['id']));

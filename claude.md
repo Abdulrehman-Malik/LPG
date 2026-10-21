@@ -90,6 +90,50 @@ The branch default transaction type is stored in `shop_settings.default_transact
 - Filled-cylinder IN requires actual gas weight and cannot exceed cylinder capacity. Purchasing gas must therefore be represented by receiving filled physical cylinders with actual gas weights.
 - Inventory Detail Report shows current gas stock, filled/empty cylinder counts, stock by cylinder type, and partially used physical cylinders.
 
+### Pricing (Retail / Wholesale price lists)
+Requirements: `requirements.md` → Rate Configuration. Test status and resume point: `testcase.md` → Progress.
+- All POS prices come from `App\Services\RateResolver`, scoped to the current shop (`rate_cards.location_id`) and the transaction time. Do not read `rate_cards` for pricing anywhere else.
+- Rates belong to a price list (`rate_cards.price_list` = retail / wholesale; migration 035). There are three rate types:
+  - `gas_per_kg` (all cylinders);
+  - `gas_per_cylinder` (per cylinder type);
+  - `empty_cylinder` (per cylinder type).
+- Price list per invoice: invoice switch (if `pos_price_list_switch`) → walk-in uses `walkin_price_list` → customer `customer_type` (`retail` / `wholesale` / `shop_default` → `default_price_list`). `wholesale_price_list_enabled = 0` forces Retail everywhere.
+- Customer special rates (`customer_rates`, migration 036, `CustomerRateModel`) come first for a named customer: `RateResolver::forCustomer($customer)`. Walk-in never gets them, and nothing applies when `customer_special_rates_enabled = 0`. They are set in LPG Rates → Customer Rates (`Rates::saveCustomer` / `stopCustomer` / `cancelCustomer`). POS reloads `sales/rates?customer_id=` on a customer change, and lines record `rate_source = customer_special`.
+- Lookup and fallback:
+  - per KG and per full cylinder convert into each other within a list (× / ÷ capacity);
+  - Wholesale falls back to Retail;
+  - an empty cylinder falls back to `cylinder_types.empty_cylinder_price`.
+- Which price each transaction type uses:
+  - **Gas Sale:** KG or amount mode uses `gasPerKg`. Cylinders mode uses `gasPerCylinder`, and the entered rate is per cylinder.
+  - **Cylinder Sale:** empty lines charge `emptyCylinder`. Filled lines charge `cylinderGasPerKg` × actual gas (full-cylinder price ÷ capacity, else per KG) **plus** `emptyCylinder`.
+  - **Security Deposit:** charges **only the gas** of filled / part-filled cylinders (`cylinderGasPerKg` × actual gas). There is **no cylinder price**, because the cylinder stays company property; empty cylinders cost 0. The deposit is a refundable hold, not a charge (owner rule, 2026-10-21).
+  - **Cylinder Return:** returned gas is valued at the custody `issued_gas_rate`. A different rate is a POS rate change.
+- POS sends a rate only when the cashier changed it; blank means "use the price list". `pos_rate_change_mode` (`not_allowed` / `allowed` / `reason_required`) is enforced server-side for all four transaction types. The reason is stored in `sales.rate_change_reason`.
+- Transaction time:
+  - up to 10 minutes old counts as now (`RateResolver::pricingTime`), because the POS fills the time in when the screen opens;
+  - more than 5 minutes in the future is rejected;
+  - more than 10 minutes in the past, when its prices differ from today's, counts as a rate change: blocked when `not_allowed`, needs a reason when `reason_required`, and sets `custom_rate_flag`.
+- Sales store `price_list`. Sale lines store `rate_source` (`customer_special`, `retail`, `wholesale`, `retail_fallback`, `cylinder_type`, `manual`, `issued_rate`).
+- LPG Rates screen:
+  - Retail / Wholesale grids, a Customer Rates tab and a History tab, with the grids and histories scrolling inside their own boxes;
+  - Effective From cannot be in the past (up to 1 hour old is treated as now);
+  - rates are never edited or deleted: **Stop** ends the current price, and **Cancel** removes a scheduled one that has not started;
+  - every save, stop and cancel runs in one transaction and writes `rate_change_log` and an audit entry.
+- Security Deposit combined payments: credit can pay gas only, never the deposit, under both `gas_first` and `deposit_first`.
+
+### Browser tests (Playwright)
+- Spec: `tests/e2e/pricing.spec.mjs` (57 cases). Case list, status and resume point: `testcase.md`. Config: `playwright.config.mjs`. Install with `npm install`.
+- The owner wants headed runs that can be watched, **run in parallel where possible** to save time. Use the wave runner:
+  `npm run test:pricing:waves`, which is `node tests/e2e/run-cases.mjs` with the plan in `tests/e2e/pricing.plan.json`.
+  - Cases in a wave run in parallel, up to 4 Chrome windows.
+  - Waves run in order, and the run stops after a wave with a failure. Resume with `--from N`.
+  - Single-case waves change Shop Settings or rates that other cases read.
+- When adding a case, put it in a wave where it cannot affect the other cases (see the plan notes).
+- One case on its own: `LPG_SLOWMO=500 npx playwright test tests/e2e/pricing.spec.mjs -g "\bPOS-P01\b" --headed --reporter=line`.
+- The base URL comes from `.env` `app.baseURL` (e.g. `http://localhost:180/lpg-management-system/public/`). Never hard-code `/login`; use relative paths.
+- The tests write to the local database: TC customers, rates, opening stock, test sales and Shop Settings changes (restored afterwards).
+- After every run, update the Status column and the Progress table in `testcase.md`, so the next session can continue from there.
+
 ### Permissions
 Sidebar entries are permission-aware and hidden when the current user lacks the relevant permission.
 Current mappings include:

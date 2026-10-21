@@ -10,7 +10,7 @@ class RateCardModel extends Model
     protected $primaryKey='id';
     protected $returnType='array';
     protected $useTimestamps=false;
-    protected $allowedFields=['location_id','rate_type','cylinder_type_id','rate_value','effective_from','effective_to','created_by','created_at'];
+    protected $allowedFields=['location_id','price_list','rate_type','cylinder_type_id','rate_value','effective_from','effective_to','created_by','created_at'];
 
     public function history(?int $locationId=null): array
     {

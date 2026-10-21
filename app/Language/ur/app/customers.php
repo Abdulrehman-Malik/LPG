@@ -32,4 +32,7 @@ return [
     'Wholesale (per cylinder)' => 'ہول سیل (فی سلنڈر)',
     'Retail' => 'ریٹیل',
     'Wholesale' => 'ہول سیل',
+    'Price List' => 'پرائس لسٹ',
+    'Shop default' => 'شاپ ڈیفالٹ',
+    'Shop default follows the Default Rate in Shop Settings → Pricing.' => 'شاپ ڈیفالٹ، شاپ سیٹنگز → قیمتیں میں دیے گئے ڈیفالٹ ریٹ کی پیروی کرتا ہے۔',
 ];
