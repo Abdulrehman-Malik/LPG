@@ -1458,6 +1458,43 @@ class SalesService
         }
     }
 
+    /**
+     * Bulk equivalent of customerBalance() for many customers: three grouped queries instead
+     * of several queries per customer. Returns [customer_id => balance] using identical rules.
+     *
+     * @param array<int,array<string,mixed>> $customers rows containing at least id and opening_balance
+     * @return array<int,float>
+     */
+    public function customerBalances(array $customers): array
+    {
+        if(!$customers)return [];
+        $locationId=(int)$this->currentLocationId;
+        $sales=[];
+        foreach($this->db->table('sales')->select('customer_id,SUM(credit_amount) AS credit,SUM(return_gas_ledger_amount) AS return_ledger')
+            ->where('location_id',$locationId)->where('status','posted')->where('customer_id IS NOT NULL',null,false)->groupBy('customer_id')->get()->getResultArray() as $r){
+            $sales[(int)$r['customer_id']]=(float)$r['credit']+(float)$r['return_ledger'];
+        }
+        $paid=[];
+        foreach($this->db->table('customer_receipts')->select('customer_id,SUM(amount) AS paid')
+            ->where('location_id',$locationId)->where('status','posted')->groupBy('customer_id')->get()->getResultArray() as $r){
+            $paid[(int)$r['customer_id']]=(float)$r['paid'];
+        }
+        $deposits=[];
+        $settings=(new ShopSettingsModel())->forLocation($locationId);
+        if((int)($settings['include_security_deposit_in_os']??0)===1){
+            foreach($this->db->table('customer_security_deposits')->select("customer_id,SUM(CASE WHEN entry_type='hold' THEN amount ELSE -amount END) AS balance")
+                ->where('location_id',$locationId)->groupBy('customer_id')->get()->getResultArray() as $r){
+                $deposits[(int)$r['customer_id']]=max(0,(float)$r['balance']);
+            }
+        }
+        $balances=[];
+        foreach($customers as $c){
+            $id=(int)$c['id'];
+            $balances[$id]=(float)($c['opening_balance']??0)+($sales[$id]??0.0)-($paid[$id]??0.0)+($deposits[$id]??0.0);
+        }
+        return $balances;
+    }
+
     public function customerBalance(int $customerId): float
     {
         $gasBalance=$this->customerGasBalance($customerId);

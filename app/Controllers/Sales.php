@@ -25,7 +25,7 @@ class Sales extends Controller
         $customers=(new CustomerModel())->activeDirectory();
         $service=new SalesService();
         $balances=[];$creditLimits=[];$shopOutstanding=0.0;
-        foreach($customers as $c){$balances[$c['id']]=$service->customerBalance((int)$c['id']);$creditLimits[$c['id']]=(float)$c['credit_limit'];}
+        $bulkBalances=$service->customerBalances($customers);foreach($customers as $c){$balances[$c['id']]=$bulkBalances[(int)$c['id']]??0.0;$creditLimits[$c['id']]=(float)$c['credit_limit'];}
         foreach($balances as $balance){if((float)$balance>0)$shopOutstanding+=(float)$balance;}
         $rateModel=new GasRateModel();
         $cylinderRates=[];

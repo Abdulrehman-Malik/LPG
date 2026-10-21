@@ -174,10 +174,11 @@ class Dashboard extends Controller
         foreach($salesCreditRows as $row)$creditBy[(int)$row['customer_id']]=(float)$row['credit'];
         foreach($receiptRows as $row)$paidBy[(int)$row['customer_id']]=(float)$row['paid'];
         $salesService=new SalesService();
+        $bulkBalances=$salesService->customerBalances($customers);
         $receivables=[];
         foreach($customers as $c){
             $id=(int)$c['id'];
-            $balance=max(0,(float)$salesService->customerBalance($id));
+            $balance=max(0,(float)($bulkBalances[$id]??0));
             if($balance<=0.005)continue;
             $receivables[]=['id'=>$id,'code'=>$c['code'],'name'=>$c['name'],'phone'=>$c['phone'],'opening_balance'=>(float)$c['opening_balance'],'credit_sales'=>(float)($creditBy[$id]??0),'receipts'=>(float)($paidBy[$id]??0),'balance'=>$balance];
         }
