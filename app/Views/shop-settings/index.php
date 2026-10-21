@@ -16,6 +16,7 @@
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general" type="button">General</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#appearance" type="button">Appearance</button></li><li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pos" type="button">POS & Sales</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pricing" type="button">Pricing</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#inventory" type="button">Inventory Control</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#cash" type="button">Cash & Payments</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#custody" type="button">Cylinder Custody</button></li>
@@ -121,6 +122,62 @@
                     </div>
                     <div class="col-12"><div class="alert alert-light border mb-0">Partial payment is allowed. Any unpaid amount becomes Customer OS and is carried into the next sale. Credit-limit validation applies to the resulting outstanding balance.</div></div>
                     <div class="col-12"><div class="alert alert-info border mb-0"><strong>POS transaction types:</strong> Visibility is configurable above per shop.  Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return / Refund Deposit. The selected default is used when opening a new POS invoice.</div></div>
+                </div>
+            </div>
+
+            <?php $wholesaleOn = (int)($settings['wholesale_price_list_enabled'] ?? 1) === 1; $rateMode = (string)($settings['pos_rate_change_mode'] ?? 'reason_required'); ?>
+            <div class="tab-pane fade" id="pricing">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Wholesale Price List</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="wholesale_price_list_enabled" id="wholesalePriceListEnabled" value="1" <?= $wholesaleOn ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="wholesalePriceListEnabled">Use Wholesale prices for wholesale customers</label>
+                        </div>
+                        <div class="form-text">Off: all sales use Retail prices, and the Wholesale options below are locked to Retail.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Customer Special Rates</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="customer_special_rates_enabled" id="customerSpecialRatesEnabled" value="1" <?= (int)($settings['customer_special_rates_enabled'] ?? 1) === 1 ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="customerSpecialRatesEnabled">Allow special rates for individual customers</label>
+                        </div>
+                        <div class="form-text">On: POS uses a customer's special rates (LPG Rates → Customer Rates) before their price list. Off: special rates are kept but not used at POS.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Default Rate</label>
+                        <select name="default_price_list" class="form-select pricing-wholesale-dependent">
+                            <option value="retail" <?= ($settings['default_price_list'] ?? 'retail') === 'retail' ? 'selected' : '' ?>>Retail</option>
+                            <option value="wholesale" <?= ($settings['default_price_list'] ?? 'retail') === 'wholesale' ? 'selected' : '' ?>>Wholesale</option>
+                        </select>
+                        <div class="form-text">Price list for customers whose Price List is "Shop default".</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Walk-in Price List</label>
+                        <select name="walkin_price_list" class="form-select pricing-wholesale-dependent">
+                            <option value="retail" <?= ($settings['walkin_price_list'] ?? 'retail') === 'retail' ? 'selected' : '' ?>>Retail</option>
+                            <option value="wholesale" <?= ($settings['walkin_price_list'] ?? 'retail') === 'wholesale' ? 'selected' : '' ?>>Wholesale</option>
+                        </select>
+                        <div class="form-text">Price list for walk-in (cash) sales.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cashier Can Change Rate at POS</label>
+                        <select name="pos_rate_change_mode" class="form-select">
+                            <option value="not_allowed" <?= $rateMode === 'not_allowed' ? 'selected' : '' ?>>Not allowed</option>
+                            <option value="allowed" <?= $rateMode === 'allowed' ? 'selected' : '' ?>>Allowed</option>
+                            <option value="reason_required" <?= $rateMode === 'reason_required' ? 'selected' : '' ?>>Allowed with reason</option>
+                        </select>
+                        <div class="form-text">Not allowed: the rate field is read-only. Allowed with reason: the cashier must say why, and the reason is saved on the sale.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cashier Can Switch Price List on Invoice</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input pricing-wholesale-dependent" type="checkbox" name="pos_price_list_switch" id="posPriceListSwitch" value="1" <?= (int)($settings['pos_price_list_switch'] ?? 0) === 1 ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="posPriceListSwitch">Show a Retail / Wholesale dropdown on the POS invoice</label>
+                        </div>
+                        <div class="form-text">On: the cashier can change the price list for one invoice, for example for a dealer who walks in.</div>
+                    </div>
+                    <div class="col-12"><div class="alert alert-light border mb-0">Rates themselves are set on the <a href="<?= site_url('rates') ?>">LPG Rates</a> screen. When a Wholesale price is missing for a cylinder type, the Retail price is used.</div></div>
                 </div>
             </div>
 
@@ -246,5 +303,20 @@ document.getElementById('individualCylinderTracking')?.addEventListener('change'
     source.disabled = !this.checked;
     if (!this.checked) source.checked = false;
 });
+(() => {
+    const wholesale = document.getElementById('wholesalePriceListEnabled');
+    if (!wholesale) return;
+    const sync = () => {
+        document.querySelectorAll('.pricing-wholesale-dependent').forEach((el) => {
+            el.disabled = !wholesale.checked;
+            if (!wholesale.checked) {
+                if (el.type === 'checkbox') el.checked = false;
+                else el.value = 'retail';
+            }
+        });
+    };
+    wholesale.addEventListener('change', sync);
+    sync();
+})();
 </script>
 <?= $this->endSection() ?>

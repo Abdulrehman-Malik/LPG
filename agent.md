@@ -7,6 +7,13 @@
 - **Branch safety:** work on the task's designated feature branch. Do not commit task changes to `main), do not merge automatically, and do not change unrelated feature branches. Merge only after explicit owner approval.
 - The current mobile/multi-shop requirements branch is `feature/mobile-multishop-ordering-requirements`. Start with `docs/mobile-multishop/README.md) and complete the documented gap analysis before implementing schema or application code.
 
+## Work in Progress — Pricing (branch `feature/pricing-rate-resolver`)
+
+- **Resume point:** `testcase.md` → "Progress". It lists the cases passed on the current code, the next case to run, and the open work.
+- Rules and design: `requirements.md` → Rate Configuration and `CLAUDE.md` → Pricing / Browser tests.
+- Changes are uncommitted. Do not commit, push or open a PR without the owner's approval.
+- Test the way the owner asked: headed Chrome, in parallel where possible, with the wave runner `npm run test:pricing:waves` (plan: `tests/e2e/pricing.plan.json`). Waves run in order and stop at the first failing wave. Record the results in `testcase.md`.
+- For every new or changed requirement, update `requirements.md` and the other relevant docs without asking.
 ## Mobile / Multi-Shop Ordering Rules — MUST FOLLOW
 
 - One Flutter app supports Android and iOS, with Customer and Shop Staff/Owner experiences.

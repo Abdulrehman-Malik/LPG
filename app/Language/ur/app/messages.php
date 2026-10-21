@@ -490,4 +490,13 @@ return [
     'Rate updated and history recorded.' => 'ریٹ اپ ڈیٹ ہو گیا اور ہسٹری محفوظ ہو گئی۔',
     'Rate could not be deleted.' => 'ریٹ حذف نہیں ہو سکا۔',
     'Rate deleted.' => 'ریٹ حذف ہو گیا۔',
+    'Invalid transaction date/time.' => 'لین دین کی تاریخ/وقت درست نہیں۔',
+    'Invalid price list.' => 'پرائس لسٹ درست نہیں۔',
+    'The Wholesale price list is turned off in Shop Settings.' => 'شاپ سیٹنگز میں ہول سیل پرائس لسٹ بند ہے۔',
+    'Changing the price list on the invoice is not allowed in Shop Settings.' => 'شاپ سیٹنگز میں انوائس پر پرائس لسٹ بدلنے کی اجازت نہیں۔',
+    'Changing the rate at POS is not allowed in Shop Settings. Remove the changed rate and post again.' => 'شاپ سیٹنگز میں POS پر ریٹ تبدیل کرنے کی اجازت نہیں۔ تبدیل شدہ ریٹ ہٹا کر دوبارہ پوسٹ کریں۔',
+    'A rate was changed. Enter the reason for the rate change before posting.' => 'ریٹ تبدیل کیا گیا ہے۔ پوسٹ کرنے سے پہلے ریٹ تبدیلی کی وجہ درج کریں۔',
+    'Unsupported POS transaction type.' => 'یہ POS لین دین کی قسم معاون نہیں۔',
+    'No wholesale cylinder rate or retail gas rate is configured for {0}. Set it in LPG Rates or enter a price per cylinder.' => '{0} کے لیے نہ ہول سیل سلنڈر ریٹ مقرر ہے نہ ریٹیل گیس ریٹ۔ اسے LPG ریٹس میں مقرر کریں یا فی سلنڈر قیمت درج کریں۔',
+    'No effective gas rate exists for {0}. Set it in LPG Rates or enter a gas rate on the issue line.' => '{0} کے لیے کوئی مؤثر گیس ریٹ موجود نہیں۔ اسے LPG ریٹس میں مقرر کریں یا اجرا لائن پر گیس ریٹ درج کریں۔',
 ];
