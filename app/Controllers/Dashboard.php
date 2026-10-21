@@ -185,12 +185,14 @@ class Dashboard extends Controller
         usort($receivables,static fn($a,$b)=>$b['balance']<=>$a['balance']);
         $receivableTotal=array_sum(array_map(static fn($x)=>(float)$x['balance'],$receivables));
 
+        // The drill-down only renders customers that have an outstanding balance, so fetch just those.
+        $receivableIds=array_map(static fn($x)=>(int)$x['id'],$receivables);
         // Customer ledger rows for the receivable drill-down.
         $ledgerRowsQ=$db->table('sales s')->select("s.customer_id,s.sale_no,s.transaction_at,s.transaction_type,s.credit_amount,0 AS receipt_amount,c.name customer_name")
-            ->join('customers c','c.id=s.customer_id','inner')->where(['s.location_id'=>$locationId,'s.status'=>'posted'])->where('s.customer_id IS NOT NULL',null,false)->where('s.credit_amount >',0)->orderBy('s.transaction_at','DESC');
+            ->join('customers c','c.id=s.customer_id','inner')->where(['s.location_id'=>$locationId,'s.status'=>'posted'])->whereIn('s.customer_id',$receivableIds ?: [0])->where('s.credit_amount >',0)->orderBy('s.transaction_at','DESC');
         $ledgerSales=$ledgerRowsQ->get()->getResultArray();
         $ledgerReceipts=$db->table('customer_receipts r')->select("r.customer_id,r.receipt_no,r.receipt_at transaction_at,r.amount receipt_amount,0 AS credit_amount,c.name customer_name")
-            ->join('customers c','c.id=r.customer_id','inner')->where(['r.location_id'=>$locationId,'r.status'=>'posted'])->orderBy('r.receipt_at','DESC')->get()->getResultArray();
+            ->join('customers c','c.id=r.customer_id','inner')->where(['r.location_id'=>$locationId,'r.status'=>'posted'])->whereIn('r.customer_id',$receivableIds ?: [0])->orderBy('r.receipt_at','DESC')->get()->getResultArray();
         $receivableLedger=[];
         foreach(array_merge($ledgerSales,$ledgerReceipts) as $row){
             $id=(int)$row['customer_id'];
