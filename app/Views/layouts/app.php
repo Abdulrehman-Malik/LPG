@@ -24,6 +24,7 @@ $current=uri_string(); $isActive=static fn(string $n):string=>str_starts_with($c
 ?>
 <!DOCTYPE html>
 <html lang="<?= esc($uiLang, 'attr') ?>" dir="<?= esc($uiDir, 'attr') ?>"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title><?= esc($title ?? 'Dashboard') ?> — <?= esc($location['name'] ?? 'Perfect LPG') ?></title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link rel="preconnect" href="https://cdn.datatables.net" crossorigin><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/<?= $uiDir === 'rtl' ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css' ?>" rel="stylesheet"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"><link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -55,7 +56,7 @@ body{background:var(--lpg-page);color:var(--lpg-text);-webkit-font-smoothing:ant
 .text-muted{color:#64748b!important}
 @media(max-width:767.98px){.content-wrap{padding:.9rem}.topbar{padding:.65rem .9rem}.topbar h5{font-size:.95rem}.topbar .small{display:none}}
 </style>
-<link rel="stylesheet" href="<?= base_url('css/lpg-theme.css') ?>">
+<link rel="stylesheet" href="<?= base_url('css/lpg-theme.css') ?>?v=<?= (int) @filemtime(FCPATH . 'css/lpg-theme.css') ?>">
 <?= view('partials/i18n_head', ['uiLang' => $uiLang]) ?>
 <?= $this->renderSection('styles') ?><script>window.fmtMoney=(v,d=2)=>Number(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});window.parseMoney=v=>Number(String(v??'').replace(/,/g,''))||0;</script></head>
 <body class="theme-<?= esc($themeMode) ?> font-<?= esc($fontFamilyKey) ?>">
