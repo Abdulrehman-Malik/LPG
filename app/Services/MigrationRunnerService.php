@@ -64,6 +64,24 @@ class MigrationRunnerService
         return array_values($migrations);
     }
 
+    /**
+     * True when a recorded checksum still matches the migration file. Line endings are ignored:
+     * git (core.autocrlf) can rewrite the same file with LF or CRLF endings, which must not
+     * count as a changed migration. Any other change to the file still blocks login.
+     */
+    protected function checksumMatches(string $recorded, array $migration): bool
+    {
+        if (hash_equals($recorded, $migration['checksum'])) {
+            return true;
+        }
+        $lf = str_replace("
+", "
+", (string) file_get_contents($migration['path']));
+        return hash_equals($recorded, hash('sha256', $lf)) || hash_equals($recorded, hash('sha256', str_replace("
+", "
+", $lf)));
+    }
+
     protected function latestHistory(): array
     {
         $rows = $this->db->query(
@@ -166,7 +184,7 @@ class MigrationRunnerService
             $history = $latest[$migration['file']] ?? null;
 
             if ($history && in_array($history['status'], ['success','skipped'], true)) {
-                if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
+                if (!$this->checksumMatches((string) $history['checksum'], $migration)) {
                     $ready = false;
                     $blockedMessage = 'Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.';
                     $results[] = [
@@ -261,7 +279,7 @@ class MigrationRunnerService
                 $history = $latest[$migration['file']] ?? null;
 
                 if ($history && $history['status'] === 'success') {
-                    if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
+                    if (!$this->checksumMatches((string) $history['checksum'], $migration)) {
                         throw new RuntimeException('Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.');
                     }
                     continue;
