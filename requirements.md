@@ -68,6 +68,10 @@ Cylinder-type inventory policy overrides remain available under Inventory Contro
 - Inventory and cash posting is atomic inside a DB transaction.
 
 ## Reports
+- **What counts as sales** (Dashboard Sales card, Reports sales total, sales list and payment-mode totals):
+  - included: Gas Sale, Cylinder Sale, and the gas charged on a Security Deposit / Issue Cylinder;
+  - not included: the security deposit amount (a refundable hold), deposit and refund payments, Cylinder Return, and issues with nothing charged;
+  - payment-mode totals count only sale payments.
 - Customer ledger
 - Supplier ledger
 - Daily transactions
