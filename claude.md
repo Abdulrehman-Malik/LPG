@@ -71,7 +71,7 @@ The branch default transaction type is stored in `shop_settings.default_transact
 
 ### Security deposit / custody
 - Company cylinders can move to customer custody when a security deposit is issued.
-- Security deposit is a liability/hold, not sales revenue.
+- Security deposit is a liability/hold, not sales revenue. The gas charged on an issue IS sales revenue: Dashboard and Reports use `SalesService::revenueSaleCondition()` (Gas Sale, Cylinder Sale, Security Deposit with total_amount > 0; never Cylinder Return), and payment-mode totals count only `payment_type = 'sale'`.
 - Cylinder return requires the customer's custody cylinder and refunds the applicable deposit.
 - Repeated custody cycles are supported.
 - Security deposit and cylinder-return transactions are not treated like ordinary voidable revenue sales.

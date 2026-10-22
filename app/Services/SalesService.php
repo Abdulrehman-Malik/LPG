@@ -111,6 +111,17 @@ class SalesService
     }
 
     /** Checks changed POS rates (and backdated prices) against Shop Settings; returns the reason to store, if any. */
+    /**
+     * SQL condition for sales revenue, used by the Dashboard and Reports: Gas Sale, Cylinder Sale
+     * and the gas charged on a Security Deposit (its total_amount excludes the deposit, which is a
+     * refundable hold). Cylinder Return and deposit-only issues (nothing charged) are not sales.
+     */
+    public static function revenueSaleCondition(string $alias = ''): string
+    {
+        $c = $alias !== '' ? $alias.'.' : '';
+        return "({$c}transaction_type NOT IN ('security_deposit','cylinder_return') OR ({$c}transaction_type='security_deposit' AND {$c}total_amount>0))";
+    }
+
     protected function rateChangeReasonFor(bool $rateChanged): ?string
     {
         if($this->backdatedPriceDiffers) RateResolver::assertBackdatedPrices($this->resolver->settings(),$this->rateChangeReason);

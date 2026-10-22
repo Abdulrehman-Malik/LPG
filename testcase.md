@@ -196,6 +196,29 @@ S-03 to S-05 and CR-01 create this data when it is missing. All amounts are in R
 | UI-09 | No script or server errors | POS (gas, cylinder, deposit) and Shop Settings. | No JavaScript errors and no 5xx responses from the app. | PASS | Ignores the CI debug toolbar's own `?debugbar_time` requests (see the notes). |
 | UI-10 | LPG Rates on a phone | 390 px wide. | No sideways page scroll; the grid scrolls inside its box; "Scroll sideways" hint shown. | PASS | New. |
 
+## F. Custody with customer special rates (scenario)
+
+Spec: [tests/e2e/custody-special-rates.spec.mjs](tests/e2e/custody-special-rates.spec.mjs). The cases share state, so run the whole file in order:
+`LPG_SLOWMO=400 npx playwright test tests/e2e/custody-special-rates.spec.mjs --headed --reporter=list`
+
+It uses its own customers, **SR Customer A** and **SR Customer B** (both on the Retail price list), and only their special rates, so the shop's price-list rates stay untouched. It works with the shop's live data: it needs at least 2 filled C11 cylinders and an open cash session.
+
+| ID | Test Case | Expected Result | Status (2026-10-22) | Actual |
+|---|---|---|---|---|
+| CS-01 | Define two new customers | Both are saved | PASS | IDs 7 and 8 |
+| CS-02 | Different special rate for the same type (C11, 11.8 KG) | A: 11,000 per full cylinder; B: 10,500. POS book source customer_special | PASS | A 932.2034 per KG, B 889.8305 per KG |
+| CS-03 | Stock before | Snapshot taken; no custody for A or B | PASS | 6 filled C11 (70.8 KG), 0 empty |
+| CS-04 (A) | Issue one filled C11 to A, deposit 2,000 | Gas only at A's special rate; cylinder price 0 | PASS | S20261022-00001: 11.8 KG × 932.2034 = 11,000.00 |
+| CS-04 (B) | Issue one filled C11 to B, deposit 2,000 | Gas only at B's special rate | PASS | S20261022-00002: 11.8 KG × 889.8305 = 10,500.00 |
+| CS-05 | Stock after issuing | Filled −2, gas −23.6 KG, both units on custody, deposits 2,000 each | PASS | 4 filled (47.2 KG), custody C11-000001 (A), C11-000002 (B) |
+| CS-06 (A) | Return A's cylinder, refund 2,000 | Return posted; refund 2,000 | PASS | S20261022-00003 |
+| CS-06 (B) | Return B's cylinder, refund 2,000 | Return posted; refund 2,000 | PASS | S20261022-00004 |
+| CS-07 | Stock after the returns | Returned empty: filled unchanged, empty +2, no custody, deposits 0 | PASS | 4 filled (47.2 KG), 2 empty, deposits 0 |
+
+The database check after the run matched the screen:
+- both units are `empty` and not on custody;
+- inventory movements: 2 filled cylinders and 23.6 KG of gas out (issue), 2 empty cylinders in (return);
+- the deposit ledger for both customers is back to 0.
 ## Notes from the 2026-10-21 runs
 - **Time-precision bug, found by CR-02 and fixed:**
   - the POS time field is filled in to the minute when the screen opens, while a new rate starts at the exact second it is saved;

@@ -129,7 +129,7 @@ class Dashboard extends Controller
             ->join('customers c','c.id=s.customer_id','left')
             ->join('sale_payments sp',"sp.sale_id=s.id AND sp.payment_type='sale'",'left')
             ->where(['s.location_id'=>$locationId,'s.status'=>'posted'])
-            ->whereNotIn('s.transaction_type',['security_deposit','cylinder_return'])
+            ->where(SalesService::revenueSaleCondition('s'),null,false)
             ->groupBy('s.id')->orderBy('s.transaction_at','DESC');
         $this->periodQuery($salesQ,'s.transaction_at',$range);
         $salesRows=$salesQ->get()->getResultArray();
