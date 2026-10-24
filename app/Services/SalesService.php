@@ -96,7 +96,7 @@ class SalesService
             $emptyReceived=0;$previewUnits=[];
 
             if(in_array($mode,['sell_gas_only','replace_same','sell_filled','replace_different'],true)){
-                $standardGasRate=$this->rates->currentKgRate($transactionAt);
+                $standardGasRate=$this->rates->currentKgRate($transactionAt,$locationId);
                 if($standardGasRate!==null && $standardGasRate<=0) $standardGasRate=null;
                 // A positive line rate is an allowed override. Only require a configured
                 // effective rate when the cashier has not supplied a usable line rate.
@@ -108,7 +108,7 @@ class SalesService
                 }
             }
             if(in_array($mode,['sell_filled','replace_different','sell_empty'],true)){
-                $standardCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
+                $standardCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt,$locationId);
                 if($standardCylinderRate===null) throw new RuntimeException('No effective cylinder price exists for '.$type['name'].'.');
                 $cylinderRate=$cylinderRateInput??$standardCylinderRate;
             }
@@ -425,7 +425,7 @@ class SalesService
             if($enteredAmount!==null && $enteredAmount<=0) throw new RuntimeException('Entered amount on gas line '.$n.' must be greater than zero.');
             if($gasRateInput!==null&&$gasRateInput<0) throw new RuntimeException('Gas rate cannot be negative on line '.$n.'.');
 
-            $standardRate=$this->rates->currentKgRate($transactionAt);
+            $standardRate=$this->rates->currentKgRate($transactionAt,$locationId);
             // A zero rate is not usable for calculating KG from an amount.
             if($standardRate!==null && $standardRate<=0) $standardRate=null;
 
@@ -637,18 +637,12 @@ class SalesService
             if(!$type||!(int)$type['is_active']) throw new RuntimeException('Invalid or inactive cylinder type on line '.$n.'.');
 
             $gasKg=0;$gasRate=0;$stdGas=null;
-            // Cylinder Sale pricing priority: a positive rate configured against this cylinder type
-            // overrides the Cylinder Type master price. A zero/negative configured rate means
-            // no rate is defined there, so fall back to the Cylinder Type empty-cylinder price.
-            $configuredCylinderRate=$this->rates->currentCylinderRate($typeId,$transactionAt);
-            $configuredCylinderRate=($configuredCylinderRate!==null && $configuredCylinderRate>0)?$configuredCylinderRate:null;
             $masterCylinderRate=(float)($type['empty_cylinder_price']??0);
-            $stdCylinderRate=$configuredCylinderRate??$masterCylinderRate;
-            // A manually entered cylinder price is valid even when it is 0.00.
-            // Only require a configured/default price when the user leaves the price blank.
-            if($cylRateInput===null && $stdCylinderRate<=0) throw new RuntimeException('No empty-cylinder price is defined for '.$type['name'].'. Enter a cylinder price on the POS line or configure a default rate.');
-            $cylRate=$cylRateInput??$stdCylinderRate;
-            if($cylRate<0) throw new RuntimeException('Cylinder price cannot be negative on line '.$n.'.');
+            $configuredEmptyRate=$this->rates->currentCylinderRate($typeId,$transactionAt,$locationId);
+            $configuredEmptyRate=($configuredEmptyRate!==null && $configuredEmptyRate>0)?$configuredEmptyRate:null;
+            $stdCylinderRate=$configuredEmptyRate??$masterCylinderRate;
+            $filledRateInfo=null;
+            $standardFilledRateInfo=null;
 
             if($status==='filled'){
                 if(count($selectedIds)!==(int)$qty) throw new RuntimeException('Filled cylinder line '.$n.' must select exactly '.(int)$qty.' physical cylinder(s).');
@@ -656,24 +650,25 @@ class SalesService
                     if(isset($selectedAcrossLines[$selectedId])) throw new RuntimeException('Physical cylinder '.$selectedId.' is selected more than once in this sale.');
                     $selectedAcrossLines[$selectedId]=$n;
                 }
-                $stdGas=$this->rates->currentKgRate($transactionAt);
-                if($stdGas!==null && $stdGas<=0) $stdGas=null;
-                $gasRate=$gasRateInput??$stdGas;
-                if($gasRate===null || $gasRate<=0){
-                    throw new RuntimeException($gasRateInput===null
-                        ? 'No effective gas/kg rate exists. Enter a positive Gas Rate for this line or configure an effective rate in Gas Rate Settings.'
-                        : 'Gas rate must be greater than zero on line '.$n.'.');
-                }
+                $standardFilledRateInfo=$this->rates->currentFilledCylinderRate($typeId,$locationId,null,$transactionAt);
+                $filledRateInfo=$this->rates->currentFilledCylinderRate($typeId,$locationId,$customerId,$transactionAt);
+                if(!$filledRateInfo || (float)$filledRateInfo['rate']<=0) throw new RuntimeException('No effective filled-cylinder selling price is configured for '.$type['name'].'. Configure a shop filled-cylinder price first.');
+                $stdCylinderRate=$standardFilledRateInfo ? (float)$standardFilledRateInfo['rate'] : (float)$filledRateInfo['rate'];
+                $cylRate=(float)$filledRateInfo['rate'];
+                $gasRate=0;
             }else{
                 if($selectedIds) throw new RuntimeException('Physical cylinder selection is only allowed for filled cylinder sale lines.');
+                if($cylRateInput===null && $stdCylinderRate<=0) throw new RuntimeException('No empty-cylinder price is defined for '.$type['name'].'. Enter a cylinder price on the POS line or configure a default rate.');
+                $cylRate=$cylRateInput??$stdCylinderRate;
+                if($cylRate<0) throw new RuntimeException('Cylinder price cannot be negative on line '.$n.'.');
             }
 
-            $custom=(($status==='filled'&&$gasRateInput!==null&&($stdGas===null||abs($gasRate-$stdGas)>0.00001))||($cylRateInput!==null&&abs($cylRate-$stdCylinderRate)>0.00001));
+            $custom=($status==='filled' && !empty($filledRateInfo['customer_specific'])) || ($status==='empty' && $cylRateInput!==null && abs($cylRate-$stdCylinderRate)>0.00001);
             $customRate=$customRate||$custom;
             $prepared[]=[
                 'line_no'=>$n,'type_id'=>$typeId,'status'=>$status,'quantity'=>(int)$qty,
                 'selected_ids'=>$selectedIds,'gas_rate'=>$gasRate,'cyl_rate'=>$cylRate,
-                'std_gas'=>$stdGas,'std_cyl_rate'=>$stdCylinderRate,'custom_rate'=>$custom?1:0
+                'std_gas'=>$stdGas,'std_cyl_rate'=>$stdCylinderRate,'custom_rate'=>$custom?1:0,'filled_rate_id'=>$filledRateInfo['rate_id']??null
             ];
         }
 
@@ -736,7 +731,7 @@ class SalesService
                     }
                 }
 
-                $lineTotal=$row['gas_kg']*$row['gas_rate']+$row['quantity']*$row['cyl_rate'];
+                $lineTotal=$row['quantity']*$row['cyl_rate'];
                 $row['line_total']=$lineTotal;
                 $lineAmounts[]=$lineTotal;$subtotal+=$lineTotal;$totalKg+=(float)$row['gas_kg'];
             }
@@ -759,12 +754,8 @@ class SalesService
             $saleId=(int)$this->db->insertID();
 
             foreach($prepared as $row){
-                $appliedRate=$row['status']==='filled'
-                    ? (($row['gas_kg']/max($row['quantity'],1))*$row['gas_rate'])+$row['cyl_rate']
-                    : $row['cyl_rate'];
-                $standardRate=$row['status']==='filled'
-                    ? (($row['gas_kg']/max($row['quantity'],1))*$row['std_gas'])+$row['std_cyl_rate']
-                    : $row['std_cyl_rate'];
+                $appliedRate=$row['cyl_rate'];
+                $standardRate=$row['std_cyl_rate'];
                 $this->db->table('sale_items')->insert([
                     'sale_id'=>$saleId,'line_no'=>$row['line_no'],'line_type'=>$row['status']==='filled'?'filled_cylinder':'empty_cylinder',
                     'cylinder_type_id'=>$row['type_id'],'customer_cylinder_unit_id'=>null,'quantity'=>$row['quantity'],
@@ -856,12 +847,12 @@ class SalesService
             // when no usable rate was supplied by the POS. This keeps the custody workflow
             // independent from the normal gas-sale rate validation while preserving the
             // configured rate as the default.
-            $stdGas=$cfg['status']==='filled'?$this->rates->currentKgRate($transactionAt):0;
+            $stdGas=$cfg['status']==='filled'?$this->rates->currentKgRate($transactionAt,$locationId):0;
             $enteredGasRate=$cfg['status']==='filled'?(float)$cfg['gas_rate']:0;
             if($cfg['status']==='filled'&&$enteredGasRate<=0&&$stdGas===null){
                 throw new RuntimeException('No effective gas/kg rate exists.');
             }
-            $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt);
+            $stdCyl=$this->rates->currentCylinderRate((int)$row['cylinder_type_id'],$transactionAt,$locationId);
             $stdCyl=($stdCyl!==null&&$stdCyl>0)?$stdCyl:(float)$row['empty_cylinder_price'];
             $gasRate=$enteredGasRate>0?$enteredGasRate:($stdGas??0);
             $cylRate=$cfg['cylinder_rate']>0?$cfg['cylinder_rate']:$stdCyl;

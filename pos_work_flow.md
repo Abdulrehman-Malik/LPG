@@ -60,7 +60,7 @@ This document describes the current four POS header transaction types in `app/Se
 ### Business flow
 
 1. Cashier selects **Cylinder Sale**, chooses cylinder type, status (**filled** or **empty**), quantity, and payment allocation.
-2. The service validates quantity as a positive whole number and validates the cylinder price. For a filled cylinder, an effective gas/KG rate is also required.
+2. The service validates quantity as a positive whole number and resolves the effective shop filled-cylinder price (customer-specific override first, then shop standard). Filled-cylinder price includes gas; no additional gas/KG charge is added. Empty cylinders use the separate empty-cylinder price. Gas Sale / Refill keeps its existing gas/KG pricing.
 3. For a filled-cylinder sale, the cashier must select the exact physical cylinder unit(s). The service checks that each unit belongs to the chosen type, is still filled, has gas, and is not selected more than once.
 4. For an empty-cylinder sale, the service selects available empty physical units of the selected type; the price is the cylinder price and there is no gas charge.
 5. The sale, detail lines, inventory movements, payments, customer settlement and cash movements are posted in a transaction.
@@ -87,7 +87,7 @@ This document describes the current four POS header transaction types in `app/Se
 
 ### Important distinction
 
-A **filled cylinder sale** charges for the gas contained in the physical cylinder plus the cylinder price. An **empty cylinder sale** charges only the cylinder price. It must not deduct gas KG or add the sold empty cylinder back into stock.
+A header-level **filled cylinder sale** charges the effective fixed filled-cylinder price, inclusive of gas; do not add a separate gas/kg charge. Inventory still deducts the selected physical cylinder and its actual gas KG. An **empty cylinder sale** charges only the empty-cylinder price and must not deduct gas KG or add the sold empty cylinder back into stock.
 
 ## 4. Security Deposit / Issue Cylinder
 

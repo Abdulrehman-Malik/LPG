@@ -122,8 +122,8 @@ For financial/inventory cases, capture enough evidence to reconcile:
 | F06 | Sell Gas Only — source type tracking | Use multiple filled types; select C20 as source for 10 kg | Movement/line identifies the selected source cylinder type; a different cylinder type is not consumed | | | NOT EXECUTED |
 | F07 | Sell Gas by Same-Capacity Replacement | Customer returns empty C20 and receives filled C20 | Actual gas from selected filled unit(s) is charged; filled stock decreases; empty C20 stock increases; named customer required | | | NOT EXECUTED |
 | F08 | Same-capacity replacement price | Select C20 with actual gas 18 kg | Charge is 18 × Gas/KG rate only; no cylinder price is added | | | NOT EXECUTED |
-| F09 | Sell Filled Cylinder + Gas | Sell one filled C20 without receiving a cylinder | Actual gas × Gas/KG + cylinder price is charged; gas and filled stock both decrease | | | NOT EXECUTED |
-| F10 | Filled sale actual-weight pricing | Selected filled unit contains 18 kg in a 20 kg cylinder | Customer is charged 18 kg of gas, not automatically 20 kg, plus cylinder price | | | NOT EXECUTED |
+| F09 | Header-level filled-cylinder sale | Sell one filled C20 without receiving a cylinder | Quantity × effective fixed filled-cylinder price is charged (gas included); actual gas KG and filled physical stock both decrease, with no extra gas/kg charge | | | NOT EXECUTED |
+| F10 | Filled sale actual-weight inventory | Selected filled unit contains 18 kg in a 20 kg cylinder | Customer pays the fixed filled-cylinder price; inventory deducts the selected unit and 18 kg actual gas, not 20 kg | | | NOT EXECUTED |
 | F11 | Different-capacity replacement | Customer returns empty C11.8 and receives filled C20 | Gas and sold filled C20 decrease; empty C11.8 increases; cylinder price for sold C20 is charged | | | NOT EXECUTED |
 | F12 | Different-capacity validation | Select same received/sold type for type 4 | Posting rejected; type 4 must use a different received cylinder type | | | NOT EXECUTED |
 | F13 | Empty-cylinder-only sale | Sell one empty C20 | Empty stock -1; gas stock unchanged; no gas quantity is charged | | | NOT EXECUTED |
@@ -465,7 +465,7 @@ Before considering the application release-ready, explicitly execute and record:
 | R17 | Cylinder capacity | Actual gas cannot exceed capacity | NOT EXECUTED |
 | R18 | Filled-to-empty | Unit becomes empty at zero KG | NOT EXECUTED |
 | R19 | Gas source of truth | Available gas equals actual KG on filled physical cylinders | NOT EXECUTED |
-| R20 | Filled-cylinder pricing | Uses actual gas KG plus cylinder price where applicable | NOT EXECUTED |
+| R20 | Filled-cylinder pricing | Header-level Cylinder Sale uses the effective fixed filled-cylinder price inclusive of gas; actual gas KG is still deducted from physical inventory | NOT EXECUTED |
 | R21 | Replacement customer | Named customer required for cylinder-return/replacement flows | NOT EXECUTED |
 | R22 | Different replacement | Received type must differ from sold type | NOT EXECUTED |
 | R23 | Empty-cylinder sale | Only empty physical inventory is consumed; gas unchanged | NOT EXECUTED |
@@ -508,3 +508,18 @@ Before considering the application release-ready, explicitly execute and record:
 - Credit eligibility and credit-limit validation remain the same as Gas Sale: projected customer OS must remain within the applicable limit.
 - A positive Security Deposit Amount still requires an actual non-credit deposit payment; deposit liability is never converted into gas-sale revenue.
 - The payment collection row remains compact, the delete button is reduced in size, and Reference / Note remains after Add Payment.
+
+
+## Filled / Empty Cylinder Selling Rates (Feature Branch)
+
+| ID | Scenario | Expected result | Status |
+|---|---|---|---|
+| R01 | Configure standard filled-cylinder price by shop and cylinder type | Fixed price is saved with effective date and audit history | NOT EXECUTED |
+| R02 | Configure customer-specific filled-cylinder price | Matching customer receives override; other customers use shop standard | NOT EXECUTED |
+| R03 | Sell filled/partially filled cylinder | Total = quantity × fixed filled-cylinder price; gas KG and cylinder inventory are still posted correctly | NOT EXECUTED |
+| R04 | Sell empty cylinder | Existing empty-cylinder price applies; no gas inventory reduction | NOT EXECUTED |
+| R05 | Attempt sale using only a browser-submitted filled price | Server rejects if no configured applicable price exists | NOT EXECUTED |
+| R06 | Change rates after a sale | Historical sale rate and total remain unchanged | NOT EXECUTED |
+| R07 | Cross-shop rate lookup | A different shop's rate is never used | NOT EXECUTED |
+| R08 | Effective-dated POS rates | Change transaction date/time across a rate boundary for gas/kg, empty-cylinder, standard-filled, and customer-filled rates | POS display and server-posted totals use the same effective rates; expired rates are not reused | NOT EXECUTED |
+| R08 | Gas Sale / Refill regression | Existing per-KG pricing is unchanged | NOT EXECUTED |

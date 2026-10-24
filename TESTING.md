@@ -34,7 +34,7 @@ The requested functional scope is implemented and the repository has undergone a
 - Users, roles and permissions.
 - Opening inventory.
 - Physical cylinder-unit inventory with per-cylinder actual gas weight.
-- POS five-mode transaction model: Sell Gas Only; Same-Capacity Replacement; Filled + Gas; Different-Capacity Replacement; Empty Only.
+- POS header-level transaction model: Gas Sale / Refill, Cylinder Sale, Security Deposit / Issue Cylinder, and Cylinder Return; legacy replacement-specific rules are tested separately.
 - Cash/cheque/online/credit payments.
 - Customer credit-limit enforcement.
 - Customer receipts.
@@ -65,8 +65,8 @@ A filled physical cylinder has:
 POS transaction behavior is explicit:
 - **Sell Gas Only:** the user selects exactly one filled physical source cylinder; gas stock decreases only from that cylinder. The selected unit keeps its remaining actual gas when partially consumed and changes from filled to empty when its gas reaches zero.
 - **Same-Capacity Replacement:** customer returns an empty cylinder and receives a filled cylinder of the same type; gas is charged by actual gas weight and the returned empty is added to physical stock.
-- **Filled + Gas:** gas is charged by actual gas weight plus cylinder price; gas and filled-cylinder stock decrease.
-- **Different-Capacity Replacement:** same as Filled + Gas, but the returned empty cylinder is a different type/capacity.
+- **Header-level Cylinder Sale (filled):** charge quantity × effective fixed filled-cylinder price (gas included); deduct each selected physical filled cylinder and its actual gas KG without adding a separate gas/kg charge.
+- **Different-Capacity Replacement:** retain the existing replacement-specific gas/cylinder pricing and returned-empty inventory flow; this is separate from header-level Cylinder Sale fixed-inclusive pricing.
 - **Empty Only:** only empty-cylinder stock is reduced; gas stock is unchanged.
 - Branch administrators set the default POS transaction type in Shop Settings; the POS uses that branch default for new sales.
 
@@ -373,3 +373,19 @@ The server must not report **“No effective gas/kg rate exists.”** when a val
 - [ ] Verify sale amount, KG, receipt/payment, customer OS, saved rate, and inventory movements reconcile.
 
 Status: **Code updated; runtime/browser/database regression not yet executed.**
+
+
+## Filled and Empty Cylinder Rate Pricing — Feature Branch
+
+- [ ] Configure a shop-level filled-cylinder selling price for each cylinder type; verify it is effective-dated and appears in rate history.
+- [ ] Configure a customer-specific filled-cylinder price; verify it is shown for that customer only and the shop price is used for other customers.
+- [ ] Attempt a filled-cylinder sale with no applicable configured filled price; verify the server rejects the sale even if a browser-submitted price is present.
+- [ ] Sell a filled or partially filled physical cylinder; verify line total equals quantity × fixed filled-cylinder price, with no additional gas-per-KG charge.
+- [ ] Verify the physical cylinder and its actual gas KG are still removed from inventory and the transaction stores the applied fixed price.
+- [ ] Sell an empty cylinder; verify the existing empty-cylinder price applies and gas inventory is unchanged.
+- [ ] Verify Gas Sale / Refill still uses its existing gas-per-KG calculation.
+- [ ] Verify future-effective rates do not apply early and old posted sale values remain unchanged after rates are updated.
+- [ ] Verify cash, credit, void/reversal, receipt, ledger, and all four POS transaction types still work as before.
+- [ ] Verify a shop-specific filled-cylinder rate is not resolved from another shop's rate cards.
+
+Runtime/database execution remains required before release.
