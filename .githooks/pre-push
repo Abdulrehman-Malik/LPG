@@ -1,0 +1,11 @@
+#!/bin/sh
+# Blocks direct pushes to main and stage. Work on a feature branch and open a pull request.
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ] || [ "$remote_ref" = "refs/heads/stage" ]; then
+    echo "ERROR: direct push to ${remote_ref#refs/heads/} is blocked."
+    echo "Create a feature branch (git switch -c feature/<name>), push it, then open a PR into stage (stage -> main by PR only)."
+    exit 1
+  fi
+done
+exit 0

@@ -14,13 +14,13 @@ class PurchaseService{
   foreach($lines as $i=>$l){
    $type=(string)($l['line_type']??'');$qty=(float)($l['quantity']??0);$rate=(float)($l['unit_rate']??0);$ct=isset($l['cylinder_type_id'])&&$l['cylinder_type_id']!==''?(int)$l['cylinder_type_id']:null;
    if($qty<=0||$rate<0) throw new RuntimeException('Invalid purchase line '.($i+1).'.');
-   if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder'],true)) throw new RuntimeException('Invalid purchase type.');
+   if(!in_array($type,['gas_kg','filled_cylinder','empty_cylinder','refill_empty'],true)) throw new RuntimeException('Invalid purchase type.');
    if(!$ct) throw new RuntimeException('Cylinder type required.');
 
    $actualRaw=$l['actual_gas_weight_kg']??null;
    $actual=$actualRaw!==null && $actualRaw!==''?(float)$actualRaw:0;
-   if($type==='filled_cylinder'){
-    if(floor($qty)!==$qty) throw new RuntimeException('Filled cylinder quantity must be a whole number.');
+   if($type==='filled_cylinder' || $type==='refill_empty'){
+    if(floor($qty)!==$qty) throw new RuntimeException(($type==='refill_empty'?'Refill':'Filled cylinder').' quantity must be a whole number.');
     $ctRow=$this->db->table('cylinder_types')->where('id',$ct)->get()->getRowArray();
     if(!$ctRow || !(int)$ctRow['is_active']) throw new RuntimeException('Invalid or inactive cylinder type.');
     $cap=(float)$ctRow['capacity_kg'];
@@ -38,17 +38,23 @@ class PurchaseService{
   $total=$subtotal-$discount;$paid=0;$normalizedPayments=[];
   foreach($payments as $pay){$mode=(string)($pay['payment_mode']??'');$amount=(float)($pay['amount']??0);if($amount<=0)continue;if(!in_array($mode,['cash','cheque','online'],true)||$amount<=0)throw new RuntimeException('Invalid purchase payment.');$paid+=$amount;$normalizedPayments[]=['payment_mode'=>$mode,'amount'=>$amount,'reference_no'=>trim((string)($pay['reference_no']??''))?:null];}
   $currentPayable=$total;$previousPayable=$this->supplierBalance($supplierId,$locationId);
-  if($paid>$previousPayable+$currentPayable+0.01)throw new RuntimeException('Amount paid cannot exceed the supplier payable balance of Rs. '.number_format(max(0,$previousPayable+$currentPayable),2).'.');
+  // Paying more than the payable is allowed: the excess is recorded as an advance
+  // supplier payment, which leaves the supplier balance negative.
   $currentPurchasePaid=min($paid,$currentPayable);$credit=max(0,$currentPayable-$currentPurchasePaid);$priorPayableSettlement=max(0,$paid-$currentPurchasePaid);
-  $newPayable=max(0,$previousPayable-$priorPayableSettlement+$credit);
+  $newPayable=$previousPayable-$priorPayableSettlement+$credit;
+  $plantId=isset($p['plant_id'])&&$p['plant_id']!==''?(int)$p['plant_id']:null;
+  if($plantId!==null){
+   $plant=$this->db->table('supplier_plants')->where(['id'=>$plantId,'supplier_id'=>$supplierId,'is_active'=>1])->get()->getRowArray();
+   if(!$plant) throw new RuntimeException('Selected plant does not belong to this supplier.');
+  }
   if($newPayable>(float)$supplier['credit_limit']+0.01)throw new RuntimeException('Supplier credit limit exceeded. Available credit is Rs. '.number_format(max(0,(float)$supplier['credit_limit']-$previousPayable),2).'.');
   $this->db->transBegin();
   try{
    $supplier=$this->db->query('SELECT * FROM suppliers WHERE id=? FOR UPDATE',[$supplierId])->getRowArray();
    if($credit>0){$currentCredit=$this->supplierBalance($supplierId,$locationId);if($currentCredit+$credit>(float)$supplier['credit_limit'])throw new RuntimeException('Supplier credit limit exceeded.');}
-   foreach($inventory as $m){if($this->inv->stock($locationId,$m['inventory_type'],$m['cylinder_type_id'])<0)throw new RuntimeException('Invalid inventory state.');}
+   foreach($inventory as $m){if($m['inventory_type']!=='refill_empty'&&$this->inv->stock($locationId,$m['inventory_type'],$m['cylinder_type_id'])<0)throw new RuntimeException('Invalid inventory state.');}
    $no='P'.date('YmdHis').'-'.random_int(100,999);
-   $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
+   $this->db->table('purchases')->insert(['purchase_no'=>$no,'location_id'=>$locationId,'supplier_id'=>$supplierId,'plant_id'=>$plantId,'status'=>'posted','transaction_at'=>date('Y-m-d H:i:s'),'subtotal'=>$subtotal,'discount_amount'=>$discount,'total_amount'=>$total,'credit_amount'=>$credit,'notes'=>trim((string)($p['notes']??''))?:null,'created_by'=>$userId]);$id=(int)$this->db->insertID();
    $purchaseLineIds=[];
    foreach($prepared as $row){
     $row['purchase_id']=$id;
@@ -150,10 +156,26 @@ class PurchaseService{
     ->where('source_type','purchase')->where('source_id',$purchaseId)
     ->orderBy('id','ASC')->get()->getResultArray();
 
+   // Cylinders refilled by this purchase existed before it: voiding restores them to empty.
+   $refillLineIds=array_map('intval',array_column(
+    $this->db->table('purchase_items')->select('id')->where(['purchase_id'=>$purchaseId,'line_type'=>'refill_empty'])->get()->getResultArray(),'id'
+   ));
+   $refilledUnits=[];
    $physicalUnits=[];
    foreach($movements as $m){
     $unitId=(int)($m['cylinder_unit_id']??0);
-    if($unitId>0) $physicalUnits[$unitId]=true;
+    if($unitId<=0) continue;
+    if(in_array((int)($m['source_line_id']??0),$refillLineIds,true)) $refilledUnits[$unitId]=max((int)($refilledUnits[$unitId]??0),(int)$m['id']);
+    else $physicalUnits[$unitId]=true;
+   }
+
+   foreach($refilledUnits as $unitId=>$lastMovementId){
+    $unit=$this->db->query('SELECT * FROM cylinder_units WHERE id=? AND location_id=? FOR UPDATE',[$unitId,$locationId])->getRowArray();
+    if(!$unit) throw new RuntimeException('Refilled physical cylinder '.$unitId.' could not be found.');
+    $later=(int)$this->db->table('inventory_movements')->where('cylinder_unit_id',$unitId)->where('id >',$lastMovementId)->countAllResults();
+    if($later>0 || $unit['status']!=='filled'){
+     throw new RuntimeException('Purchase '.$purchase['purchase_no'].' cannot be voided because refilled cylinder '.$unit['unit_code'].' has already been used in another stock transaction.');
+    }
    }
 
    $units=[];
@@ -299,6 +321,9 @@ class PurchaseService{
      'custody_customer_id'=>null,
      'gas_weight_kg'=>0
     ]);
+   }
+   foreach(array_keys($refilledUnits) as $unitId){
+    $this->db->table('cylinder_units')->where('id',$unitId)->update(['status'=>'empty','gas_weight_kg'=>0,'filled_purchase_id'=>null]);
    }
 
    if(!$this->db->transStatus()) throw new RuntimeException('Purchase void failed.');

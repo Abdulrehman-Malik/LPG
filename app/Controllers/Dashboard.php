@@ -129,7 +129,7 @@ class Dashboard extends Controller
             ->join('customers c','c.id=s.customer_id','left')
             ->join('sale_payments sp',"sp.sale_id=s.id AND sp.payment_type='sale'",'left')
             ->where(['s.location_id'=>$locationId,'s.status'=>'posted'])
-            ->whereNotIn('s.transaction_type',['security_deposit','cylinder_return'])
+            ->where(SalesService::revenueSaleCondition('s'),null,false)
             ->groupBy('s.id')->orderBy('s.transaction_at','DESC');
         $this->periodQuery($salesQ,'s.transaction_at',$range);
         $salesRows=$salesQ->get()->getResultArray();
@@ -174,22 +174,25 @@ class Dashboard extends Controller
         foreach($salesCreditRows as $row)$creditBy[(int)$row['customer_id']]=(float)$row['credit'];
         foreach($receiptRows as $row)$paidBy[(int)$row['customer_id']]=(float)$row['paid'];
         $salesService=new SalesService();
+        $bulkBalances=$salesService->customerBalances($customers);
         $receivables=[];
         foreach($customers as $c){
             $id=(int)$c['id'];
-            $balance=max(0,(float)$salesService->customerBalance($id));
+            $balance=max(0,(float)($bulkBalances[$id]??0));
             if($balance<=0.005)continue;
             $receivables[]=['id'=>$id,'code'=>$c['code'],'name'=>$c['name'],'phone'=>$c['phone'],'opening_balance'=>(float)$c['opening_balance'],'credit_sales'=>(float)($creditBy[$id]??0),'receipts'=>(float)($paidBy[$id]??0),'balance'=>$balance];
         }
         usort($receivables,static fn($a,$b)=>$b['balance']<=>$a['balance']);
         $receivableTotal=array_sum(array_map(static fn($x)=>(float)$x['balance'],$receivables));
 
+        // The drill-down only renders customers that have an outstanding balance, so fetch just those.
+        $receivableIds=array_map(static fn($x)=>(int)$x['id'],$receivables);
         // Customer ledger rows for the receivable drill-down.
         $ledgerRowsQ=$db->table('sales s')->select("s.customer_id,s.sale_no,s.transaction_at,s.transaction_type,s.credit_amount,0 AS receipt_amount,c.name customer_name")
-            ->join('customers c','c.id=s.customer_id','inner')->where(['s.location_id'=>$locationId,'s.status'=>'posted'])->where('s.customer_id IS NOT NULL',null,false)->where('s.credit_amount >',0)->orderBy('s.transaction_at','DESC');
+            ->join('customers c','c.id=s.customer_id','inner')->where(['s.location_id'=>$locationId,'s.status'=>'posted'])->whereIn('s.customer_id',$receivableIds ?: [0])->where('s.credit_amount >',0)->orderBy('s.transaction_at','DESC');
         $ledgerSales=$ledgerRowsQ->get()->getResultArray();
         $ledgerReceipts=$db->table('customer_receipts r')->select("r.customer_id,r.receipt_no,r.receipt_at transaction_at,r.amount receipt_amount,0 AS credit_amount,c.name customer_name")
-            ->join('customers c','c.id=r.customer_id','inner')->where(['r.location_id'=>$locationId,'r.status'=>'posted'])->orderBy('r.receipt_at','DESC')->get()->getResultArray();
+            ->join('customers c','c.id=r.customer_id','inner')->where(['r.location_id'=>$locationId,'r.status'=>'posted'])->whereIn('r.customer_id',$receivableIds ?: [0])->orderBy('r.receipt_at','DESC')->get()->getResultArray();
         $receivableLedger=[];
         foreach(array_merge($ledgerSales,$ledgerReceipts) as $row){
             $id=(int)$row['customer_id'];
@@ -211,6 +214,69 @@ class Dashboard extends Controller
         }
         $expenseCategories=array_values($expenseCategories);
         usort($expenseCategories,static fn($a,$b)=>$b['amount']<=>$a['amount']);
+
+        // 8) Purchases for selected range: Company (supplier) -> Plant -> Purchase.
+        $purchaseQ=$db->table('purchases p')
+            ->select('p.id,p.purchase_no,p.transaction_at,p.total_amount,p.credit_amount,p.supplier_id,p.plant_id,s.name supplier_name,sp.name plant_name')
+            ->join('suppliers s','s.id=p.supplier_id')
+            ->join('supplier_plants sp','sp.id=p.plant_id','left')
+            ->where(['p.location_id'=>$locationId,'p.status'=>'posted'])
+            ->orderBy('s.name')->orderBy('p.transaction_at','DESC');
+        $this->periodQuery($purchaseQ,'p.transaction_at',$range);
+        $purchaseRows=$purchaseQ->get()->getResultArray();
+
+        $purchaseItems=[];
+        if($purchaseRows){
+            $itemRows=$db->table('purchase_items pi')
+                ->select('pi.purchase_id,pi.line_type,pi.quantity,ct.code type_code,ct.name type_name')
+                ->join('cylinder_types ct','ct.id=pi.cylinder_type_id','left')
+                ->whereIn('pi.purchase_id',array_map(static fn($r)=>(int)$r['id'],$purchaseRows))
+                ->orderBy('pi.line_no')->get()->getResultArray();
+            foreach($itemRows as $it) $purchaseItems[(int)$it['purchase_id']][]=$it;
+        }
+
+        $purchaseCompanies=[];
+        $purchaseSummary=['total'=>0.0,'paid'=>0.0,'pending'=>0.0,'count'=>count($purchaseRows),'cylinders'=>0];
+        foreach($purchaseRows as $row){
+            $sid=(int)$row['supplier_id'];
+            $pkey=$row['plant_id']?(int)$row['plant_id']:0;
+            $total=(float)$row['total_amount'];$pending=(float)$row['credit_amount'];$paid=max(0,$total-$pending);
+            $cyl=0;$row['items']=$purchaseItems[(int)$row['id']]??[];
+            foreach($row['items'] as $it) if($it['line_type']!=='gas_kg') $cyl+=(int)$it['quantity'];
+            $row['paid']=$paid;$row['cylinders']=$cyl;
+            if(!isset($purchaseCompanies[$sid])) $purchaseCompanies[$sid]=['name'=>$row['supplier_name'],'total'=>0.0,'paid'=>0.0,'pending'=>0.0,'cylinders'=>0,'plants'=>[]];
+            if(!isset($purchaseCompanies[$sid]['plants'][$pkey])) $purchaseCompanies[$sid]['plants'][$pkey]=['name'=>$row['plant_name']?:'Plant not specified','total'=>0.0,'paid'=>0.0,'pending'=>0.0,'cylinders'=>0,'purchases'=>[]];
+            foreach(['company','plant'] as $level){
+                $node=&$purchaseCompanies[$sid];
+                if($level==='plant') $node=&$purchaseCompanies[$sid]['plants'][$pkey];
+                $node['total']+=$total;$node['paid']+=$paid;$node['pending']+=$pending;$node['cylinders']+=$cyl;
+                unset($node);
+            }
+            $purchaseCompanies[$sid]['plants'][$pkey]['purchases'][]=$row;
+            $purchaseSummary['total']+=$total;$purchaseSummary['paid']+=$paid;$purchaseSummary['pending']+=$pending;$purchaseSummary['cylinders']+=$cyl;
+        }
+
+        // 9) Filled cylinders: Company -> Plant -> Cylinder type -> physical cylinders.
+        // Origin = purchase that filled the cylinder (filled_purchase_id), else the purchase that created it.
+        $filledOriginRows=$db->table('cylinder_units cu')
+            ->select("cu.id,cu.unit_code,ct.code type_code,ct.name type_name,s.id supplier_id,s.name supplier_name,sp.id plant_id,sp.name plant_name")
+            ->join('cylinder_types ct','ct.id=cu.cylinder_type_id')
+            ->join('purchases p',"p.id=COALESCE(cu.filled_purchase_id,CASE WHEN cu.source_type='purchase' THEN cu.source_id END)",'left')
+            ->join('suppliers s','s.id=p.supplier_id','left')
+            ->join('supplier_plants sp','sp.id=p.plant_id','left')
+            ->where(['cu.location_id'=>$locationId,'cu.status'=>'filled'])
+            ->orderBy('s.name')->orderBy('sp.name')->orderBy('ct.sort_order')->orderBy('cu.unit_code')->get()->getResultArray();
+        $filledCompanies=[];
+        foreach($filledOriginRows as $row){
+            $sid=$row['supplier_id']?(int)$row['supplier_id']:0;
+            $pkey=$row['plant_id']?(int)$row['plant_id']:0;
+            if(!isset($filledCompanies[$sid])) $filledCompanies[$sid]=['name'=>$row['supplier_name']?:'Opening / Adjustment stock','count'=>0,'plants'=>[]];
+            if(!isset($filledCompanies[$sid]['plants'][$pkey])) $filledCompanies[$sid]['plants'][$pkey]=['name'=>$sid?($row['plant_name']?:'Plant not specified'):'—','count'=>0,'types'=>[]];
+            $tkey=$row['type_code'];
+            if(!isset($filledCompanies[$sid]['plants'][$pkey]['types'][$tkey])) $filledCompanies[$sid]['plants'][$pkey]['types'][$tkey]=['name'=>$row['type_code'].' — '.$row['type_name'],'units'=>[]];
+            $filledCompanies[$sid]['plants'][$pkey]['types'][$tkey]['units'][]=$row['unit_code'];
+            $filledCompanies[$sid]['count']++;$filledCompanies[$sid]['plants'][$pkey]['count']++;
+        }
 
         // Existing Stock tab data — intentionally retained.
         $filled=$db->table('cylinder_units cu')
@@ -245,6 +311,8 @@ class Dashboard extends Controller
             'receivables'=>$receivables,'receivableTotal'=>$receivableTotal,'receivableLedger'=>$receivableLedger,
             'expenseRows'=>$expenseRows,'expenseCategories'=>$expenseCategories,'expenseTotal'=>$expenseTotal,
             'stock'=>$stock,
+            'purchaseCompanies'=>$purchaseCompanies,'purchaseSummary'=>$purchaseSummary,
+            'filledCompanies'=>$filledCompanies,'filledCylinderCount'=>count($filledOriginRows),
         ]);
     }
 }

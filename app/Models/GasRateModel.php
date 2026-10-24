@@ -1,15 +1,34 @@
 <?php
 namespace App\Models;
+/**
+ * Effective rate lookups for one shop (location) and price list.
+ * The rate in force at a time is the latest row that has started; when that row was
+ * stopped (effective_to reached) there is no rate in this list until a newer row starts.
+ */
 class GasRateModel extends RateCardModel
 {
-    public function currentCylinderRate(int $id, ?string $asOf=null): ?float
+    protected function forKey(int $locationId, string $priceList, string $rateType, ?int $cylinderTypeId)
     {
-        $row=$this->where('rate_type','cylinder_package')->where('cylinder_type_id',$id)->where('effective_from <=',$asOf??date('Y-m-d H:i:s'))->orderBy('effective_from','DESC')->first();
+        return $this->where('location_id',$locationId)->where('price_list',$priceList)->where('rate_type',$rateType)->where('cylinder_type_id',$cylinderTypeId);
+    }
+
+    public function effectiveRow(int $locationId, string $priceList, string $rateType, ?int $cylinderTypeId, ?string $asOf=null): ?array
+    {
+        $at=$asOf??date('Y-m-d H:i:s');
+        $row=$this->forKey($locationId,$priceList,$rateType,$cylinderTypeId)->where('effective_from <=',$at)->orderBy('effective_from','DESC')->orderBy('id','DESC')->first();
+        if(!$row || ($row['effective_to']!==null && $row['effective_to']<=$at)) return null;
+        return $row;
+    }
+
+    public function effective(int $locationId, string $priceList, string $rateType, ?int $cylinderTypeId, ?string $asOf=null): ?float
+    {
+        $row=$this->effectiveRow($locationId,$priceList,$rateType,$cylinderTypeId,$asOf);
         return $row?(float)$row['rate_value']:null;
     }
-    public function currentKgRate(?string $asOf=null): ?float
+
+    /** The next scheduled rate after $asOf, if any. */
+    public function nextRow(int $locationId, string $priceList, string $rateType, ?int $cylinderTypeId, ?string $asOf=null): ?array
     {
-        $row=$this->where('rate_type','gas_per_kg')->where('cylinder_type_id',null)->where('effective_from <=',$asOf??date('Y-m-d H:i:s'))->orderBy('effective_from','DESC')->first();
-        return $row?(float)$row['rate_value']:null;
+        return $this->forKey($locationId,$priceList,$rateType,$cylinderTypeId)->where('effective_from >',$asOf??date('Y-m-d H:i:s'))->orderBy('effective_from','ASC')->orderBy('id','ASC')->first();
     }
 }

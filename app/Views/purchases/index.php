@@ -53,13 +53,7 @@
 </style>
 
 <div class="purchase-page">
-    <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-    <?php endif; ?>
-    <?php if (session()->getFlashdata('error')): ?>
-        <div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div>
-    <?php endif; ?>
-
+    <?php /* Flash success/error messages are rendered once by layouts/app.php. */ ?>
     <ul class="nav nav-tabs purchase-tabs" role="tablist">
         <li class="nav-item" role="presentation">
             <a class="nav-link <?= ($activeTab ?? 'new') === 'new' ? 'active' : '' ?>" href="#new-purchase" data-bs-toggle="tab" role="tab" aria-controls="new-purchase" aria-selected="<?= ($activeTab ?? 'new') === 'new' ? 'true' : 'false' ?>">
@@ -86,14 +80,24 @@
             </div>
             <div class="card-body">
                 <div class="row g-2 align-items-end">
-                    <div class="col-lg-6">
-                        <label class="form-label fw-semibold">Supplier</label>
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold">Supplier / Company</label>
                         <select name="supplier_id" id="supplier_id" class="form-select" required>
                             <option value="">Select supplier</option>
                             <?php foreach ($suppliers as $s): ?>
                                 <option value="<?= $s['id'] ?>"><?= esc($s['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <div id="supplierCreditInfo" class="small fw-semibold text-danger mt-1" style="display:none"></div>
+                    </div>
+                    <div class="col-lg-3">
+                        <label class="form-label fw-semibold">Plant</label>
+                        <div class="input-group">
+                            <select name="plant_id" id="plant_id" class="form-select">
+                                <option value="">Select plant</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-primary" id="addPlant" title="Add a plant for this supplier"><i class="bi bi-plus-lg"></i></button>
+                        </div>
                     </div>
                     <div class="col-lg-3">
                         <label class="form-label fw-semibold">Previous Payable</label>
@@ -124,10 +128,11 @@
                         <thead class="border-bottom">
                             <tr>
                                 <th class="ps-3" style="width:18%">Stock Type</th>
-                                <th style="width:18%">Cylinder Type</th>
+                                <th style="width:16%">Cylinder Type</th>
+                                <th class="text-end" style="width:12%">Empty Available</th>
                                 <th class="text-end" style="width:10%">Quantity</th>
                                 <th class="text-end" style="width:16%">Actual Gas / Cylinder (KG)</th>
-                                <th class="text-end" style="width:15%">Unit Rate</th>
+                                <th class="text-end" style="width:15%">Cylinder Rate</th>
                                 <th class="text-end" style="width:18%">Line Amount</th>
                                 <th class="text-center pe-3" style="width:5%"></th>
                             </tr>
@@ -246,6 +251,7 @@
                                         <th>Date</th>
                                         <th>Purchase No.</th>
                                         <th>Supplier</th>
+                                        <th>Plant</th>
                                         <th class="text-end">Subtotal</th>
                                         <th class="text-end">Discount</th>
                                         <th class="text-end">Total</th>
@@ -266,6 +272,7 @@
                                             <td><?= esc(date('d-M-Y h:i A', strtotime($purchase['transaction_at']))) ?></td>
                                             <td class="fw-semibold"><?= esc($purchase['purchase_no']) ?></td>
                                             <td><?= esc($purchase['supplier_name']) ?></td>
+                                            <td><?= esc($purchase['plant_name'] ?? '—') ?></td>
                                             <td class="text-end">Rs. <?= number_format((float) $purchase['subtotal'], 2) ?></td>
                                             <td class="text-end">Rs. <?= number_format((float) $purchase['discount_amount'], 2) ?></td>
                                             <td class="text-end fw-semibold">Rs. <?= number_format((float) $purchase['total_amount'], 2) ?></td>
@@ -364,7 +371,7 @@
                                                                 <th>Cylinder Type</th>
                                                                 <th class="text-end">Quantity</th>
                                                                 <th class="text-end">Actual Gas / Cylinder (KG)</th>
-                                                                <th class="text-end">Unit Rate</th>
+                                                                <th class="text-end">Cylinder Rate</th>
                                                                 <th class="text-end">Line Amount</th>
                                                             </tr>
                                                         </thead>
@@ -376,7 +383,7 @@
                                                                     <td><?= esc(trim(($item['cylinder_code'] ?? '') . ' ' . ($item['cylinder_name'] ?? '')) ?: '—') ?></td>
                                                                     <td class="text-end"><?= number_format((float) $item['quantity'], 2) ?></td>
                                                                     <td class="text-end">
-                                                                        <?= $item['line_type'] === 'filled_cylinder' ? number_format((float) $item['actual_gas_weight_kg'], 2) : '—' ?>
+                                                                        <?= in_array($item['line_type'], ['filled_cylinder', 'refill_empty'], true) ? number_format((float) $item['actual_gas_weight_kg'], 2) : '—' ?>
                                                                     </td>
                                                                     <td class="text-end">Rs. <?= number_format((float) $item['unit_rate'], 2) ?></td>
                                                                     <td class="text-end fw-semibold">Rs. <?= number_format((float) $item['line_total'], 2) ?></td>
@@ -488,13 +495,47 @@
 const canVoidPurchases = <?= json_encode($canVoidPurchases ?? false) ?>;
 const types = <?= json_encode($types) ?>;
 const supplierBalances = <?= json_encode($supplierBalances ?? []) ?>;
+const emptyStock = <?= json_encode((object) $emptyStock) ?>;
+const supplierLimits = <?= json_encode(array_column($suppliers, 'credit_limit', 'id')) ?>;
+const plants = <?= json_encode($plants ?? []) ?>;
 
-const money = value => Number(value || 0).toFixed(2);
+const money = value => fmtMoney(value);
 
+// A negative previous payable is an advance already paid to the supplier.
 function getPreviousPayable() {
     const supplierId = document.getElementById('supplier_id').value;
-    return Math.max(0, Number(supplierBalances[supplierId] || 0));
+    return Number(supplierBalances[supplierId] || 0);
 }
+
+function loadPlants(selectedId) {
+    const supplierId = document.getElementById('supplier_id').value;
+    const select = document.getElementById('plant_id');
+    select.innerHTML = '<option value="">Select plant</option>' + plants
+        .filter(p => String(p.supplier_id) === String(supplierId))
+        .map(p => `<option value="${p.id}">${p.name.replace(/</g, '&lt;')}</option>`).join('');
+    if (selectedId) select.value = selectedId;
+}
+
+document.getElementById('supplier_id').addEventListener('change', () => loadPlants());
+document.getElementById('addPlant').addEventListener('click', async () => {
+    const supplierId = document.getElementById('supplier_id').value;
+    if (!supplierId) { alert('Select a supplier first.'); return; }
+    const name = (prompt('Plant name for this supplier:') || '').trim();
+    if (!name) return;
+    const body = new URLSearchParams({ supplier_id: supplierId, name });
+    body.append('<?= csrf_token() ?>', document.querySelector('#purchaseForm [name="<?= csrf_token() ?>"]').value);
+    try {
+        const response = await fetch('<?= site_url('purchases/plants/save') ?>', {
+            method: 'POST', body, headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await response.json();
+        if (!data.success) { alert(data.error || 'Plant could not be saved.'); return; }
+        if (!plants.some(p => String(p.id) === String(data.plant.id))) plants.push(data.plant);
+        loadPlants(data.plant.id);
+    } catch (e) {
+        alert('Plant could not be saved.');
+    }
+});
 
 function addLine() {
     const row = document.createElement('tr');
@@ -504,6 +545,7 @@ function addLine() {
             <select class="form-select type">
                 <option value="filled_cylinder">Filled Cylinder</option>
                 <option value="empty_cylinder">Empty Cylinder</option>
+                <option value="refill_empty">Refill Empty Cylinder (from stock)</option>
             </select>
         </td>
         <td>
@@ -513,7 +555,11 @@ function addLine() {
             </select>
         </td>
         <td>
+            <input class="form-control emptyAvail text-end" type="text" value="—" readonly tabindex="-1">
+        </td>
+        <td>
             <input class="form-control qty text-end" type="number" min=".001" step=".001" value="1">
+            <div class="invalid-feedback text-end stockMsg">Stock not available</div>
         </td>
         <td>
             <input class="form-control actual text-end" type="number" min="0" step=".001" placeholder="Filled cylinders only">
@@ -534,9 +580,45 @@ function addLine() {
     row.querySelector('.rm').onclick = () => { row.remove(); calculate(); };
     row.querySelectorAll('input,select').forEach(element => element.addEventListener('input', calculate));
     row.querySelectorAll('select').forEach(element => element.addEventListener('change', calculate));
+
+    const typeSelect = row.querySelector('.type');
+    const actualInput = row.querySelector('.actual');
+    const syncActual = () => {
+        const needsGas = typeSelect.value !== 'empty_cylinder';
+        actualInput.disabled = !needsGas;
+        if (!needsGas) actualInput.value = '';
+        actualInput.placeholder = needsGas ? 'KG per cylinder' : 'Filled / refill only';
+    };
+    typeSelect.addEventListener('change', syncActual);
+    syncActual();
+}
+
+function checkEmptyStock() {
+    const requested = {};
+    const rows = [...document.querySelectorAll('.line')];
+    rows.forEach(row => {
+        const id = row.querySelector('.cyl').value;
+        const avail = id ? Number(emptyStock[id] || 0) : null;
+        row.querySelector('.emptyAvail').value = avail === null ? '—' : avail;
+        if (id && row.querySelector('.type').value === 'refill_empty') {
+            requested[id] = (requested[id] || 0) + Number(row.querySelector('.qty').value || 0);
+        }
+    });
+    rows.forEach(row => {
+        const id = row.querySelector('.cyl').value;
+        const isRefill = id && row.querySelector('.type').value === 'refill_empty';
+        const short = isRefill && requested[id] > Number(emptyStock[id] || 0);
+        const qty = row.querySelector('.qty');
+        const avail = row.querySelector('.emptyAvail');
+        qty.classList.toggle('is-invalid', !!short);
+        avail.classList.toggle('is-invalid', !!short);
+        row.querySelector('.stockMsg').style.display = short ? 'block' : 'none';
+    });
+    return !Object.keys(requested).some(id => requested[id] > Number(emptyStock[id] || 0));
 }
 
 function calculate() {
+    checkEmptyStock();
     let current = 0;
 
     document.querySelectorAll('.line').forEach(row => {
@@ -555,18 +637,25 @@ function calculate() {
 
     const paid = Math.max(0, Number(document.getElementById('amountPaid').value || 0));
 
-    const balance = Math.max(0, totalPayable - paid);
+    const balance = totalPayable - paid;
 
     document.getElementById('previousPayable').textContent = 'Rs. ' + money(previous);
     document.getElementById('summaryPrevious').textContent = money(previous);
     document.getElementById('summaryCurrent').textContent = money(current);
     document.getElementById('summaryTotalPayable').textContent = money(totalPayable);
     document.getElementById('summaryBalance').textContent = money(balance);
-    document.getElementById('amountPaid').max = money(totalPayable);
 
-    const over = paid > totalPayable + 0.01;
-    document.getElementById('amountPaid').classList.toggle('is-invalid', over);
-    document.getElementById('postPurchase').disabled = over;
+    const creditInfo = document.getElementById('supplierCreditInfo');
+    const supplierId = document.getElementById('supplier_id').value;
+    if (!supplierId) {
+        creditInfo.style.display = 'none';
+    } else {
+        const limit = Number(supplierLimits[supplierId] || 0);
+        const available = limit - balance;
+        creditInfo.textContent = 'Credit limit: Rs. ' + money(limit) + ' | Available: Rs. ' + money(Math.max(0, available))
+            + (available < -0.005 ? ' | Limit exceeded by Rs. ' + money(-available) : '');
+        creditInfo.style.display = '';
+    }
 }
 
 document.getElementById('add').onclick = addLine;
@@ -606,13 +695,8 @@ document.getElementById('purchaseForm').onsubmit = function () {
         return false;
     }
 
-    const totalPayable = getPreviousPayable() +
-        Number(document.getElementById('summaryCurrent').textContent || 0);
-
-    const paid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-
-    if (paid > totalPayable + 0.01) {
-        alert('Amount paid cannot exceed the total supplier payable.');
+    if (!checkEmptyStock()) {
+        alert('Stock not available: not enough empty cylinders to refill.');
         return false;
     }
 

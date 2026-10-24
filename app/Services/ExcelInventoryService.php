@@ -349,9 +349,9 @@ class ExcelInventoryService
             'xl/_rels/workbook.xml.rels' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/></Relationships>',
             'xl/worksheets/sheet1.xml' => $this->worksheetXml([
                 ['Cylinder Type', 'Quantity', 'Max GAS Capacity', 'Available Gas'],
-                ['C6', '10', '6', '6'],
-                ['C6', '2', '6', '4'],
-                ['C10', '5', '10', '10'],
+                ['C11_8', '10', '11.8', '11.8'],
+                ['C11_8', '2', '11.8', '5'],
+                ['C45', '5', '45', '45'],
             ]),
             'xl/worksheets/sheet2.xml' => $this->worksheetXml([
                 ['Opening Inventory Excel Upload Instructions'],

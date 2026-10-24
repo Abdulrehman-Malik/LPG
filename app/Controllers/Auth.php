@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Libraries\UiLanguage;
 use App\Models\UserModel;
 use App\Services\MigrationRunnerService;
 use App\Services\InstallationSetupService;
@@ -27,22 +28,46 @@ class Auth extends Controller
         }
 
         try {
-            $migrationGate=(new MigrationRunnerService())->status();
-            $companyName = trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD';
-            return view('auth/login',['title'=>'Login','companyName'=>$companyName,'migrationGate'=>$migrationGate]);
+            return $this->loginView((new MigrationRunnerService())->status());
         } catch (\Throwable $e) {
-            return view('auth/login',[
-                'title'=>'Login',
-                'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
-                'migrationGate'=>[
-                    'ready'=>false,
-                    'blocked_message'=>'Database migration status could not be checked.',
-                    'system_error'=>$e->getMessage(),
-                    'migrations'=>[],
-                    'total'=>0,
-                    'completed'=>0,
-                ],
+            return $this->loginView([
+                'ready'=>false,
+                'blocked_message'=>'Database migration status could not be checked.',
+                'system_error'=>$e->getMessage(),
+                'migrations'=>[],
+                'total'=>0,
+                'completed'=>0,
             ]);
+        }
+    }
+
+    protected function loginView(array $migrationGate): string
+    {
+        return view('auth/login',[
+            'title'=>'Login',
+            'companyName'=>trim((string) env('app.companyName', 'Perfect LPG (Pvt.) LTD')) ?: 'Perfect LPG (Pvt.) LTD',
+            'migrationGate'=>$migrationGate,
+            'shop'=>$this->publicShopInfo(),
+            // service('request'), not $this->request: Landing builds this controller directly.
+            'lang'=>UiLanguage::resolve(service('request')->getCookie(UiLanguage::COOKIE)),
+        ]);
+    }
+
+    /**
+     * Non-sensitive shop identity for the sign-in screen (name, address, phone).
+     * Never include sales, cash or stock figures here: this page is public.
+     */
+    protected function publicShopInfo(): array
+    {
+        try {
+            $row = \Config\Database::connect()->table('locations')
+                ->select('name,address,city,phone')
+                ->where('is_active', 1)
+                ->orderBy('id', 'ASC')
+                ->get(1)->getRowArray();
+            return $row ?: [];
+        } catch (\Throwable $e) {
+            return [];
         }
     }
 

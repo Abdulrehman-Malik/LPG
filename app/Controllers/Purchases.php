@@ -54,8 +54,9 @@ class Purchases extends Controller
         $purchaseDetails = [];
         if ($activeTab === 'history') {
             $history = $db->table('purchases p')
-                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, p.voided_at, p.void_reason, p.notes, s.name AS supplier_name, vu.full_name AS voided_by_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
+                ->select('p.id, p.purchase_no, p.transaction_at, p.subtotal, p.discount_amount, p.total_amount, p.credit_amount, p.status, p.voided_at, p.void_reason, p.notes, s.name AS supplier_name, sp.name AS plant_name, vu.full_name AS voided_by_name, COALESCE(SUM(pp.amount), 0) AS amount_paid')
                 ->join('suppliers s', 's.id = p.supplier_id')
+                ->join('supplier_plants sp', 'sp.id = p.plant_id', 'left')
                 ->join('users vu', 'vu.id = p.voided_by', 'left')
                 ->join('purchase_payments pp', 'pp.purchase_id = p.id', 'left')
                 ->where('p.location_id', (int) session()->get('location_id'))
@@ -104,6 +105,18 @@ class Purchases extends Controller
             }
         }
 
+        $emptyStock = [];
+        $emptyRows = $db->table('cylinder_units')
+            ->select('cylinder_type_id, COUNT(*) AS total')
+            ->where('location_id', (int) session()->get('location_id'))
+            ->where('status', 'empty')
+            ->groupBy('cylinder_type_id')
+            ->get()
+            ->getResultArray();
+        foreach ($emptyRows as $row) {
+            $emptyStock[(int) $row['cylinder_type_id']] = (int) $row['total'];
+        }
+
         return view('purchases/index', [
             'title'            => 'Purchases',
             'activeTab'        => $activeTab,
@@ -113,7 +126,9 @@ class Purchases extends Controller
             'purchaseDetails'  => $purchaseDetails,
             'suppliers'        => $suppliers,
             'supplierBalances' => $supplierBalances,
+            'plants'           => $db->table('supplier_plants')->where('is_active', 1)->orderBy('name')->get()->getResultArray(),
             'canVoidPurchases' => $canVoidPurchases,
+            'emptyStock'       => $emptyStock,
             'types'            => $db->table('cylinder_types')
                 ->where('is_active', 1)
                 ->orderBy('sort_order')
@@ -136,6 +151,35 @@ class Purchases extends Controller
         return $date && !$hasErrors && $date->format('Y-m-d') === $value ? $value : $default;
     }
 
+    public function savePlant()
+    {
+        if ($r = $this->guard()) {
+            return $r;
+        }
+
+        $supplierId = (int) $this->request->getPost('supplier_id');
+        $name = trim((string) $this->request->getPost('name'));
+        $db = Database::connect();
+
+        if ($supplierId <= 0 || $name === '' || mb_strlen($name) > 150) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'error' => 'Select a supplier and enter a plant name.']);
+        }
+        if (!$db->table('suppliers')->where(['id' => $supplierId, 'is_active' => 1])->countAllResults()) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'error' => 'Supplier is invalid or inactive.']);
+        }
+
+        $existing = $db->table('supplier_plants')->where(['supplier_id' => $supplierId, 'name' => $name])->get()->getRowArray();
+        if ($existing) {
+            $db->table('supplier_plants')->where('id', (int) $existing['id'])->update(['is_active' => 1]);
+            $id = (int) $existing['id'];
+        } else {
+            $db->table('supplier_plants')->insert(['supplier_id' => $supplierId, 'name' => $name, 'is_active' => 1]);
+            $id = (int) $db->insertID();
+        }
+
+        return $this->response->setJSON(['success' => true, 'plant' => ['id' => $id, 'supplier_id' => $supplierId, 'name' => $name]]);
+    }
+
     public function save()
     {
         if ($r = $this->guard()) {
@@ -148,6 +192,7 @@ class Purchases extends Controller
 
             $x = (new PurchaseService())->post([
                 'supplier_id'     => $this->request->getPost('supplier_id'),
+                'plant_id'        => $this->request->getPost('plant_id'),
                 'discount_amount' => $this->request->getPost('discount_amount'),
                 'lines'           => $lines,
                 'payments'        => $payments,

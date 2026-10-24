@@ -47,3 +47,21 @@ Options -Indexes
 # Disable server signature start
 ServerSignature Off
 # Disable server signature end
+
+# ----------------------------------------------------------------------
+# Performance: compress text responses and cache versioned static assets
+# (CSS/JS links carry a ?v=<mtime> query string, so a change busts the cache).
+# ----------------------------------------------------------------------
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresByType text/css "access plus 30 days"
+	ExpiresByType application/javascript "access plus 30 days"
+	ExpiresByType text/javascript "access plus 30 days"
+	ExpiresByType image/x-icon "access plus 30 days"
+	ExpiresByType image/svg+xml "access plus 30 days"
+	ExpiresByType image/png "access plus 30 days"
+</IfModule>

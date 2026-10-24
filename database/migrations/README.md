@@ -42,6 +42,9 @@ The **NNN** prefix is the deployment sequence. The date remains in the filename 
 | 028 | `028_20261007_sale_history_permission.sql` | Dedicated Sale History permission and default role mappings |
 | 029 | `029_20261007_security_deposit_first.sql` | Makes Security Deposit the default allocation target before Gas/Cylinder |
 | 030 | `030_20261009_pak_operations_user.sql` | Creates the `pak` account and limited `PAK_OPS` role for dashboard, sales/receipts, inventory, customer ledger, cash, expenses and rates |
+| 034 | `034_20261021_pricing_settings.sql` | Shop-level Pricing settings (Retail/Wholesale price lists, POS rate-change control), customer "Shop default" price list, and sale price-list / rate-source fields |
+| 035 | `035_20261021_rate_price_lists.sql` | Rates per price list: `price_list` on rate cards and the rate change log; rate types become Gas per KG / Gas per full cylinder / Empty cylinder price |
+| 036 | `036_20261021_customer_special_rates.sql` | Customer special rates (`customer_rates`) and customer columns on the rate change log |
 
 ## Deployment rules
 
@@ -52,9 +55,11 @@ Execution results are recorded in `lpg_migration_history`, including status, che
 
 1. Run `database/schema.sql` only for a fresh database.
 2. For an existing database, run only the migration scripts that have not already been applied.
-3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031**.
+3. Always execute pending migrations in ascending sequence order: **001 → 002 → ... → 029 → 030 → 031 → 032 → 033 → 034 → 035 → 036**.
 4. Migration **011** is not a normal upgrade migration. It is a controlled, destructive refresh intended for disposable staging/test databases. It clears transactional records plus customers, suppliers, cylinder types, rate cards, and rate-change history. Users, roles, permissions, locations, shop settings, cash registers, inventory policies, and other application configuration remain. Whenever a later migration introduces a new transactional table, update the controlled refresh service/script so that table is reset too.
 5. Do not automatically run migration 011 during production deployment.
+6. A fresh install loads the current `schema.sql` and then runs the migrations. Any migration that changes something a later migration redefines needs an "already applied" check in `MigrationRunnerService::migrationAlreadyApplied()`, so it is skipped on a fresh install. Example: 032 narrows `rate_cards.rate_type`, which 035 later changes. Without such a check, an old migration re-runs on the new schema and fails or undoes newer changes. Its check must also accept the newer state. Never edit an applied migration file to fix this: the runner blocks login when an applied file's checksum changes.
+7. The checksum comparison ignores line endings (LF or CRLF), because git with `core.autocrlf` may write the same migration either way. Any other change to an applied migration still blocks login.
 6. Do not rename or reorder an already released migration. Add a new sequence number for every future migration.
 7. Keep migration files idempotent where practical so a partially completed deployment can be safely retried.
 
@@ -105,3 +110,8 @@ Never reuse an existing sequence number.
 - These rules are enforced server-side; POS display/JavaScript is only an early user-feedback layer.
 
 - `031_20261009_default_gas_entry_mode.sql` — adds the branch-level default Gas Entry option (KG, Amount, or Cylinders) for Gas Sale / Refill.
+- `032_20261019_client_feedback_plants_wholesale_refill.sql` — supplier plants, purchase plant, refill-empty purchase line, filled-cylinder purchase origin, customer retail/wholesale type and wholesale per-cylinder rate.
+- `033_20261021_performance_indexes.sql` — index-only performance migration for sales, receipts, cash, purchases, supplier payments and expenses lookups (no behaviour change).
+- `034_20261021_pricing_settings.sql` — shop-level Pricing settings (Wholesale price list on/off, Default Rate, Walk-in price list, Customer special rates on/off, POS rate-change control, invoice price-list switch); customers can follow the shop default price list; sales store the price list and rate-change reason, and sale lines store the rate source.
+- `035_20261021_rate_price_lists.sql` — adds `price_list` (retail / wholesale) to `rate_cards` and `rate_change_log`. It converts the old `wholesale_cylinder` rates to Wholesale `gas_per_cylinder` and `cylinder_package` to Retail `empty_cylinder`. It then narrows `rate_type` to `gas_per_kg` / `gas_per_cylinder` / `empty_cylinder`, re-adds the rate-type CHECK and adds the `idx_rate_price_lookup` index. It is idempotent (26 statements).
+- `036_20261021_customer_special_rates.sql` — creates `customer_rates`: a customer's own Gas per KG / Gas per full cylinder / Empty cylinder price per shop, dated, stoppable, with value and rate-type CHECKs. It adds `customer_id` and `customer_rate_id` to `rate_change_log` and makes its `price_list` optional. It is idempotent (6 statements).

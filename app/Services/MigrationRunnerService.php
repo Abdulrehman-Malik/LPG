@@ -64,6 +64,24 @@ class MigrationRunnerService
         return array_values($migrations);
     }
 
+    /**
+     * True when a recorded checksum still matches the migration file. Line endings are ignored:
+     * git (core.autocrlf) can rewrite the same file with LF or CRLF endings, which must not
+     * count as a changed migration. Any other change to the file still blocks login.
+     */
+    protected function checksumMatches(string $recorded, array $migration): bool
+    {
+        if (hash_equals($recorded, $migration['checksum'])) {
+            return true;
+        }
+        $lf = str_replace("
+", "
+", (string) file_get_contents($migration['path']));
+        return hash_equals($recorded, hash('sha256', $lf)) || hash_equals($recorded, hash('sha256', str_replace("
+", "
+", $lf)));
+    }
+
     protected function latestHistory(): array
     {
         $rows = $this->db->query(
@@ -120,6 +138,13 @@ class MigrationRunnerService
             28 => "SELECT COUNT(*) ok FROM permissions WHERE code='POS_HISTORY'",
             29 => "SELECT IF(COUNT(*)=0,1,0) ok FROM shop_settings WHERE deposit_payment_allocation_rule='gas_first'",
             31 => "SELECT COUNT(*) ok FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='default_gas_entry_mode'",
+            // 032 is present when its tables and columns exist. Its rate types count as present when they are
+            // either 032's (wholesale_cylinder) or the newer 035 ones (gas_per_cylinder): a database installed
+            // from the current schema.sql must not run 032, which would narrow rate_type back to the old values.
+            32 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='supplier_plants') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='purchases' AND COLUMN_NAME='plant_id') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cylinder_units' AND COLUMN_NAME='filled_purchase_id') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='customers' AND COLUMN_NAME='customer_type') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='purchase_items' AND COLUMN_NAME='line_type' AND COLUMN_TYPE LIKE '%refill_empty%') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='rate_type' AND (COLUMN_TYPE LIKE '%wholesale_cylinder%' OR COLUMN_TYPE LIKE '%gas_per_cylinder%'))) ok",
+            35 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='price_list') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_cards' AND COLUMN_NAME='rate_type' AND COLUMN_TYPE NOT LIKE '%wholesale_cylinder%') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_change_log' AND COLUMN_NAME='price_list')) ok",
+            36 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='customer_rates') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='rate_change_log' AND COLUMN_NAME='customer_rate_id')) ok",
+            34 => "SELECT (EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='shop_settings' AND COLUMN_NAME='pos_price_list_switch') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='customers' AND COLUMN_NAME='customer_type' AND COLUMN_TYPE LIKE '%shop_default%') AND EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sale_items' AND COLUMN_NAME='rate_source')) ok",
         ];
 
         if (!isset($checks[$migration['seq']])) {
@@ -159,7 +184,7 @@ class MigrationRunnerService
             $history = $latest[$migration['file']] ?? null;
 
             if ($history && in_array($history['status'], ['success','skipped'], true)) {
-                if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
+                if (!$this->checksumMatches((string) $history['checksum'], $migration)) {
                     $ready = false;
                     $blockedMessage = 'Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.';
                     $results[] = [
@@ -254,7 +279,7 @@ class MigrationRunnerService
                 $history = $latest[$migration['file']] ?? null;
 
                 if ($history && $history['status'] === 'success') {
-                    if (!hash_equals((string) $history['checksum'], $migration['checksum'])) {
+                    if (!$this->checksumMatches((string) $history['checksum'], $migration)) {
                         throw new RuntimeException('Migration file '.$migration['file'].' was changed after it was applied. Create a new migration sequence instead.');
                     }
                     continue;

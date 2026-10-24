@@ -19,3 +19,21 @@ php_errors.log
 .env.*
 !.env.example
 .env
+
+# Composer dependencies (installed by `composer install`)
+/vendor/
+
+# Local build output and database backups
+/build/
+/writable/backups/
+/installer/.stage/
+/installer/output/
+
+# Stray env copy (contains credentials)
+/..env
+
+# Playwright browser tests (npm install / npx playwright test)
+/node_modules/
+/writable/playwright-report/
+/writable/playwright-results/
+/test-results/

@@ -373,3 +373,36 @@ The server must not report **“No effective gas/kg rate exists.”** when a val
 - [ ] Verify sale amount, KG, receipt/payment, customer OS, saved rate, and inventory movements reconcile.
 
 Status: **Code updated; runtime/browser/database regression not yet executed.**
+
+
+## Client Feedback Fixes — 19 Oct 2026
+
+Run migration `032_20261019_client_feedback_plants_wholesale_refill.sql` first (Database update screen).
+
+1. **Wholesale rates / POS** — set a customer to *Wholesale* (Customers); add a *Wholesale — Price per Full Cylinder* rate per cylinder type (LPG Rates).
+   - [ ] Wholesale customer + Gas Sale: entry is forced to cylinders; line total = cylinders × price per cylinder; gas stock reduces by cylinders × capacity KG.
+   - [ ] Wholesale customer with no rate for that type: blocked unless a price per cylinder is typed; typed price is flagged as custom rate.
+   - [ ] Retail and Walk-in customers still sell by KG at the retail rate.
+2. **Supplier Payments**
+   - [ ] Payment allowed when outstanding payable is 0 (recorded as an advance; outstanding shows "Advance Rs. X").
+   - [ ] Purchases screen allows paying more than the payable (excess recorded as advance).
+3. **Purchases**
+   - [ ] "Refill Empty Cylinder (from stock)" converts existing empty cylinders to filled with the entered KG; fails if not enough empties.
+   - [ ] Voiding a refill purchase returns those cylinders to empty and reverses gas stock.
+   - [ ] Rate column reads *Cylinder Rate* and is a price per cylinder.
+   - [ ] Plant dropdown / add-plant works per supplier; plant shows in Purchase History.
+4. **Supplier Ledger**
+   - [ ] Credit Limit appears once (top card only), not repeated in Account Summary.
+5. **Dashboard**
+   - [ ] Card order: Purchases, Sales, Total Filled Cylinders, then the rest.
+   - [ ] Purchases card drills Company → Plant → purchases with paid / pending.
+   - [ ] Total Filled Cylinders card shows a count only (no KG); drills Company → Plant → cylinder type.
+
+Status: **Automated checks passed (PHP lint, unit tests, scratch-DB service and HTTP render checks); browser/UI runtime not yet executed.**
+
+### Wholesale pricing on Issue Cylinder and Cylinder Sale — 19 Oct 2026
+
+- [ ] Wholesale customer + Security Deposit / Issue Cylinder (filled): column reads *Price / Cylinder*; a full cylinder costs exactly the wholesale cylinder price, a partly filled cylinder is pro-rated by gas weight.
+- [ ] Wholesale customer + Cylinder Sale (filled): gas component uses the per-cylinder price (*Rs/Cyl*), same pro-rating rule.
+- [ ] Wholesale customer with no wholesale rate for the type: blocked with a clear message unless a price per cylinder is typed.
+- [ ] Retail customers unchanged (Rs per KG).

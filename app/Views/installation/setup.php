@@ -1,10 +1,15 @@
+<?php
+$uiLang = \App\Libraries\UiLanguage::fromRequest();
+$uiDir  = \App\Libraries\UiLanguage::meta($uiLang)['dir'];
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= esc($uiLang, 'attr') ?>" dir="<?= esc($uiDir, 'attr') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= esc($title ?? 'Database Installation Setup') ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/<?= $uiDir === 'rtl' ? 'bootstrap.rtl.min.css' : 'bootstrap.min.css' ?>" rel="stylesheet">
+    <?= view('partials/i18n_head', ['uiLang' => $uiLang]) ?>
     <style>
         body { min-height:100vh; background:#172534; display:flex; align-items:center; padding:24px 0; }
         .setup-card { border:0; border-radius:14px; box-shadow:0 1rem 3rem rgba(0,0,0,.25); }
@@ -66,5 +71,6 @@
         </div>
     </div>
 </div>
+<?= view('partials/i18n_foot', ['uiLang' => $uiLang]) ?>
 </body>
 </html>
