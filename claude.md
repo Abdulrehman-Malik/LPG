@@ -182,6 +182,12 @@ Do not expose the production application/database. Use a dedicated test database
 - Testing infrastructure may use external URLs, but it must not require application-code changes to accommodate a temporary tunnel.
 
 
+## Windows client installer
+- `installer/` builds `PerfectLPG-Setup-<version>.exe` with `.\installer\build.ps1` (Inno Setup 6; Composer needs PHP on PATH). See `installer/README.md`.
+- The exe carries only the app. On the client PC it downloads the latest PHP 8.5 / Apache 2.4 / MySQL 8.4 patch (`installer/scripts/resolve.ps1`), installs the `PerfectLPG-Apache` / `PerfectLPG-MySQL` services under `C:\PerfectLPG` and opens the web Installation page. Re-running it upgrades and keeps data.
+- Client databases are upgraded only through migrations, so every schema change needs a new migration file.
+- Installer scripts must run on Windows PowerShell 5.1: call external programs through `Invoke-Native` in `configure.ps1` (PS 5.1 turns redirected stderr into fatal errors under `ErrorActionPreference = 'Stop'`).
+
 ## Git Workflow Rule
 - Flow is feature -> stage -> main. Never push directly to `main` or `stage`.
 - Branch from `stage` (`feature/`, `fix/`, `chore/`), push, open a PR into `stage`, merge after CI passes. Promote with a PR from `stage` into `main`.
